@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ব্রাদার্স বুক হাউস</title>
+  <title>চলো — কিনে ফেলি</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -100,19 +100,28 @@
       backdrop-filter: blur(12px);
     }
     .nav { display: flex; align-items: center; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line); }
-    .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 0 0 auto; }
-    .mark { width: 38px; height: 38px; }
-    .logo strong { font-family: var(--font); font-size: 18px; color: var(--burgundy); display: block; line-height: 1.15; }
-    .logo small { display: block; font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+    .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 0 0 auto; }
+    .mark { width: 40px; height: 40px; display: block; flex-shrink: 0; transition: transform .28s ease; }
+    .logo:hover .mark { transform: translateX(3px); }
+    .logo-word { display: flex; flex-direction: column; justify-content: center; }
+    .logo strong {
+      font-family: var(--font); font-size: 26px; font-weight: 800;
+      color: var(--burgundy); display: block; line-height: 1.05; letter-spacing: -.03em;
+    }
+    .logo small {
+      display: block; font-size: 11px; font-weight: 600;
+      color: #b08940; letter-spacing: .06em; margin-top: 2px;
+    }
     nav.links { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
     nav.links a, .nav-cat > a { padding: 8px 12px; border-radius: 999px; font-weight: 500; }
     nav.links a:hover, nav.links a.active, .nav-cat > a:hover, .nav-cat > a.active { background: #efe6d4; color: var(--burgundy); }
     .nav-cat { position: relative; }
     .nav-cat > a { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
     .nav-cat > a::after { content: "▾"; font-size: 11px; opacity: .7; }
+    .nav-cat.on { z-index: 56; }
     .nav-cat-menu {
       display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 55;
-      min-width: 260px; max-height: min(70vh, 480px); overflow-y: auto;
+      min-width: 240px; max-height: min(70vh, 480px); overflow-y: auto;
       background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
       padding: 8px; box-shadow: 0 14px 32px rgba(28,20,16,.14);
     }
@@ -223,6 +232,17 @@
     .btn-primary:hover { background: var(--burgundy-dark); box-shadow: 0 8px 18px rgba(122,36,48,.25); }
     .btn-gold { background: transparent; color: var(--burgundy); border: 1.5px solid var(--gold); }
     .btn-ghost { background: transparent; color: var(--burgundy); border: 1px solid var(--line); }
+    .btn-hero {
+      background: var(--gold); color: #1C1410; font-weight: 800;
+      box-shadow: 0 10px 24px rgba(196,161,90,.35);
+    }
+    .btn-hero:hover { background: #d4b36a; }
+    .btn-hero-ghost {
+      background: transparent; color: #fff;
+      border: 1.5px solid rgba(246, 240, 228, .42);
+    }
+    .btn-hero-ghost:hover { background: rgba(255,255,255,.1); }
+    body:not(.vert-book) .book-only { display: none !important; }
     .btn-wide { width: 100%; }
     .btn-sm { padding: 7px 12px; font-size: 13px; }
     .menu-btn { display: none; }
@@ -314,25 +334,100 @@
     }
     .minicart-foot .row { font-size: 14px; }
     .minicart-foot .row.total { font-size: 18px; color: var(--burgundy); }
-    .minicart-foot .add-cart { margin-top: 12px; padding: 12px 16px; font-size: 15px; }
+    .minicart-foot .btn.add-cart, .minicart-foot .add-cart {
+      display: flex; width: 100%; justify-content: center; align-items: center;
+      margin-top: 14px; padding: 15px 20px; font-size: 16px; font-weight: 800;
+      border-radius: 999px;
+    }
 
     .page { display: none; }
     .page.on { display: block; animation: rise .4s ease; }
 
-    .hero { padding: 56px 0 20px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; }
+    .vbar {
+      background: linear-gradient(90deg, #4a141c 0%, #7A2430 42%, #5C1B24 100%);
+      border-bottom: 1px solid rgba(196,161,90,.28);
+    }
+    .vbar-in { display: flex; justify-content: center; gap: 8px; padding: 10px 0 12px; }
+    .vtab {
+      appearance: none; border: 1px solid transparent; background: transparent;
+      color: #f4ead8; font: 700 14px/1 var(--font); letter-spacing: .02em;
+      padding: 9px 18px; border-radius: 999px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: background .2s, color .2s, transform .18s, border-color .2s, box-shadow .2s;
+    }
+    .vtab svg { flex: 0 0 auto; }
+    .vtab:hover { background: rgba(255,255,255,.1); }
+    .vtab.on {
+      background: var(--gold); color: #1C1410; border-color: var(--gold);
+      box-shadow: 0 8px 18px rgba(196,161,90,.38);
+    }
+    .mnav-verts { display: flex; gap: 6px; margin: 0 0 14px; }
+    .mnav-verts .vtab { flex: 1; justify-content: center; color: var(--burgundy); border: 1px solid var(--line); background: #fff; padding: 10px 8px; font-size: 13px; }
+    .mnav-verts .vtab.on { background: var(--burgundy); color: #fff; border-color: var(--burgundy); box-shadow: none; }
+
+    .hero-stage {
+      position: relative; overflow: hidden; color: #f6efe4;
+      min-height: min(320px, 42vh); background: #1a1012;
+    }
+    .hero-slides { position: absolute; inset: 0; }
+    .hero-slide {
+      position: absolute; inset: 0; opacity: 0; border: 0; padding: 0; cursor: pointer;
+      background: #1a1012 center/cover no-repeat;
+      transition: opacity .7s ease;
+    }
+    .hero-slide.on { opacity: 1; z-index: 1; }
+    .hero-slide img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; display: block;
+    }
+    .hero-slide::after {
+      content: ""; position: absolute; inset: 0; z-index: 1;
+      background:
+        linear-gradient(90deg, rgba(18,8,10,.82) 0%, rgba(18,8,10,.42) 46%, rgba(18,8,10,.12) 100%),
+        linear-gradient(180deg, transparent 50%, rgba(18,8,10,.45));
+    }
+    .hero-copy { position: relative; z-index: 2; padding: 40px 0 52px; }
+    .hero-copy .inner { max-width: 640px; }
+    .hero-kicker {
+      display: inline-flex; align-items: center; gap: 10px;
+      color: var(--gold); font-weight: 700; letter-spacing: .04em;
+      font-size: 13px; margin-bottom: 16px;
+    }
+    .hero-kicker i { width: 28px; height: 1.5px; background: var(--gold); display: inline-block; }
+    .hero-stage h1 {
+      color: #fff; display: flex; flex-direction: column; align-items: flex-start;
+      gap: 2px; line-height: 1.12; margin-bottom: 12px;
+      font-size: clamp(26px, 4vw, 44px);
+    }
+    .hero-stage h1 span { display: block; }
+    .hero-stage h1 .hero-sub { color: var(--gold-soft); padding-left: 0; font-weight: 600; }
+    .hero-stage .lead { color: #eadfcf; max-width: 46ch; margin-bottom: 16px; font-size: 16px; }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 10px; }
+    .hs-nav {
+      position: absolute; top: 50%; z-index: 3; transform: translateY(-50%);
+      width: 46px; height: 46px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.28); background: rgba(28,20,16,.38);
+      color: #fff; cursor: pointer; font-size: 26px; line-height: 1;
+      display: grid; place-items: center;
+      transition: background .2s, transform .2s;
+    }
+    .hs-nav:hover { background: rgba(196,161,90,.9); color: #1C1410; }
+    .hs-nav.prev { left: 18px; }
+    .hs-nav.next { right: 18px; }
+    .hs-dots {
+      position: absolute; z-index: 3; left: 50%; bottom: 14px; transform: translateX(-50%);
+      display: flex; gap: 8px;
+    }
+    .hs-dots button {
+      width: 8px; height: 8px; padding: 0; border: 0; border-radius: 99px;
+      background: rgba(255,255,255,.38); cursor: pointer; transition: width .2s, background .2s;
+    }
+    .hs-dots button.on { width: 26px; background: var(--gold); }
+
     .kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--burgundy); font-weight: 600; font-size: 14px; margin-bottom: 14px; }
     .kicker i { width: 28px; height: 2px; background: var(--gold); display: inline-block; }
     h1 { font-family: var(--font); font-size: clamp(34px, 5vw, 56px); line-height: 1.2; color: var(--burgundy); margin-bottom: 14px; }
-    .hero h1 {
-      display: flex; flex-direction: column; align-items: flex-start;
-      gap: 0; line-height: 1.18; margin-bottom: 18px;
-    }
-    .hero h1 span { display: block; }
-    .hero h1 .hero-sub { padding-left: 1.35em; }
     .lead { font-size: 18px; color: #4b433c; max-width: 48ch; margin-bottom: 8px; }
-    .home-cats-sec { padding: 8px 0 18px; }
-    .home-chip-lab { font-size: 13px; font-weight: 700; color: var(--burgundy); margin-bottom: 10px; }
-    .home-chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .hchip {
       border: 1px solid var(--line); background: var(--paper); color: var(--ink);
       border-radius: 999px; padding: 7px 12px; cursor: pointer;
@@ -618,50 +713,62 @@
     .author-spines { display: flex; justify-content: center; gap: 5px; margin-top: 14px; height: 32px; align-items: flex-end; }
     .author-spines i { width: 11px; border-radius: 2px 2px 0 0; display: block; }
     .card {
-      background: var(--paper); border: 1px solid var(--line); border-radius: 16px;
-      overflow: visible; display: flex; flex-direction: column; min-width: 0;
+      background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      overflow: hidden; display: flex; flex-direction: column; min-width: 0;
       position: relative;
       transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
       animation: rise .45s ease both;
     }
-    .card:hover { transform: translateY(-8px); box-shadow: 0 18px 34px rgba(28,20,16,.12); border-color: #e2d4b8; }
+    .card:hover { transform: translateY(-6px); box-shadow: 0 16px 32px rgba(28,20,16,.12); border-color: #e2d4b8; }
     .cover-wrap { position: relative; background: #efe6d4; }
     .card .cover-wrap {
-      padding: 0;
+      padding: 14px 14px 8px;
       min-height: 0;
-      background: #1a1410;
+      background: #fff;
       overflow: hidden;
-      border-radius: 16px 16px 0 0;
+      border-radius: 0;
     }
+    .card .cover-wrap.pic-tight { padding: 6px 2px 4px; }
     .cover {
       height: 168px; display: flex; flex-direction: column; justify-content: space-between;
       padding: 14px 12px 12px 18px; color: #f7efe4; position: relative; overflow: hidden;
     }
     .card .cover {
       width: 100%;
-      height: 188px;
+      height: 210px;
       aspect-ratio: auto;
-      border-radius: 0;
+      border-radius: 12px;
       box-shadow: none;
+      background: #f7f2e8;
       transition: transform .35s ease;
     }
-    .card:hover .cover { transform: scale(1.04); }
-    .card .cover.has-pic img { position: absolute; inset: 0; }
+    .card:hover .cover { transform: scale(1.03); }
+    .card .cover.has-pic { background: #fff; }
+    .card .cover.has-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+    .card .cover-wrap.pic-tight .cover.has-pic img { padding: 2px 0; }
+    .card .cover.has-pic img.pic-b {
+      opacity: 0; z-index: 2; pointer-events: none;
+      transition: opacity .38s ease;
+    }
+    @media (hover: hover) {
+      .card .cover-wrap:hover .cover.has-hover img.pic-b { opacity: 1; }
+    }
     .card .cover .ribbon, .card .cover .stamp { z-index: 5; }
+    .cover.pic-plain::before, .cover.pic-plain::after { display: none; }
     .sale-badge {
-      position: absolute; top: -8px; right: -8px; left: auto; z-index: 6;
-      min-width: 54px; height: 54px; padding: 6px;
-      border-radius: 50%;
-      background: conic-gradient(from 210deg, #ff2d55, #ff7a00, #ffd000, #ff2d55);
+      position: absolute; top: 12px; left: 12px; right: auto; z-index: 6;
+      min-width: 0; height: auto; padding: 5px 9px;
+      border-radius: 8px;
+      background: #1C1410;
       color: #fff;
-      display: grid; place-items: center;
-      font-weight: 800; font-size: 14px; line-height: 1.05;
-      text-align: center;
-      box-shadow: 0 8px 18px rgba(255, 80, 40, .45), 0 0 0 3px #fff;
-      transform: rotate(12deg);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px; line-height: 1;
+      letter-spacing: .02em;
+      box-shadow: 0 6px 14px rgba(28,20,16,.25);
+      transform: none;
       pointer-events: none;
     }
-    .sale-badge small { display: block; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+    .sale-badge small { display: none; }
     .cover::before {
       content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 7px;
       background: linear-gradient(90deg, rgba(0,0,0,.18), var(--gold) 55%, rgba(255,255,255,.2));
@@ -707,16 +814,17 @@
       border-radius: 999px; padding: 2px 8px;
     }
     .card-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 2px; }
-    .card .card-body { padding: 10px 12px 12px; gap: 3px; flex: 1; border-radius: 0 0 16px 16px; }
+    .card .card-body { padding: 8px 14px 14px; gap: 4px; flex: 1; border-radius: 0; }
     .card h3 {
-      font-size: 14px; font-weight: 600; line-height: 1.35;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 0;
+      font-size: 14px; font-weight: 700; line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 38px;
     }
     .author { color: var(--muted); font-size: 12px; margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-foot { margin-top: 6px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-    .card .card-foot { margin-top: 6px; padding-top: 6px; flex-direction: column; align-items: stretch; gap: 6px; }
+    .card .card-foot { margin-top: auto; padding-top: 8px; flex-direction: column; align-items: stretch; gap: 10px; }
     .price { font-family: var(--font); font-weight: 700; color: var(--burgundy); font-size: 16px; line-height: 1.2; }
-    .card .price { font-size: 17px; }
+    .card .price { font-size: 18px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+    .card .old { margin-left: 0; font-size: 13px; color: #9a8f84; }
     .card-rate {
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
       font-size: 12px; color: var(--muted); margin: 2px 0 4px;
@@ -732,16 +840,21 @@
     }
     .card .add { padding: 8px 14px; font-size: 13px; }
     .add.add-cart, .btn.add-cart {
-      width: 100%;
-      background: #FFD814;
-      color: #111;
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 13px; font-weight: 800;
-      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      width: 100%; height: auto; padding: 10px 14px;
+      background: var(--burgundy);
+      color: #fff;
+      border-radius: 12px;
+      font-size: 14px; font-weight: 800;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      flex: 0 0 auto;
+      box-shadow: none;
     }
-    .add.add-cart:hover, .btn.add-cart:hover { background: #F7CA00; color: #111; transform: translateY(-1px); }
+    .add.add-cart:hover, .btn.add-cart:hover { background: var(--burgundy-dark); color: #fff; transform: translateY(-1px); }
+    .btn.add-cart { width: auto; border-radius: 999px; }
     .add.add-cart svg, .btn.add-cart svg { flex-shrink: 0; }
+    .card .add.wait {
+      width: auto; height: 42px; padding: 0 12px; border-radius: 999px; flex: 0 0 auto;
+    }
     .add:hover { background: var(--burgundy-dark); transform: scale(1.03); }
     .card.oos { box-shadow: none; }
     .card.oos .cover { filter: grayscale(.5) brightness(.72); }
@@ -794,13 +907,26 @@
     .pkg:hover .ps:nth-child(3) { transform: rotate(15deg) translateY(-3px); }
     .ps, .pkg .ps { transition: transform .28s ease; }
     .pkg .card-body { padding: 8px 12px 12px; }
-    .pkg .card-foot { flex-direction: column; align-items: stretch; gap: 8px; }
+    .pkg .card-foot { flex-direction: row; align-items: flex-end; gap: 8px; }
+    .vtag {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      color: var(--burgundy); background: var(--cream); border: 1px solid var(--line);
+      border-radius: 999px; padding: 1px 8px; margin-right: 6px; vertical-align: middle;
+    }
     .pkg.oos .ps, .pkg-stack.oos .ps { filter: grayscale(.5) brightness(.72); }
 
     footer.site { background: var(--burgundy-dark); color: #f3eadc; margin-top: 20px; padding: 42px 0 18px; }
     .fgrid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 28px; padding-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,.12); }
     footer h4 { font-family: var(--font); margin-bottom: 12px; }
     footer a, footer p { color: #e6d7c4; font-size: 14px; display: block; margin-bottom: 8px; }
+    .foot-brand { display: flex; align-items: flex-start; gap: 14px; }
+    .foot-brand .mark { width: 44px; height: 44px; }
+    .foot-brand h4 {
+      font-size: 26px; font-weight: 800; letter-spacing: -.03em;
+      color: #fff; margin: 0 0 4px; line-height: 1.1;
+    }
+    .foot-tag { color: var(--gold-soft) !important; font-weight: 700; margin-bottom: 10px !important; }
+    .foot-lead { max-width: 34ch; opacity: .9; }
     .copy { padding-top: 16px; font-size: 13px; opacity: .75; }
 
     .crumb { color: var(--muted); font-size: 14px; padding: 22px 0 8px; }
@@ -864,9 +990,155 @@
     select.inline { width: auto; min-height: 40px; padding: 8px 36px 8px 12px; }
     table input, table select { min-height: 38px; padding: 6px 10px; font-size: 13px; border-radius: 8px; }
     label { display: block; font-size: 14px; margin: 10px 0 6px; font-weight: 600; }
+    label.lab-ico {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--ink);
+    }
+    label.lab-ico svg { flex: 0 0 auto; color: var(--burgundy); }
     textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
 
     .product { display: grid; grid-template-columns: 340px 1fr; gap: 48px; padding: 12px 0 48px; }
+    .product.with-reviews { grid-template-columns: minmax(240px, 300px) minmax(260px, 1fr) minmax(280px, 340px); gap: 32px; align-items: start; }
+    .rv-col {
+      background: #fff; border: 1px solid var(--line); border-radius: 20px;
+      padding: 16px 16px 12px; display: flex; flex-direction: column; min-height: 0;
+      max-height: min(720px, calc(100vh - 120px));
+      position: sticky; top: 86px;
+      box-shadow: 0 10px 28px rgba(28,20,16,.06);
+    }
+    .rv-col h3 { font-size: 20px; margin: 0 0 4px; }
+    .rv-col .rv-avg { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+    .rv-form { display: grid; gap: 8px; margin-bottom: 12px; position: relative; }
+    .rv-form label { margin: 0; font-size: 12px; }
+    .rv-pick { display: flex; gap: 2px; }
+    .rv-pick.bad { outline: 2px solid #c4453c; outline-offset: 4px; border-radius: 8px; }
+    .rv-form input.bad, .rv-form textarea.bad {
+      border-color: #c4453c !important; box-shadow: 0 0 0 4px rgba(196, 69, 60, .16);
+    }
+    .rv-star {
+      background: none; border: 0; cursor: pointer; padding: 0 1px;
+      font-size: 22px; line-height: 1; color: #d8cfc4;
+    }
+    .rv-star.on, .rv-star:hover { color: #C4A15A; }
+    .rv-form textarea, .rv-form input {
+      width: 100%; min-height: 0; border-radius: 12px; font-size: 13px;
+    }
+    .rv-form textarea { min-height: 72px; }
+    .rv-busy {
+      display: none; position: absolute; inset: 0; z-index: 3;
+      background: rgba(255,252,247,.82); border-radius: 14px;
+      place-items: center; text-align: center; gap: 8px;
+    }
+    .rv-form.wait .rv-busy { display: grid; }
+    .rv-busy b { color: var(--burgundy); font-size: 13px; }
+    .rv-list { overflow: hidden; flex: 1; min-height: 220px; position: relative; }
+    .rv-run {
+      display: flex; flex-direction: column;
+      animation: rvRun var(--rv-dur, 28s) linear infinite;
+    }
+    .rv-set { display: flex; flex-direction: column; gap: 10px; padding-bottom: 10px; }
+    .rv-col:hover .rv-run { animation-play-state: paused; }
+    @keyframes rvRun {
+      from { transform: translateY(0); }
+      to { transform: translateY(-50%); }
+    }
+    .rv-item {
+      background: #faf7f1; border: 1px solid #eee6d8; border-radius: 14px;
+      padding: 12px 12px 10px;
+    }
+    .rv-item-h { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .rv-av {
+      width: 36px; height: 36px; border-radius: 50%; flex: 0 0 auto;
+      display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px;
+    }
+    .rv-item-h b { display: block; font-size: 13px; line-height: 1.2; }
+    .rv-item-h small { color: var(--muted); font-size: 11px; }
+    .rv-item p { font-size: 13px; line-height: 1.5; color: #3f3832; margin: 0; }
+    .rv-stars { color: #C4A15A; letter-spacing: 1px; font-size: 12px; }
+
+    .also-wrap {
+      position: relative;
+      background: linear-gradient(180deg, #eef3fb 0%, #f7f3ea 100%);
+      border: 1px solid #e4dcc8;
+      border-radius: 28px;
+      padding: 36px 16px 22px;
+      margin: 8px 0 48px;
+      overflow: hidden;
+    }
+    .also-pill {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--burgundy), #9a3544);
+      color: #fff; border-radius: 999px; padding: 8px 22px;
+      font-weight: 800; font-size: 14px; letter-spacing: .02em;
+      box-shadow: 0 8px 18px rgba(122,36,48,.28); white-space: nowrap; z-index: 2;
+    }
+    .also-mask { overflow: hidden; }
+    .also-track {
+      display: flex; width: max-content;
+      animation: alsoRun var(--also-dur, 32s) linear infinite;
+    }
+    .also-set { display: flex; gap: 14px; padding-right: 14px; }
+    .also-wrap:hover .also-track { animation-play-state: paused; }
+    @keyframes alsoRun {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    .like-card {
+      flex: 0 0 210px; width: 210px;
+      background: #fff; border: 1px solid #ece4d4; border-radius: 18px;
+      padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 8px;
+      box-shadow: 0 8px 18px rgba(28,20,16,.05);
+    }
+    .like-pic {
+      position: relative; height: 150px; border-radius: 14px; overflow: hidden;
+      background: #fff; cursor: pointer;
+    }
+    .like-pic img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain; padding: 2px 0;
+    }
+    .like-pic img.pic-b { opacity: 0; z-index: 1; transition: opacity .35s ease; }
+    @media (hover: hover) {
+      .like-card:hover .like-pic img.pic-b { opacity: 1; }
+    }
+    .like-off {
+      position: absolute; top: 8px; left: 8px; z-index: 3;
+      background: #1C1410; color: #fff; font-size: 11px; font-weight: 800;
+      border-radius: 8px; padding: 4px 7px; pointer-events: none;
+    }
+    .like-card h3 {
+      font-size: 13px; font-weight: 700; line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; min-height: 34px; cursor: pointer; margin: 0;
+    }
+    .like-price { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .like-price s { color: #9a8f84; font-size: 12px; }
+    .like-price b { color: var(--burgundy); font-family: var(--font); font-size: 16px; }
+    .like-add {
+      margin-top: auto; border: 0; cursor: pointer;
+      background: var(--burgundy); color: #fff; font-weight: 700; font-size: 13px;
+      border-radius: 999px; padding: 9px 12px; width: 100%;
+    }
+    .like-add:hover { background: var(--burgundy-dark); }
+    .like-card .add { width: 100%; border-radius: 999px; padding: 9px 12px; }
+    .also-wrap.minicart-also {
+      margin: 10px 0 0; padding: 8px 4px 6px; border-radius: 12px;
+    }
+    .also-wrap.minicart-also .also-set { gap: 8px; padding-right: 8px; }
+    .also-wrap.minicart-also .like-card {
+      flex: 0 0 88px; width: 88px; padding: 5px 5px 6px; gap: 4px; border-radius: 10px;
+    }
+    .also-wrap.minicart-also .like-pic { height: 58px; border-radius: 8px; }
+    .also-wrap.minicart-also .like-card h3 {
+      font-size: 10px; min-height: 0; -webkit-line-clamp: 1; line-height: 1.3;
+    }
+    .also-wrap.minicart-also .like-price { gap: 4px; }
+    .also-wrap.minicart-also .like-price b { font-size: 11px; }
+    .also-wrap.minicart-also .like-price s { font-size: 9px; }
+    .also-wrap.minicart-also .like-add, .also-wrap.minicart-also .like-card .add {
+      padding: 4px 6px; font-size: 9px;
+    }
+    .also-wrap.minicart-also .like-off { top: 3px; left: 3px; font-size: 9px; padding: 2px 4px; border-radius: 6px; }
     .big-cover { aspect-ratio: 2/3; border-radius: 6px 16px 16px 6px; padding: 36px 28px; color: #f7efe4; position: relative; box-shadow: var(--shadow); }
     .big-cover::before { content: ""; position: absolute; left: 14px; top: 0; bottom: 0; width: 4px; background: var(--gold); }
     .big-cover.oos { filter: grayscale(.42) brightness(.78); }
@@ -1051,7 +1323,7 @@
     .field-box.area { align-items: flex-start; padding-top: 12px; padding-bottom: 12px; min-height: 108px; }
     .field-box.area textarea { min-height: 84px; padding: 0 !important; }
     .field-box select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A7E72' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important; background-repeat: no-repeat !important; background-position: right 0 center !important; padding-right: 22px !important; cursor: pointer; }
-    .field-ico { width: 18px; height: 18px; flex: 0 0 auto; color: var(--gold); display: grid; place-items: center; }
+    .field-ico { width: 20px; height: 20px; flex: 0 0 auto; color: var(--burgundy); display: grid; place-items: center; }
     .field-ico svg { display: block; }
     .coupon { display: flex; gap: 8px; margin: 14px 0 16px; align-items: stretch; }
     .coupon .field-box { flex: 1; min-width: 0; }
@@ -1065,6 +1337,18 @@
     }
     .ssl-head { background: #1a3a6b; color: #fff; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; }
     .ssl-body { padding: 22px; }
+    .ssl-note {
+      background: #f4f7fb; border: 1px solid #d5e0ee; border-radius: 12px;
+      padding: 12px 14px; font-size: 13px; color: #3a4a62; line-height: 1.55; margin: 0 0 14px;
+    }
+    .ssl-note.ok { background: #eef6f0; border-color: #c5ddd0; color: #2d4a3a; }
+    .ssl-note.warn { background: #fbf6ee; border-color: #ead9b4; color: #6a5428; }
+    .ssl-note code { font-size: 12px; background: #fff; padding: 1px 6px; border-radius: 6px; }
+    .ssl-test {
+      display: grid; gap: 6px; margin: 0 0 14px; font-size: 12.5px; color: #5a524a;
+      background: #faf8f3; border-radius: 12px; padding: 12px 14px;
+    }
+    .ssl-test b { color: #1a3a6b; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spin {
       width: 16px; height: 16px; border: 2px solid currentColor; border-top-color: transparent;
@@ -1724,8 +2008,14 @@
       .wrap { width: calc(100% - 28px); }
       nav.links, .nav-tools .search, .nav-cpns { display: none; }
       .menu-btn { display: grid; }
-      .hero, .product, .cart-layout, .check-layout, .admin-shell, .fgrid, .form-grid, .grid-3, .shop-layout { grid-template-columns: 1fr; }
+      .hero, .product, .product.with-reviews, .cart-layout, .check-layout, .admin-shell, .fgrid, .form-grid, .grid-3, .shop-layout { grid-template-columns: 1fr; }
+      .rv-col { position: static; max-height: none; }
       .fin-kpis, .fin-split { grid-template-columns: 1fr; }
+      .hero-stage { min-height: 260px; }
+      .hero-copy { padding: 28px 0 44px; }
+      .hs-nav { width: 38px; height: 38px; }
+      .hs-nav.prev { left: 8px; }
+      .hs-nav.next { right: 8px; }
       .grid { grid-template-columns: repeat(2, 1fr); }
       .rail-books .rail-track > * { flex: 0 0 calc((100% - 20px) / 2); }
       .rail-packs .rail-track > * { flex: 0 0 80%; }
@@ -1751,6 +2041,10 @@
       .rail-books .rail-track > * { flex: 0 0 calc((100% - 80px) / 5); }
       .cats { grid-template-columns: repeat(5, 1fr); }
     }
+    @media (max-width: 1100px) and (min-width: 981px) {
+      .product.with-reviews { grid-template-columns: 260px 1fr; }
+      .rv-col { grid-column: 1 / -1; position: static; max-height: none; }
+    }
   </style>
 </head>
 <body>
@@ -1767,8 +2061,8 @@
     <div class="wrap nav">
       <button class="icon-btn menu-btn" onclick="openMenu()" aria-label="মেনু">☰</button>
       <div class="logo" onclick="go('home')">
-        <svg class="mark" viewBox="0 0 40 40" fill="none"><rect x="4" y="8" width="18" height="26" rx="2" fill="#7A2430"/><rect x="16" y="5" width="18" height="26" rx="2" fill="#C4A15A"/><path d="M16 8v23" stroke="#F6F0E4" stroke-width="1.5"/></svg>
-        <div><strong>ব্রাদার্স বুক হাউস</strong><small>BROTHERS BOOK HOUSE</small></div>
+        <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true"><rect width="40" height="40" rx="14" fill="#7A2430"/><rect x="1.5" y="1.5" width="37" height="37" rx="12.5" stroke="#C4A15A" stroke-width="1.25"/><path d="M16 11.8c0-.55.58-.9 1.06-.64l13.2 7.55a.74.74 0 0 1 0 1.28L17.06 27.54c-.48.27-1.06-.08-1.06-.64V11.8z" fill="#E8D5A3"/></svg>
+        <div class="logo-word"><strong>চলো</strong><small>কিনে ফেলি</small></div>
       </div>
       <nav class="links">
         <a data-nav="home" href="#" onclick="go('home');return false;">হোম</a>
@@ -1776,8 +2070,8 @@
           <a data-nav="shop" href="#" onclick="toggleNavCat(event);return false;">ক্যাটাগরি</a>
           <div class="nav-cat-menu" id="navCatMenu"></div>
         </div>
-        <a data-nav="packs" href="#" onclick="go('packs');return false;">প্যাকেজ</a>
-        <a data-nav="authors" href="#" onclick="go('authors');return false;">লেখক</a>
+        <a class="book-only" data-nav="packs" href="#" onclick="go('packs');return false;">প্যাকেজ</a>
+        <a class="book-only" data-nav="authors" href="#" onclick="go('authors');return false;">লেখক</a>
         <a data-nav="orders" href="#" onclick="goMyOrders();return false;">অর্ডার</a>
         <a data-nav="wait" href="#" onclick="goWait();return false;" style="display:none">ভবিষ্যৎ</a>
       </nav>
@@ -1793,6 +2087,9 @@
         </button>
         <div id="authSlot"></div>
       </div>
+    </div>
+    <div class="vbar">
+      <div class="wrap vbar-in" id="vbar"></div>
     </div>
     <div class="backbar" id="backBar">
       <div class="wrap">
@@ -1815,6 +2112,7 @@
         <span>⌕</span>
         <input id="qMobile" placeholder="কোন বই খুঁজছেন?" oninput="onMobileSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();submitMobileSearch();}" />
       </div>
+      <div class="mnav-verts" id="mnavVerts"></div>
       <p class="mnav-cpn-lab" id="mnavCpnLab" hidden>কুপন · ক্লিক করে কপি</p>
       <div class="mnav-cpns" id="mnavCoupons" hidden></div>
       <nav class="mnav-links">
@@ -1823,8 +2121,8 @@
           <a data-nav="shop" href="#" onclick="return false;">ক্যাটাগরি</a>
           <div id="mnavCats"></div>
         </div>
-        <a data-nav="packs" href="#" onclick="closeMenu();go('packs');return false;">প্যাকেজ</a>
-        <a data-nav="authors" href="#" onclick="closeMenu();go('authors');return false;">লেখক</a>
+        <a class="book-only" data-nav="packs" href="#" onclick="closeMenu();go('packs');return false;">প্যাকেজ</a>
+        <a class="book-only" data-nav="authors" href="#" onclick="closeMenu();go('authors');return false;">লেখক</a>
         <a data-nav="orders" href="#" onclick="closeMenu();goMyOrders();return false;">অর্ডার</a>
         <a data-nav="wait" href="#" onclick="closeMenu();goWait();return false;" style="display:none">ভবিষ্যৎ</a>
         <a href="#" onclick="closeMenu();go('track');return false;">অর্ডার খুঁজুন</a>
@@ -1856,19 +2154,25 @@
 
   <main>
     <section class="page on" id="page-home">
-      <div class="wrap hero">
-        <div>
-          <h1><span>আপনার পরবর্তী</span><span class="hero-sub">প্রিয় বইটি এখানেই</span></h1>
-          <p class="lead">অষ্টম থেকে অনার্স, ভর্তি গাইড আর BCS ও ব্যাংক প্রস্তুতি — ক্যাটাগরি বেছে বই নিন। পেমেন্ট SSLCOMMERZ।</p>
+      <div class="hero-stage" id="heroStage">
+        <div class="hero-slides" id="heroSlides"></div>
+        <button class="hs-nav prev" type="button" onclick="heroPrev()" aria-label="আগের স্লাইড">‹</button>
+        <button class="hs-nav next" type="button" onclick="heroNext()" aria-label="পরের স্লাইড">›</button>
+        <div class="hs-dots" id="heroDots"></div>
+        <div class="hero-copy wrap">
+          <div class="inner">
+            <p class="hero-kicker" id="heroKicker"><i></i> চলো বই</p>
+            <h1><span id="heroTitle">আপনার পরবর্তী</span><span class="hero-sub" id="heroSub">প্রিয় বইটি এখানেই</span></h1>
+            <p class="lead" id="heroLead">অষ্টম থেকে অনার্স, ভর্তি গাইড আর BCS ও ব্যাংক প্রস্তুতি — ক্যাটাগরি বেছে বই নিন। পেমেন্ট SSLCOMMERZ।</p>
+            <div class="hero-cta">
+              <button class="btn btn-hero" type="button" onclick="heroOpenCat()">এই ক্যাটাগরি</button>
+              <button class="btn btn-hero-ghost book-only" type="button" onclick="go('authors')">লেখকবৃন্দ</button>
+            </div>
+          </div>
         </div>
-        <div class="stack" id="heroStack" aria-hidden="true"></div>
-      </div>
-      <div class="wrap home-cats-sec">
-        <p class="home-chip-lab">ক্যাটাগরি</p>
-        <div class="home-chips" id="homeChips"></div>
       </div>
       <div class="wrap section">
-        <div class="section-head"><h2>জনপ্রিয় বইসমূহ</h2><span class="see" onclick="go('shop')">সব দেখুন →</span></div>
+        <div class="section-head"><h2 id="homePopTitle">জনপ্রিয় বইসমূহ</h2><span class="see" onclick="go('shop')">সব দেখুন →</span></div>
         <div class="rail rail-books" id="bestRail">
           <button type="button" class="rail-btn rail-prev" hidden aria-label="আগে">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5 8 12l7 7"/></svg>
@@ -1879,7 +2183,7 @@
           </button>
         </div>
       </div>
-      <div class="wrap section">
+      <div class="wrap section book-only" id="homePackSec">
         <div class="section-head"><h2>প্যাকেজ অফার</h2><span class="see" onclick="go('packs')">সব প্যাকেজ →</span></div>
         <div class="rail rail-packs" id="packRail">
           <button type="button" class="rail-btn rail-prev" hidden aria-label="আগে">
@@ -1899,8 +2203,8 @@
               <span class="how-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2z"/><path d="M9 8h6M9 12h4"/></svg></span>
               <span class="n">১</span>
             </div>
-            <h3>বই বাছুন</h3>
-            <p>ক্যাটাগরি বা সার্চ থেকে পছন্দের বই কার্টে দিন।</p>
+            <h3 id="how1t">বই বাছুন</h3>
+            <p id="how1p">ক্যাটাগরি বা সার্চ থেকে পছন্দের বই কার্টে দিন।</p>
           </article>
           <article class="how-step" style="--i:1">
             <div class="how-top">
@@ -2045,7 +2349,7 @@
           <div class="coupon">
             <div class="field-box">
               <span class="field-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h16"/><circle cx="18.5" cy="12" r="2.2"/></svg></span>
-              <input id="trackQ" type="text" placeholder="017xxxxxxxx অথবা BBH-2041" onkeydown="if(event.key==='Enter')doTrack()" />
+              <input id="trackQ" type="text" placeholder="017xxxxxxxx অথবা CLO-2041" onkeydown="if(event.key==='Enter')doTrack()" />
             </div>
             <button class="btn btn-primary" onclick="doTrack()">খুঁজুন</button>
           </div>
@@ -2086,15 +2390,19 @@
 
   <footer class="site">
     <div class="wrap fgrid">
-      <div>
-        <h4>ব্রাদার্স বুক হাউস</h4>
-        <p>বাংলাদেশের ঘরে ঘরে বই। সারা দেশে হোম ডেলিভারি।</p>
+      <div class="foot-brand">
+        <svg class="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true"><rect width="40" height="40" rx="14" fill="#C4A15A"/><path d="M16 11.8c0-.55.58-.9 1.06-.64l13.2 7.55a.74.74 0 0 1 0 1.28L17.06 27.54c-.48.27-1.06-.08-1.06-.64V11.8z" fill="#5C1B24"/></svg>
+        <div>
+          <h4>চলো</h4>
+          <p class="foot-tag">চলো, কিনে ফেলি</p>
+          <p class="foot-lead">বই, খাবার ও গ্যাজেট — এক ঠিকানায়। সারা দেশে হোম ডেলিভারি।</p>
+        </div>
       </div>
       <div>
         <h4>লিংক</h4>
         <a href="#" onclick="goFirstCat();return false;">ক্যাটাগরি</a>
-        <a href="#" onclick="go('packs');return false;">প্যাকেজ</a>
-        <a href="#" onclick="go('authors');return false;">লেখক</a>
+        <a class="book-only" href="#" onclick="go('packs');return false;">প্যাকেজ</a>
+        <a class="book-only" href="#" onclick="go('authors');return false;">লেখক</a>
         <a href="#" onclick="goMyOrders();return false;">অর্ডার</a>
         <a href="#" onclick="goWait();return false;" id="footWait">ভবিষ্যৎ অর্ডার</a>
         <a href="#" onclick="go('track');return false;">অর্ডার খুঁজুন</a>
@@ -2107,7 +2415,7 @@
         <p>বিকাশ · নগদ · কার্ড</p>
       </div>
     </div>
-    <div class="wrap copy">© ২০২৬ ব্রাদার্স বুক হাউস</div>
+    <div class="wrap copy">© ২০২৬ চলো · চলো, কিনে ফেলি</div>
   </footer>
 
   <button class="chat-fab" id="chatFab" type="button" onclick="toggleChat()" aria-label="লাইভ চ্যাট">
@@ -2120,7 +2428,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8.5 8.5 0 0 1-8.5 8.5H8l-4 3V12A8.5 8.5 0 1 1 21 12z"/></svg>
       </div>
       <div>
-        <b>ব্রাদার্স সাপোর্ট</b>
+        <b>চলো সাপোর্ট</b>
         <small><i class="on-dot"></i>অনলাইন · সাধারণত সাথে সাথে জবাব</small>
       </div>
       <div class="chat-head-acts">
@@ -2175,8 +2483,82 @@
     const icoPin = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11.2A7 7 0 1 0 5 9.8C5 14.8 12 21 12 21z"/><circle cx="12" cy="10" r="2.2"/></svg>`;
     const icoDel = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 7V5h4v2M6 7l1.1 13h9.8L18 7M10 11v6M14 11v6"/></svg>`;
     const icoCart = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M3 4h2l2.2 11h11.3l1.8-8H7"/></svg>`;
-    const KEY = "bbh_demo_v6";
+    const KEY = "cholo_demo_v2";
     const colors = ["#7A2430","#3D5A4C","#2C3A5A","#6B3A1F","#4A2744","#245A6B","#B86A2A","#1F4A3A"];
+    const icoBook = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2z"/></svg>`;
+    const icoFood = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11h16v2a8 8 0 0 1-16 0v-2z"/><path d="M8 11V5M12 11V4M16 11V6"/></svg>`;
+    const icoGadget = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>`;
+    const VERTICALS = {
+      book: {
+        id: "book", name: "বই", ico: icoBook,
+        search: "কোন বই খুঁজছেন?",
+        kicker: "চলো বই",
+        title: "আপনার পরবর্তী", sub: "প্রিয় বইটি এখানেই",
+        lead: "অষ্টম থেকে অনার্স, ভর্তি গাইড আর BCS ও ব্যাংক প্রস্তুতি — ক্যাটাগরি বেছে বই নিন। পেমেন্ট SSLCOMMERZ।",
+        popular: "জনপ্রিয় বইসমূহ", catLab: "ক্যাটাগরি", unit: "বই",
+        empty: "এই ক্যাটাগরিতে বই নেই", how1: "বই বাছুন",
+        how1p: "ক্যাটাগরি বা সার্চ থেকে পছন্দের বই কার্টে দিন।",
+        authorField: "লেখক", prodTab: "বই", addTitle: "নতুন বই যোগ",
+        countLab: "টি বই"
+      },
+      food: {
+        id: "food", name: "খাবার", ico: icoFood,
+        search: "কী খেতে চান?",
+        kicker: "চলো কিচেন",
+        title: "ঘরের স্বাদ", sub: "এখন আপনার টেবিলে",
+        lead: "বিরিয়ানি, ভুনা, স্ন্যাকস আর মিষ্টি — তাজা রান্না, সারা শহরে ডেলিভারি।",
+        popular: "আজকের জনপ্রিয় খাবার", catLab: "মেনু", unit: "খাবার",
+        empty: "এই ক্যাটাগরিতে খাবার নেই", how1: "খাবার বাছুন",
+        how1p: "মেনু থেকে পছন্দের প্লেট কার্টে দিন।",
+        authorField: "কিচেন / ব্র্যান্ড", prodTab: "খাবার", addTitle: "নতুন খাবার যোগ",
+        countLab: "টি আইটেম"
+      },
+      gadget: {
+        id: "gadget", name: "গ্যাজেট", ico: icoGadget,
+        search: "কোন গ্যাজেট খুঁজছেন?",
+        kicker: "চলো গ্যাজেট",
+        title: "স্মার্ট জিনিস", sub: "যেগুলো কাজকে সহজ করে",
+        lead: "ইয়ারবাড, পাওয়ার ব্যাংক, ফ্যান আর UPS — Tech Jhuli স্টাইলে অরিজিনাল গ্যাজেট।",
+        popular: "ট্রেন্ডিং গ্যাজেট", catLab: "ক্যাটাগরি", unit: "গ্যাজেট",
+        empty: "এই ক্যাটাগরিতে গ্যাজেট নেই", how1: "গ্যাজেট বাছুন",
+        how1p: "ক্যাটাগরি বা সার্চ থেকে পছন্দের আইটেম কার্টে দিন।",
+        authorField: "ব্র্যান্ড", prodTab: "গ্যাজেট", addTitle: "নতুন গ্যাজেট যোগ",
+        countLab: "টি আইটেম"
+      }
+    };
+    const FOOD_CATS = [
+      { vertical: "food", name: "রান্না খাবার", subs: ["বিরিয়ানি", "ভুনা-কারি"] },
+      { vertical: "food", name: "স্ন্যাকস", subs: ["রোল", "সমুচা"] },
+      { vertical: "food", name: "মিষ্টি", subs: ["ফিরনি", "মিষ্টান্ন"] },
+      { vertical: "food", name: "পানীয়", subs: ["চা", "জুস"] }
+    ];
+    const GADGET_CATS = [
+      { vertical: "gadget", name: "মোবাইল এক্সেসরিজ", subs: ["ইয়ারবাড", "পাওয়ার ব্যাংক"] },
+      { vertical: "gadget", name: "স্মার্ট গ্যাজেট", subs: ["মাইক", "ফ্ল্যাশলাইট"] },
+      { vertical: "gadget", name: "কম্পিউটার", subs: ["Mini UPS", "DC UPS"] },
+      { vertical: "gadget", name: "হোম", subs: ["ফ্যান", "মশারি ব্যাট"] }
+    ];
+    const EXTRA_CATS = [...FOOD_CATS, ...GADGET_CATS];
+    const DEFAULT_SLIDES = {
+      book: [
+        { cat: "নবম-দশম", kicker: "এসএসসি", title: "নবম-দশম গাইড", sub: "বোর্ড প্রশ্ন ও সাজেশন", img: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=1600&q=80" },
+        { cat: "ইঞ্জিনিয়ারিং ভর্তি", kicker: "ভর্তি", title: "ইঞ্জিনিয়ারিং প্রস্তুতি", sub: "গণিত ও প্রশ্নব্যাংক", img: "https://images.unsplash.com/photo-14565130808-af29b1fef35b?auto=format&fit=crop&w=1600&q=80" },
+        { cat: "মেডিকেল ভর্তি", kicker: "মেডিকেল", title: "মেডিকেল ভর্তি", sub: "বায়োলজি · রসায়ন · পদার্থ", img: "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=1600&q=80" },
+        { cat: "ব্যাংক প্রস্তুতি", kicker: "চাকরি", title: "ব্যাংক নিয়োগ গাইড", sub: "গাইড · গণিত · ইংরেজি", img: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1600&q=80" }
+      ],
+      food: [
+        { cat: "রান্না খাবার", kicker: "বিরিয়ানি", title: "গরম গরম বিরিয়ানি", sub: "কাচ্চি · চিকেন · ভুনা", img: "https://images.deliveryhero.io/image/fd-bd/Products/7921460.jpg?width=1400" },
+        { cat: "স্ন্যাকস", kicker: "স্ন্যাকস", title: "রোল ও সমুচা", sub: "চা-এর সাথে পারফেক্ট", img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1600&q=80" },
+        { cat: "মিষ্টি", kicker: "ডেজার্ট", title: "ফিরনি ও মিষ্টান্ন", sub: "মিষ্টি শেষ", img: "https://images.unsplash.com/photo-1571115177098-24ec42ed204d?auto=format&fit=crop&w=1600&q=80" },
+        { cat: "পানীয়", kicker: "পানীয়", title: "চা ও জুস", sub: "গরম বা ঠান্ডা", img: "https://images.unsplash.com/photo-1571934811356-5cc061b6821f?auto=format&fit=crop&w=1600&q=80" }
+      ],
+      gadget: [
+        { cat: "হোম", kicker: "হোম", title: "রিচার্জেবল ফ্যান", sub: "রিমোট কন্ট্রোল · পোর্টেবল", img: "https://techjhuli.com/wp-content/uploads/2026/09/521A5181-D00A-4F69-8FFA-1F2BED7015F5.avif" },
+        { cat: "মোবাইল এক্সেসরিজ", kicker: "মোবাইল", title: "ইয়ারবাড ও পাওয়ার", sub: "প্রতিদিনের গ্যাজেট", img: "https://techjhuli.com/wp-content/uploads/2026/09/4501F450-166C-4DF4-BB39-5304544053BE.avif" },
+        { cat: "স্মার্ট গ্যাজেট", kicker: "স্মার্ট", title: "মাইক ও ফ্ল্যাশলাইট", sub: "অডিও · টর্চ", img: "https://techjhuli.com/wp-content/uploads/2026/08/318BA3BA-3A90-4627-AB55-302C6C32C853.avif" },
+        { cat: "কম্পিউটার", kicker: "ডেস্ক", title: "Mini DC UPS", sub: "রাউটার · ল্যাপটপ ব্যাকআপ", img: "https://techjhuli.com/wp-content/uploads/2026/09/AF3DF6A1-4605-4C70-AC92-F5319BAD1740.avif" }
+      ]
+    };
     const CATS = ["অষ্টম শ্রেণি","নবম-দশম","ইন্টারমিডিয়েট","ইঞ্জিনিয়ারিং ভর্তি","বিশ্ববিদ্যালয় ভর্তি","জাতীয় বিশ্ববিদ্যালয় ভর্তি","মেডিকেল ভর্তি","ব্যাংক প্রস্তুতি","বিশ্ববিদ্যালয় বিজ্ঞান","বিশ্ববিদ্যালয় মানবিক"];
     const DEFAULT_SUBS = {
       "অষ্টম শ্রেণি": ["বাংলা", "গণিত"],
@@ -2232,18 +2614,37 @@
         { id: 17, title: "অনার্স পদার্থবিজ্ঞান", author: "বিজ্ঞান পাঠ", price: 480, old: 0, sold: 120, pages: 420, color: "#245A6B", cat: "বিশ্ববিদ্যালয় বিজ্ঞান", desc: "বিশ্ববিদ্যালয় বিজ্ঞান অনুষদ — পদার্থ।", stock: 0 },
         { id: 18, title: "অনার্স রসায়ন", author: "বিজ্ঞান পাঠ", price: 460, old: 520, sold: 110, pages: 400, color: "#3D5A4C", cat: "বিশ্ববিদ্যালয় বিজ্ঞান", desc: "অনার্স রসায়ন — তত্ত্ব ও ল্যাব।" },
         { id: 19, title: "অনার্স বাংলা সাহিত্য", author: "সাহিত্য সংসদ", price: 340, old: 0, sold: 140, pages: 280, color: "#7A2430", cat: "বিশ্ববিদ্যালয় মানবিক", desc: "বিশ্ববিদ্যালয় মানবিক — বাংলা সাহিত্য।" },
-        { id: 20, title: "অনার্স ইতিহাস", author: "সাহিত্য সংসদ", price: 320, old: 360, sold: 95, pages: 260, color: "#4A2744", cat: "বিশ্ববিদ্যালয় মানবিক", desc: "অনার্স ইতিহাস — বাংলাদেশ ও বিশ্ব।" }
+        { id: 20, title: "অনার্স ইতিহাস", author: "সাহিত্য সংসদ", price: 320, old: 360, sold: 95, pages: 260, color: "#4A2744", cat: "বিশ্ববিদ্যালয় মানবিক", desc: "অনার্স ইতিহাস — বাংলাদেশ ও বিশ্ব।" },
+        { id: 301, title: "কাচ্চি বিরিয়ানি", author: "চলো কিচেন", unit: "১ প্লেট", price: 280, old: 320, sold: 640, color: "#7A2430", vertical: "food", cat: "রান্না খাবার", sub: "বিরিয়ানি", desc: "খাসির মাংস, আলু ও জাফরানি চাল — গরম গরম প্লেট।", image: "https://images.deliveryhero.io/image/fd-bd/Products/7921460.jpg?width=800", image2: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80" },
+        { id: 302, title: "চিকেন বিরিয়ানি", author: "চলো কিচেন", unit: "১ প্লেট", price: 220, old: 0, sold: 510, color: "#6B3A1F", vertical: "food", cat: "রান্না খাবার", sub: "বিরিয়ানি", desc: "মুরগির মাংস ও বাসমতি চালের বিরিয়ানি।", image: "https://images.deliveryhero.io/image/global-menu-service/FP_BD/vendor/usv0/product/10026193/93cac7c2-d576-41d5-b1e2-3902d4a02fd0.jpg?width=800", image2: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=800&q=80" },
+        { id: 303, title: "গরুর মাংস ভুনা", author: "চলো কিচেন", unit: "১ প্লেট", price: 340, old: 380, sold: 290, color: "#4A2744", vertical: "food", cat: "রান্না খাবার", sub: "ভুনা-কারি", desc: "মসলাদার গরুর মাংস ভুনা, পরোটা বা ভাতের সাথে।", image: "https://images.deliveryhero.io/image/fd-bd/Products/7210782.jpg?width=800", image2: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=80" },
+        { id: 304, title: "মুরগির কারি", author: "চলো কিচেন", unit: "১ প্লেট", price: 190, old: 0, sold: 360, color: "#3D5A4C", vertical: "food", cat: "রান্না খাবার", sub: "ভুনা-কারি", desc: "ঘরোয়া মুরগির কারি — দুপুরের খাবার।", image: "https://images.deliveryhero.io/image/fd-bd/products/7212398.jpg?width=800", image2: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=800&q=80" },
+        { id: 305, title: "চিকেন রোল", author: "স্ট্রিট হাউস", unit: "২ পিস", price: 120, old: 140, sold: 780, color: "#B86A2A", vertical: "food", cat: "স্ন্যাকস", sub: "রোল", desc: "ক্রাস্টি পরোটায় মুরগি, সস ও সবজি।", image: "https://images.unsplash.com/photo-1529006557810-274b0b6db83d?auto=format&fit=crop&w=800&q=80", image2: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=800&q=80" },
+        { id: 306, title: "সমুচা প্যাক", author: "স্ট্রিট হাউস", unit: "৬ পিস", price: 90, old: 0, sold: 420, color: "#6B3A1F", vertical: "food", cat: "স্ন্যাকস", sub: "সমুচা", desc: "মুখরোচক সমুচা — চা-এর পার্টনার।", stock: 0, image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80", image2: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=800&q=80" },
+        { id: 307, title: "ফিরনি কাপ", author: "মিষ্টি ঘর", unit: "১ কাপ", price: 80, old: 100, sold: 310, color: "#7A2430", vertical: "food", cat: "মিষ্টি", sub: "ফিরনি", desc: "ঠান্ডা ফিরনি, এলাচ ও বাদাম।", image: "https://images.unsplash.com/photo-1571115177098-24ec42ed204d?auto=format&fit=crop&w=800&q=80", image2: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=800&q=80" },
+        { id: 308, title: "রসমালাই বক্স", author: "মিষ্টি ঘর", unit: "৪ পিস", price: 160, old: 0, sold: 240, color: "#4A2744", vertical: "food", cat: "মিষ্টি", sub: "মিষ্টান্ন", desc: "নরম রসমালাই — উপহারের জন্য বক্স।", image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=800&q=80", image2: "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=800&q=80" },
+        { id: 309, title: "মাসালা চা", author: "চা ঘর", unit: "১ কাপ", price: 40, old: 0, sold: 910, color: "#3D5A4C", vertical: "food", cat: "পানীয়", sub: "চা", desc: "আদা-এলাচ মাখানো গরম চা।", image: "https://images.unsplash.com/photo-1571934811356-5cc061b6821f?auto=format&fit=crop&w=800&q=80", image2: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=800&q=80" },
+        { id: 310, title: "আমের জুস", author: "চা ঘর", unit: "৫০০ মিলি", price: 90, old: 110, sold: 270, color: "#B86A2A", vertical: "food", cat: "পানীয়", sub: "জুস", desc: "টাটকা আমের জুস, বরফসহ।", image: "https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=800&q=80", image2: "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=800&q=80" },
+        { id: 401, title: "Hoco EQ34 Plus TWS", author: "Tech Jhuli", unit: "১ জোড়া", price: 1450, old: 1790, sold: 210, color: "#2C3A5A", vertical: "gadget", cat: "মোবাইল এক্সেসরিজ", sub: "ইয়ারবাড", desc: "ANC/ENC, টাচ কন্ট্রোল, লং ব্যাটারি।", image: "https://techjhuli.com/wp-content/uploads/2026/09/4501F450-166C-4DF4-BB39-5304544053BE.avif", image2: "https://techjhuli.com/wp-content/uploads/2026/09/IMG_1469.avif" },
+        { id: 402, title: "QCY PB20A ২০০০০mAh", author: "Tech Jhuli", unit: "১ পিস", price: 1890, old: 2290, sold: 160, color: "#245A6B", vertical: "gadget", cat: "মোবাইল এক্সেসরিজ", sub: "পাওয়ার ব্যাংক", desc: "৪৫W PD ফাস্ট চার্জ, দুই পোর্ট।", image: "https://techjhuli.com/wp-content/uploads/2026/08/D2000A52-6E61-471C-A625-5D33E96E6C55-copy.jpg", image2: "https://techjhuli.com/wp-content/uploads/2026/08/IMG_9621.jpg" },
+        { id: 403, title: "Hollyland Lark M2S", author: "Tech Jhuli", unit: "১ সেট", price: 2490, old: 2890, sold: 140, color: "#1F4A3A", vertical: "gadget", cat: "স্মার্ট গ্যাজেট", sub: "মাইক", desc: "ওয়্যারলেস ল্যাভালিয়ার মাইক — কন্টেন্ট ও কল।", image: "https://techjhuli.com/wp-content/uploads/2026/08/318BA3BA-3A90-4627-AB55-302C6C32C853.avif", image2: "https://techjhuli.com/wp-content/uploads/2026/08/imageye___-_imgi_145_Group102-pe.jpg" },
+        { id: 404, title: "X10 লেজার ফ্ল্যাশলাইট", author: "Tech Jhuli", unit: "১ পিস", price: 990, old: 1290, sold: 190, color: "#4A2744", vertical: "gadget", cat: "স্মার্ট গ্যাজেট", sub: "ফ্ল্যাশলাইট", desc: "হাই পাওয়ার টর্চ, জুম ফোকাস।", stock: 0, image: "https://techjhuli.com/wp-content/uploads/2026/08/9418D9EE-D585-4F96-A051-0DCF53D4F201.avif", image2: "https://techjhuli.com/wp-content/uploads/2026/08/IMG_9791.avif" },
+        { id: 405, title: "SKE POE 432P Mini UPS", author: "Tech Jhuli", unit: "১ পিস", price: 4290, old: 4790, sold: 95, color: "#2C3A5A", vertical: "gadget", cat: "কম্পিউটার", sub: "Mini UPS", desc: "৫V/৯V/১২V ও PoE — রাউটার ব্যাকআপ।", image: "https://techjhuli.com/wp-content/uploads/2026/09/AF3DF6A1-4605-4C70-AC92-F5319BAD1740.avif", image2: "https://techjhuli.com/wp-content/uploads/2026/09/IMG_2016.avif" },
+        { id: 406, title: "SKE POE 36E LFP UPS", author: "Tech Jhuli", unit: "১ পিস", price: 3650, old: 0, sold: 230, color: "#1C3A5A", vertical: "gadget", cat: "কম্পিউটার", sub: "DC UPS", desc: "LiFePO৪ মিনি DC UPS — ওয়াইফাই ব্যাকআপ।", image: "https://techjhuli.com/wp-content/uploads/2026/08/B7E1A1A2-B767-472D-9AD8-58F2B12A3862.avif", image2: "https://techjhuli.com/wp-content/uploads/2026/08/IMG_0681.jpg" },
+        { id: 407, title: "Weidasi WD-959 মশারি ব্যাট", author: "Tech Jhuli", unit: "১ পিস", price: 780, old: 950, sold: 175, color: "#C4A15A", vertical: "gadget", cat: "হোম", sub: "মশারি ব্যাট", desc: "রিচার্জেবল মশারি মারার ব্যাট, LED লাইট।", image: "https://techjhuli.com/wp-content/uploads/2026/08/BA11A1F0-6351-47FA-861C-5DF9AE95AD51.avif", image2: "https://techjhuli.com/wp-content/uploads/2026/08/IMG_0145.avif" },
+        { id: 408, title: "Iwin IW8038 ডেস্ক ফ্যান", author: "Tech Jhuli", unit: "১ পিস", price: 1890, old: 0, sold: 340, color: "#6B3A1F", vertical: "gadget", cat: "হোম", sub: "ফ্যান", desc: "টার্বো ডেস্ক ফ্যান — পড়ার টেবিলের জন্য।", image: "https://techjhuli.com/wp-content/uploads/2026/08/0726ED6E-B790-476A-815C-AD81D5676281.avif", image2: "https://techjhuli.com/wp-content/uploads/2026/08/IMG_1009.avif" },
+        { id: 409, title: "Weidasi WD-289 Remote", author: "Tech Jhuli", unit: "১ পিস", price: 3590, old: 4090, sold: 88, color: "#2C3A5A", vertical: "gadget", cat: "হোম", sub: "ফ্যান", desc: "রিচার্জেবল স্ট্যান্ড ফ্যান, রিমোট কন্ট্রোল।", image: "https://techjhuli.com/wp-content/uploads/2026/09/521A5181-D00A-4F69-8FFA-1F2BED7015F5.avif", image2: "https://techjhuli.com/wp-content/uploads/2026/09/IMG_1878.avif" }
       ],
       packs: [
-        { id: 101, title: "এসএসসি প্যাকেজ", price: 480, old: 540, bookIds: [3, 4], desc: "নবম-দশম — বাংলা ও পদার্থ একসাথে।" },
-        { id: 102, title: "মেডিকেল প্যাকেজ", price: 920, old: 1020, bookIds: [13, 14], desc: "মেডিকেল ভর্তি — বায়োলজি, রসায়ন, পদার্থ।" },
-        { id: 103, title: "ভর্তি স্ট্যাক", price: 720, old: 850, bookIds: [7, 8, 15], desc: "ইঞ্জিনিয়ারিং, বিশ্ববিদ্যালয় ও ব্যাংক প্রস্তুতি।" }
+        { id: 101, title: "এসএসসি প্যাকেজ", price: 480, old: 540, bookIds: [3, 4], desc: "নবম-দশম — বাংলা ও পদার্থ একসাথে।", vertical: "book" },
+        { id: 102, title: "মেডিকেল প্যাকেজ", price: 920, old: 1020, bookIds: [13, 14], desc: "মেডিকেল ভর্তি — বায়োলজি, রসায়ন, পদার্থ।", vertical: "book" },
+        { id: 103, title: "ভর্তি স্ট্যাক", price: 720, old: 850, bookIds: [7, 8, 15], desc: "ইঞ্জিনিয়ারিং, বিশ্ববিদ্যালয় ও ব্যাংক প্রস্তুতি।", vertical: "book" }
       ],
       coupons: [
-        { code: "BROTHERS10", off: 10, type: "pct", active: true },
+        { code: "CHOLO10", off: 10, type: "pct", active: true },
         { code: "BOI50", off: 50, type: "tk", active: true }
       ],
-      promo: { on: true, title: "প্রথম অর্ডারে ১০% ছাড়", text: "কুপন: BROTHERS10 — চেকআউটে প্রয়োগ করুন।", code: "BROTHERS10", image: "" },
+      promo: { on: true, title: "প্রথম অর্ডারে ১০% ছাড়", text: "কুপন: CHOLO10 — চেকআউটে প্রয়োগ করুন।", code: "CHOLO10", image: "" },
       ship: {
         dhaka: 60, outside: 120, costDhaka: 60, costOutside: 120,
         freeOnPack: false, freeOnBooks: false,
@@ -2251,19 +2652,21 @@
         freeAllOn: false, freeFrom: "", freeTo: "",
         sslFeePct: 0
       },
-      ticker: ["সারা বাংলাদেশে হোম ডেলিভারি"],
+      ticker: ["চলো, কিনে ফেলি", "বই · খাবার · গ্যাজেট এক ঠিকানায়", "সারা বাংলাদেশে হোম ডেলিভারি"],
+      slides: structuredClone(DEFAULT_SLIDES),
       chats: [],
       users: [
-        { id: 1, name: "অ্যাডমিন", email: "admin@brothersbookhouse.com", phone: "01700000000", password: "admin123", role: "admin" },
+        { id: 1, name: "অ্যাডমিন", email: "admin@cholo.shop", phone: "01700000000", password: "admin123", role: "admin" },
         { id: 2, name: "রাফি আহমেদ", email: "rafi@gmail.com", phone: "01711111111", password: "123456", role: "user", div: "ঢাকা", dist: "গাজীপুর", upa: "কালীগঞ্জ", uni: "তুমুলিয়া", detail: "পূর্ব তুমুলিয়া, বাড়ি ১২, মাদ্রাসা রোড, জামে মসজিদের পূর্ব পাশে", wait: [{ kind: "book", id: 2 }, { kind: "book", id: 8 }] }
       ],
       orders: [
-        { id: "BBH-2041", phone: "01711111111", email: "rafi@gmail.com", name: "রাফি আহমেদ", total: 620, status: 3, items: "হিমু × ১", address: "পূর্ব তুমুলিয়া, তুমুলিয়া, কালীগঞ্জ, গাজীপুর, ঢাকা", pay: "SSLCOMMERZ", at: Date.now() - 2 * 3600000 },
-        { id: "BBH-2039", phone: "01711111111", email: "rafi@gmail.com", name: "রাফি আহমেদ", total: 260, status: 5, cancelAt: 1, items: "এসএসসি বাংলা সাজেশন × ১", address: "পূর্ব তুমুলিয়া, তুমুলিয়া, কালীগঞ্জ, গাজীপুর, ঢাকা", pay: "ক্যাশ অন ডেলিভারি", at: Date.now() - 6 * 86400000 }
+        { id: "CLO-2041", phone: "01711111111", email: "rafi@gmail.com", name: "রাফি আহমেদ", total: 620, status: 3, items: "হিমু × ১", address: "পূর্ব তুমুলিয়া, তুমুলিয়া, কালীগঞ্জ, গাজীপুর, ঢাকা", pay: "SSLCOMMERZ", at: Date.now() - 2 * 3600000 },
+        { id: "CLO-2039", phone: "01711111111", email: "rafi@gmail.com", name: "রাফি আহমেদ", total: 260, status: 5, cancelAt: 1, items: "এসএসসি বাংলা সাজেশন × ১", address: "পূর্ব তুমুলিয়া, তুমুলিয়া, কালীগঞ্জ, গাজীপুর, ঢাকা", pay: "ক্যাশ অন ডেলিভারি", at: Date.now() - 6 * 86400000 }
       ]
     };
 
     seed.books.forEach(b => {
+      if (!b.vertical) b.vertical = "book";
       if (b.stock == null) b.stock = b.id % 9 === 0 ? 0 : 12;
       if (b.copies == null) b.copies = b.stock;
       if (b.oos == null) b.oos = b.stock <= 0;
@@ -2273,13 +2676,22 @@
     if (!Array.isArray(db.chats)) db.chats = [];
     if (!Array.isArray(db.cats) || !db.cats.length) db.cats = [...CATS];
     db.books.forEach(b => {
+      if (!b.vertical) b.vertical = "book";
       if (b.stock == null) b.stock = 0;
       if (b.copies == null) b.copies = b.stock;
       if (b.oos == null) b.oos = b.stock <= 0;
       if (b.cost == null) b.cost = 0;
     });
+    (db.packs || []).forEach(p => { if (!p.vertical) p.vertical = "book"; });
+    if (!db.slides || typeof db.slides !== "object") db.slides = structuredClone(DEFAULT_SLIDES);
+    ["book", "food", "gadget"].forEach(v => {
+      if (!Array.isArray(db.slides[v]) || !db.slides[v].length) db.slides[v] = structuredClone(DEFAULT_SLIDES[v]);
+    });
     const padN = db.books.length;
-    db.books = db.books.filter(b => !(+b.id >= 200 && +b.id < 100000));
+    db.books = db.books.filter(b => {
+      if ((b.vertical || "book") !== "book") return true;
+      return !(+b.id >= 200 && +b.id < 100000);
+    });
     if (db.books.length !== padN) {
       const keep = new Set(db.books.map(b => b.id));
       (db.packs || []).forEach(p => { p.bookIds = (p.bookIds || []).filter(id => keep.has(id)); });
@@ -2289,12 +2701,13 @@
       try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {}
     }
     if (!Array.isArray(db.ticker)) db.ticker = ["সারা বাংলাদেশে হোম ডেলিভারি"];
+    if (!Array.isArray(db.reviews)) db.reviews = [];
     db.orders.forEach((o, i) => {
-      if (!o.at) o.at = Date.now() - ((o.id === "BBH-2041" ? 0 : o.id === "BBH-2039" ? 6 : i + 2) * 86400000) - (o.id === "BBH-2041" ? 2 * 3600000 : i * 3600000);
+      if (!o.at) o.at = Date.now() - ((o.id === "CLO-2041" ? 0 : o.id === "CLO-2039" ? 6 : i + 2) * 86400000) - (o.id === "CLO-2041" ? 2 * 3600000 : i * 3600000);
       if (!o.pay) o.pay = "SSLCOMMERZ";
     });
-    if (db && !db.orders.some(o => o.id === "BBH-2039")) {
-      db.orders.push({ id: "BBH-2039", phone: "01711111111", email: "rafi@gmail.com", name: "রাফি আহমেদ", total: 260, status: 5, cancelAt: 1, items: "এসএসসি বাংলা সাজেশন × ১", address: "পূর্ব তুমুলিয়া, তুমুলিয়া, কালীগঞ্জ, গাজীপুর, ঢাকা", pay: "ক্যাশ অন ডেলিভারি", at: Date.now() - 6 * 86400000 });
+    if (db && !db.orders.some(o => o.id === "CLO-2039")) {
+      db.orders.push({ id: "CLO-2039", phone: "01711111111", email: "rafi@gmail.com", name: "রাফি আহমেদ", total: 260, status: 5, cancelAt: 1, items: "এসএসসি বাংলা সাজেশন × ১", address: "পূর্ব তুমুলিয়া, তুমুলিয়া, কালীগঞ্জ, গাজীপুর, ঢাকা", pay: "ক্যাশ অন ডেলিভারি", at: Date.now() - 6 * 86400000 });
     }
     let session = JSON.parse(localStorage.getItem(KEY + "_s") || "null");
     let cartBags = {};
@@ -2311,7 +2724,9 @@
       }
     } catch (e) { cartBags = {}; }
     let cart = [];
-    let page = "home", qty = 1, productId = 1, packId = 101, authorName = "", authorFilter = "সব", coupon = null, payMethod = "bkash", payMode = "ssl", authView = "login", aTab = "books", activeCat = "সব", adminBookCat = "", adminBookSub = "", adminAddOpen = false, shopPage = 1, pageSize = 25, lastOrder = null, orderFlash = "", pendingWait = null, pendingBookImg = "", adminChatId = "", adminOrderId = "", guestChatId = localStorage.getItem(KEY + "_chat") || "", finRange = "month", finPayFilt = "all";
+    let page = "home", qty = 1, reviewStars = 0, productId = 1, packId = 101, authorName = "", authorFilter = "সব", coupon = null, payMethod = "bkash", payMode = "ssl", authView = "login", aTab = "books", activeCat = "সব", adminBookCat = "", adminBookSub = "", adminAddOpen = false, shopPage = 1, pageSize = 25, lastOrder = null, orderFlash = "", pendingWait = null, pendingBookImg = "", adminChatId = "", adminOrderId = "", guestChatId = localStorage.getItem(KEY + "_chat") || "", finRange = "month", finPayFilt = "all";
+    let vertical = localStorage.getItem(KEY + "_v") || "book";
+    if (!VERTICALS[vertical]) vertical = "book";
     let ordFilt = { range: "all", from: "", to: "", status: "all", pay: "all", q: "" };
     let calMonth = { y: new Date().getFullYear(), m: new Date().getMonth() };
     let calMode = "ord";
@@ -2415,8 +2830,20 @@
         if (el) chkDraft[id] = el.value;
       });
     }
+    function divOfDist(dist) {
+      if (!dist) return "";
+      for (const div of Object.keys(GEO)) {
+        if (GEO[div] && Object.prototype.hasOwnProperty.call(GEO[div], dist)) return div;
+      }
+      return "";
+    }
+    function allDistricts() {
+      const set = new Set();
+      Object.values(GEO).forEach(dists => Object.keys(dists || {}).forEach(d => set.add(d)));
+      return [...set].sort((a, b) => a.localeCompare(b, "bn"));
+    }
     function geoList(div, dist, upa) {
-      if (!div) return Object.keys(GEO);
+      if (!div) return allDistricts();
       if (!dist) return Object.keys(GEO[div] || {});
       if (!upa) return Object.keys((GEO[div] || {})[dist] || {});
       const raw = ((GEO[div] || {})[dist] || {})[upa];
@@ -2425,15 +2852,9 @@
     function opts(list, ph, sel) {
       return `<option value="">${ph}</option>` + list.map(x => `<option value="${x}" ${x === sel ? "selected" : ""}>${x}</option>`).join("");
     }
-    function geoDiv() {
-      snapChk();
-      chkDraft.cDist = ""; chkDraft.cUpa = ""; chkDraft.cUni = "";
-      fillGeoSelects();
-      ["cDist","cUpa","cUni"].forEach(clearChkErr);
-      updateChkShip();
-    }
     function geoDist() {
       snapChk();
+      chkDraft.cDiv = divOfDist(chkDraft.cDist);
       chkDraft.cUpa = ""; chkDraft.cUni = "";
       fillGeoSelects();
       ["cUpa","cUni"].forEach(clearChkErr);
@@ -2447,18 +2868,20 @@
       updateChkShip();
     }
     function fillGeoSelects() {
-      const div = document.getElementById("cDiv");
       const dist = document.getElementById("cDist");
       const upa = document.getElementById("cUpa");
       const uni = document.getElementById("cUni");
-      if (!div) return;
-      const d = chkDraft.cDiv || div.value;
-      const ds = chkDraft.cDist || "";
+      if (!dist) return;
+      const ds = chkDraft.cDist || dist.value || "";
+      const d = divOfDist(ds) || chkDraft.cDiv || "";
+      chkDraft.cDiv = d;
+      const hid = document.getElementById("cDiv");
+      if (hid) hid.value = d;
+      dist.innerHTML = opts(allDistricts(), "জেলা বাছুন", ds);
       const u = chkDraft.cUpa || "";
       const un = chkDraft.cUni || "";
-      dist.innerHTML = opts(geoList(d), "জেলা বাছুন", ds);
-      upa.innerHTML = opts(geoList(d, dist.value), "উপজেলা / থানা বাছুন", u);
-      uni.innerHTML = opts(geoList(d, dist.value, upa.value), "ইউনিয়ন / পৌরসভা বাছুন", un) + `<option value="অন্যান্য" ${un==="অন্যান্য"?"selected":""}>অন্যান্য</option>`;
+      if (upa) upa.innerHTML = opts(d && ds ? geoList(d, ds) : [], "উপজেলা / থানা বাছুন", u);
+      if (uni) uni.innerHTML = opts(d && ds && (upa?.value || u) ? geoList(d, ds, upa?.value || u) : [], "ইউনিয়ন / পৌরসভা (ঐচ্ছিক)", un) + `<option value="অন্যান্য" ${un==="অন্যান্য"?"selected":""}>অন্যান্য</option>`;
     }
 
     function cartOwner() {
@@ -2508,44 +2931,64 @@
       if (wasFlat) {
         db.cats = db.cats.map(name => ({
           name,
+          vertical: "book",
           subs: DEFAULT_SUBS[name] ? [...DEFAULT_SUBS[name]] : []
         }));
         db.books.forEach(b => {
-          if (b.sub) return;
+          if (b.sub || (b.vertical && b.vertical !== "book")) return;
           const hint = SEED_BOOK_SUB[b.id];
-          const node = db.cats.find(c => c.name === b.cat);
+          const node = db.cats.find(c => c.name === b.cat && (c.vertical || "book") === "book");
           if (hint && node?.subs.includes(hint)) b.sub = hint;
         });
       } else {
         db.cats = db.cats.map(c => {
-          if (typeof c === "string") return { name: c, subs: DEFAULT_SUBS[c] ? [...DEFAULT_SUBS[c]] : [] };
+          if (typeof c === "string") return { name: c, vertical: "book", subs: DEFAULT_SUBS[c] ? [...DEFAULT_SUBS[c]] : [] };
           return {
             name: String(c.name || "").trim(),
+            vertical: c.vertical || "book",
             subs: Array.isArray(c.subs) ? [...new Set(c.subs.map(s => String(s).trim()).filter(Boolean))] : []
           };
         }).filter(c => c.name);
       }
-      const names = new Set(db.cats.map(c => c.name));
+      EXTRA_CATS.forEach(extra => {
+        if (!db.cats.some(c => c.name === extra.name && (c.vertical || "book") === extra.vertical)) {
+          db.cats.push({ name: extra.name, vertical: extra.vertical, subs: [...extra.subs] });
+        }
+      });
       db.books.forEach(b => {
         if (!b.cat) return;
-        if (!names.has(b.cat)) {
-          db.cats.push({ name: b.cat, subs: b.sub ? [b.sub] : [] });
-          names.add(b.cat);
-        } else if (b.sub) {
-          const node = db.cats.find(c => c.name === b.cat);
-          if (node && !node.subs.includes(b.sub)) node.subs.push(b.sub);
+        const vid = b.vertical || "book";
+        let node = db.cats.find(c => c.name === b.cat && (c.vertical || "book") === vid);
+        if (!node) {
+          db.cats.push({ name: b.cat, vertical: vid, subs: b.sub ? [b.sub] : [] });
+        } else if (b.sub && !node.subs.includes(b.sub)) {
+          node.subs.push(b.sub);
         }
       });
       if (wasFlat) {
         try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {}
       }
     }
-    function catTree() {
+    function catTreeAll() {
       ensureCatTree();
       return db.cats;
     }
+    function catTree(v) {
+      const vid = v || vertical;
+      return catTreeAll().filter(c => (c.vertical || "book") === vid);
+    }
     const catsList = () => catTree().map(c => c.name);
     function catNode(name) { return catTree().find(c => c.name === name); }
+    function V() { return VERTICALS[vertical] || VERTICALS.book; }
+    function productsOf(v) {
+      const vid = v || vertical;
+      return db.books.filter(b => (b.vertical || "book") === vid);
+    }
+    function vertOf(b) { return b?.vertical || "book"; }
+    function slidesOf() {
+      const s = db.slides && db.slides[vertical];
+      return Array.isArray(s) && s.length ? s : DEFAULT_SLIDES[vertical] || DEFAULT_SLIDES.book;
+    }
     function subsOf(name) { return catNode(name)?.subs || []; }
     function catKey(parent, sub) { return sub ? parent + CAT_SEP + sub : parent; }
     function parseCatKey(key) {
@@ -2566,7 +3009,7 @@
     }
     function bookInCat(b, parent, sub) {
       if (!parent || parent === "সব") return true;
-      if (GROUPS[parent] && !sub) return GROUPS[parent].includes(b.cat);
+      if (GROUPS[parent] && !sub) return (vertOf(b) === "book") && GROUPS[parent].includes(b.cat);
       if (b.cat !== parent) return false;
       if (sub) return (b.sub || "") === sub;
       return true;
@@ -2641,19 +3084,256 @@
       const on = inWait(id, kind);
       return `<button class="add wait ${on ? "on" : ""}" onclick="toggleWait(event,${id},'${kind}')">${on ? "রাখা হয়েছে" : "তালিকায়"}</button>`;
     }
-    const popular = () => [...db.books].sort((a, b) => b.sold - a.sold);
+    const RV_TEXTS = {
+      book: [
+        { name: "নুসরাত জাহান", stars: 5, text: "গাইড পরিষ্কার, সাজেশন সত্যিই কাজে লেগেছে।" },
+        { name: "রাফি আহমেদ", stars: 4, text: "প্রিন্ট ভালো। আরও উদাহরণ থাকলে পারফেক্ট হতো।" },
+        { name: "তানিয়া আক্তার", stars: 5, text: "সময়মতো ডেলিভারি, কাভার সুন্দর।" },
+        { name: "ইমরান হোসেন", stars: 5, text: "পড়ার জন্য বেস্ট — নোট নিতে সুবিধা।" },
+        { name: "সাদিয়া ইসলাম", stars: 4, text: "দাম অনুযায়ী কোয়ালিটি ঠিক আছে।" }
+      ],
+      food: [
+        { name: "মাহিনুর রহমান", stars: 5, text: "স্বাদ ঘরোয়া, পরিমাণও ভালো।" },
+        { name: "ফারিহা নূর", stars: 4, text: "গরম গরম এসেছে। একটু বেশি ঝাল হলেও মজা।" },
+        { name: "আরিফ চৌধুরী", stars: 5, text: "প্যাকেজিং পরিষ্কার, আবার অর্ডার করব।" },
+        { name: "লামিয়া খান", stars: 5, text: "অফিসের জন্য পারফেক্ট প্ল্যাটার।" },
+        { name: "নাফিস আলম", stars: 4, text: "ডেলিভারি দ্রুত, স্বাদ ঠিকঠাক।" }
+      ],
+      gadget: [
+        { name: "শাহরিয়ার কবীর", stars: 5, text: "বিল্ড কোয়ালিটি ভালো, দামের তুলনায় সেরা।" },
+        { name: "মেহজাবিন", stars: 4, text: "হোভারে যে ছবি দেখায় সেটাই হাতে পেয়েছি।" },
+        { name: "তানভীর হাসান", stars: 5, text: "চার্জ ধরে ভালো, প্যাকিং সেফ ছিল।" },
+        { name: "রিফাত জামান", stars: 5, text: "অরিজিনাল মনে হয়েছে, রান করে ভালো।" },
+        { name: "আয়েশা সিদ্দিকা", stars: 4, text: "কাজের জিনিস। ওয়ারেন্টি থাকলে আরও আত্মবিশ্বাস।" }
+      ]
+    };
+    function reviewsOf(b) {
+      if (!b) return [];
+      const pool = RV_TEXTS[vertOf(b)] || RV_TEXTS.book;
+      const n = 3 + (Math.abs(+b.id) % 3);
+      const demo = Array.from({ length: n }, (_, i) => {
+        const src = pool[(Math.abs(+b.id) + i * 2) % pool.length];
+        return {
+          id: "s-" + b.id + "-" + i,
+          bookId: b.id,
+          name: src.name,
+          stars: src.stars,
+          text: src.text,
+          at: Date.now() - (i + 1) * (2 + i) * 86400000,
+          demo: true
+        };
+      });
+      const user = (db.reviews || []).filter(r => r.bookId === b.id);
+      return [...user, ...demo].sort((a, c) => (c.at || 0) - (a.at || 0));
+    }
+    function timeAgo(ts) {
+      const d = Math.max(0, Date.now() - (ts || 0));
+      const m = Math.floor(d / 60000);
+      if (m < 60) return bn(Math.max(1, m)) + " মিনিট আগে";
+      const h = Math.floor(m / 60);
+      if (h < 24) return bn(h) + " ঘণ্টা আগে";
+      const days = Math.floor(h / 24);
+      if (days < 30) return bn(days) + " দিন আগে";
+      return bn(Math.max(1, Math.floor(days / 30))) + " মাস আগে";
+    }
+    function starGlyphs(n) {
+      const f = Math.max(0, Math.min(5, Math.round(n || 0)));
+      return "★".repeat(f) + "☆".repeat(5 - f);
+    }
+    function setReviewStars(n) {
+      reviewStars = n;
+      document.querySelectorAll(".rv-star").forEach((el, i) => el.classList.toggle("on", i < n));
+      document.getElementById("rvPick")?.classList.remove("bad");
+      const w = document.getElementById("w-rvStars");
+      if (w) { w.textContent = ""; w.classList.remove("on"); }
+    }
+    function clearRvErr(id) {
+      document.getElementById(id)?.classList.remove("bad");
+      const w = document.getElementById("w-" + id);
+      if (w) { w.textContent = ""; w.classList.remove("on"); }
+    }
+    function markRvErr(id, msg) {
+      const el = document.getElementById(id);
+      el?.classList.add("bad");
+      const w = document.getElementById("w-" + id);
+      if (w) { w.textContent = msg; w.classList.add("on"); }
+    }
+    function reviewItemHtml(r, i) {
+      return `<article class="rv-item">
+        <div class="rv-item-h">
+          <span class="rv-av" style="background:${colors[i % colors.length]}">${esc((r.name || "ক").slice(0, 1))}</span>
+          <div>
+            <b>${esc(r.name || "ক্রেতা")}</b>
+            <small><span class="rv-stars">${starGlyphs(r.stars)}</span> · ${timeAgo(r.at)}</small>
+          </div>
+        </div>
+        <p>${esc(r.text || "")}</p>
+      </article>`;
+    }
+    function reviewRunHtml(list) {
+      let loop = list.length ? [...list] : [];
+      if (!loop.length) return `<p class="author" style="padding:8px 0">এখনও রিভিউ নেই</p>`;
+      while (loop.length < 6) loop = loop.concat(list);
+      const inner = loop.map((r, i) => reviewItemHtml(r, i)).join("");
+      return `<div class="rv-run" style="--rv-dur:${Math.max(18, loop.length * 5)}s"><div class="rv-set">${inner}</div><div class="rv-set">${inner}</div></div>`;
+    }
+    function paintReviewRun(id) {
+      const b = book(id);
+      if (!b) return;
+      const list = reviewsOf(b);
+      const sc = bookSocial(b);
+      const avg = document.getElementById("rvAvg");
+      if (avg) avg.innerHTML = `<span class="rv-stars">${starGlyphs(sc.score)}</span> ${String(sc.score)} · ${bn(list.length)}টি রিভিউ`;
+      const box = document.getElementById("rvList");
+      if (box) box.innerHTML = reviewRunHtml(list);
+      const pd = document.querySelector(".pd-rate span:last-child");
+      if (pd && page === "product") pd.textContent = `${String(sc.score)} · ${bn(sc.reviews)} রিভিউ`;
+    }
+    function submitReview(e, id) {
+      e.preventDefault();
+      const form = document.getElementById("rvForm");
+      const btn = document.getElementById("rvSubmit");
+      const nameEl = document.getElementById("rvName");
+      const textEl = document.getElementById("rvText");
+      const name = (nameEl?.value || "").trim();
+      const text = (textEl?.value || "").trim();
+      clearRvErr("rvName");
+      clearRvErr("rvText");
+      document.getElementById("rvPick")?.classList.remove("bad");
+      const sw = document.getElementById("w-rvStars");
+      if (sw) { sw.textContent = ""; sw.classList.remove("on"); }
+      let ok = true, first = null;
+      if (!reviewStars) {
+        document.getElementById("rvPick")?.classList.add("bad");
+        if (sw) { sw.textContent = "স্টার দিন"; sw.classList.add("on"); }
+        if (!first) first = document.getElementById("rvPick");
+        ok = false;
+      }
+      if (!name) {
+        markRvErr("rvName", "নাম লিখুন");
+        if (!first) first = nameEl;
+        ok = false;
+      }
+      if (!text) {
+        markRvErr("rvText", "রিভিউ লিখুন");
+        if (!first) first = textEl;
+        ok = false;
+      } else if (text.length < 8) {
+        markRvErr("rvText", "কমপক্ষে ৮ অক্ষর লিখুন");
+        if (!first) first = textEl;
+        ok = false;
+      }
+      if (!ok) {
+        toast("তিনটি ঘরই পূরণ করুন");
+        first?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      if (!Array.isArray(db.reviews)) db.reviews = [];
+      form?.classList.add("wait");
+      if (btn) { btn.disabled = true; btn.innerHTML = `<i class="spin"></i>জমা হচ্ছে`; }
+      setTimeout(() => {
+        db.reviews.unshift({ id: Date.now(), bookId: id, name, stars: reviewStars, text, at: Date.now() });
+        persist();
+        if (textEl) textEl.value = "";
+        reviewStars = 0;
+        setReviewStars(0);
+        paintReviewRun(id);
+        form?.classList.remove("wait");
+        if (btn) { btn.disabled = false; btn.textContent = "রিভিউ দিন"; }
+        toast("রিভিউ যোগ হয়েছে");
+      }, 900);
+    }
+    function likeCard(b) {
+      const oos = !inStock(b);
+      const d = disc(b.price, b.old);
+      const hover = b.image2 && b.image2 !== b.image
+        ? `<img class="pic-b" src="${b.image2}" alt="" aria-hidden="true">`
+        : "";
+      const pic = b.image
+        ? `<img class="pic-a" src="${b.image}" alt="">${hover}`
+        : `<div style="position:absolute;inset:12px;display:flex;align-items:flex-end;color:#fff;font-weight:700">${esc(b.title)}</div>`;
+      return `<article class="like-card">
+        <div class="like-pic" onclick="go('product',${b.id})" ${b.image ? "" : `style="background:${b.color}"`}>
+          ${d && !oos ? `<span class="like-off">-${bn(d)}%</span>` : ""}
+          ${pic}
+        </div>
+        <h3 onclick="go('product',${b.id})">${esc(b.title)}</h3>
+        <div class="like-price">${b.old && b.old > b.price ? `<s>৳${bn(b.old)}</s>` : ""}<b>৳${bn(b.price)}</b></div>
+        ${oos ? waitBtn(b.id) : `<button type="button" class="like-add" onclick="addBook(event,${b.id})">কার্টে যোগ</button>`}
+      </article>`;
+    }
+    function relatedFor(b) {
+      const all = productsOf().filter(x => x.id !== b.id);
+      const same = all.filter(x => x.cat === b.cat);
+      let list = [...same, ...all.filter(x => x.cat !== b.cat)];
+      if (!list.length) return [];
+      while (list.length < 8) list = list.concat(list);
+      return list.slice(0, Math.max(8, Math.min(12, list.length)));
+    }
+    function alsoRunHtml(b) {
+      const list = relatedFor(b);
+      if (!list.length) return "";
+      const row = list.map(likeCard).join("");
+      return `<div class="also-wrap" style="--also-dur:${Math.max(24, list.length * 4)}s">
+        <span class="also-pill">এগুলোও চলছে</span>
+        <div class="also-mask"><div class="also-track"><div class="also-set">${row}</div><div class="also-set">${row}</div></div></div>
+      </div>`;
+    }
+    function miniAlsoHtml() {
+      const inCart = new Set(cart.filter(c => c.kind === "book").map(c => c.id));
+      let list = productsOf().filter(p => inStock(p) && !inCart.has(p.id));
+      if (!list.length) list = productsOf().filter(p => !inCart.has(p.id));
+      if (!list.length) return "";
+      while (list.length < 6) list = list.concat(list);
+      list = list.slice(0, 8);
+      const row = list.map(likeCard).join("");
+      return `<div class="also-wrap minicart-also" style="--also-dur:${Math.max(18, list.length * 4)}s">
+        <div class="also-mask"><div class="also-track"><div class="also-set">${row}</div><div class="also-set">${row}</div></div></div>
+      </div>`;
+    }
+    function reviewsColHtml(b, sc) {
+      const list = reviewsOf(b);
+      const u = me();
+      return `<aside class="rv-col">
+        <h3>কাস্টমার রিভিউ</h3>
+        <p class="rv-avg" id="rvAvg"><span class="rv-stars">${starGlyphs(sc.score)}</span> ${String(sc.score)} · ${bn(list.length)}টি রিভিউ</p>
+        <form class="rv-form" id="rvForm" onsubmit="submitReview(event,${b.id})">
+          <div>
+            <label>রেটিং</label>
+            <div class="rv-pick" id="rvPick">${[1,2,3,4,5].map(n => `<button type="button" class="rv-star ${n <= reviewStars ? "on" : ""}" onclick="setReviewStars(${n})">★</button>`).join("")}</div>
+            <p class="field-warn" id="w-rvStars"></p>
+          </div>
+          <div>
+            <label>নাম</label>
+            <input id="rvName" type="text" placeholder="আপনার নাম" maxlength="40" value="${esc(u?.name || "")}" oninput="clearRvErr('rvName')" />
+            <p class="field-warn" id="w-rvName"></p>
+          </div>
+          <div>
+            <label>রিভিউ</label>
+            <textarea id="rvText" placeholder="এই পণ্য কেমন লাগল লিখুন" maxlength="400" oninput="clearRvErr('rvText')"></textarea>
+            <p class="field-warn" id="w-rvText"></p>
+          </div>
+          <button class="btn btn-primary" type="submit" id="rvSubmit">রিভিউ দিন</button>
+          <div class="rv-busy" aria-hidden="true"><i class="spin-lg"></i><b>জমা হচ্ছে...</b></div>
+        </form>
+        <div class="rv-list" id="rvList">${reviewRunHtml(list)}</div>
+      </aside>`;
+    }
+    const popular = () => [...productsOf()].sort((a, b) => (b.sold || 0) - (a.sold || 0));
     const disc = (price, old) => old && old > price ? Math.round((1 - price / old) * 100) : 0;
     const priceHtml = (price, old) => {
       const d = disc(price, old);
       return `৳${bn(price)}${old && old > price ? `<span class="old">৳${bn(old)}</span>` : ""}${d ? `<span class="off">${bn(d)}%</span>` : ""}`;
     };
     function bookSocial(b) {
-      const ratings = Math.max(18, Math.round((b.sold || 40) * 0.22));
-      const reviews = Math.max(12, Math.round(ratings * 0.88));
+      const list = reviewsOf(b);
+      const ratings = Math.max(list.length, Math.max(18, Math.round((b.sold || 40) * 0.22)));
+      const reviews = list.length;
       const saved = db.users.filter(u => (u.wait || []).some(x => x.kind === "book" && x.id === b.id)).length;
       const love = saved + Math.max(24, Math.round((b.sold || 40) * 0.65));
       const rank = [...db.books].filter(x => x.cat === b.cat).sort((a, c) => c.sold - a.sold).findIndex(x => x.id === b.id) + 1;
-      const score = Math.round((4.4 + ((b.id + (b.sold || 0)) % 50) / 100) * 10) / 10;
+      const avg = list.length ? list.reduce((s, r) => s + (r.stars || 0), 0) / list.length : (4.4 + ((b.id + (b.sold || 0)) % 50) / 100);
+      const score = Math.round(avg * 10) / 10;
       return { ratings, reviews, love, rank, score };
     }
     function starsHtml(b) {
@@ -2663,7 +3343,7 @@
       return `<div class="card-rate"><span class="stars">${stars}</span><b>${String(sc.score)}</b> (${bn(sc.ratings)})</div>`;
     }
     function addCartBtn(onclick) {
-      return `<button class="add add-cart" onclick="${onclick}">${icoCart} Add to Cart</button>`;
+      return `<button class="add add-cart" onclick="${onclick}">${icoCart} কার্টে যোগ</button>`;
     }
     function toggleDesc() {
       const el = document.getElementById("pdDesc");
@@ -2754,7 +3434,7 @@
         const u = me();
         c = {
           id, name: u?.name || "গেস্ট", phone: u?.phone || "",
-          msgs: [{ from: "agent", text: "আসসালামু আলাইকুম! ব্রাদার্স বুক হাউস সাপোর্ট। অর্ডার, স্টক বা ডেলিভারি — যা জানতে চান লিখুন।", t: Date.now() }],
+          msgs: [{ from: "agent", text: "আসসালামু আলাইকুম! চলো সাপোর্ট। অর্ডার, স্টক বা ডেলিভারি — যা জানতে চান লিখুন।", t: Date.now() }],
           userSeen: 0, adminSeen: 0
         };
         db.chats.unshift(c);
@@ -2781,11 +3461,11 @@
     function agentReply(text) {
       const q = (text || "").toLowerCase();
       const b = db.books.find(x => q.includes((x.title || "").slice(0, 4).toLowerCase()) || (x.author && q.includes(x.author.toLowerCase())));
-      if (/অর্ডার|ট্র্যাক|কোথায়|status|bbh/i.test(q)) {
+      if (/অর্ডার|ট্র্যাক|কোথায়|status|clo|cholo|bbh/i.test(q)) {
         const u = me();
         const mine = u ? db.orders.filter(o => o.phone === u.phone || o.email === u.email)[0] : db.orders[0];
         if (mine) return `আপনার সর্বশেষ অর্ডার ${mine.id}। স্ট্যাটাস দেখতে «অর্ডার খুঁজুন» পেজে ${mine.id} দিন, অথবা হেডার থেকে অর্ডার খুলুন।`;
-        return "অর্ডার আইডি (যেমন BBH-2041) বা মোবাইল নম্বর দিয়ে «অর্ডার খুঁজুন» পেজ থেকে ট্র্যাক করতে পারবেন।";
+        return "অর্ডার আইডি (যেমন CLO-2041) বা মোবাইল নম্বর দিয়ে «অর্ডার খুঁজুন» পেজ থেকে ট্র্যাক করতে পারবেন।";
       }
       if (/স্টক|আছে কি|আউট|পাওয়া/i.test(q)) {
         if (b) return inStock(b) ? `হ্যাঁ, «${b.title}» এখন স্টকে আছে — ৳${bn(b.price)}। কার্টে যোগ করে অর্ডার করতে পারেন।` : `«${b.title}» এখন স্টক আউট। চাইলে ভবিষ্যৎ অর্ডার তালিকায় রাখুন।`;
@@ -2795,7 +3475,7 @@
         return shipHelpText();
       }
       if (/কুপন|ছাড়|অফার/i.test(q)) {
-        return "চালু কুপন: BROTHERS10 (১০%) আর BOI50 (৳৫০)। চেকআউটে কোড বসান।";
+        return "চালু কুপন: CHOLO10 (১০%) আর BOI50 (৳৫০)। চেকআউটে কোড বসান।";
       }
       if (/পেমেন্ট|বিকাশ|নগদ|ক্যাশ/i.test(q)) {
         return "পেমেন্ট: ক্যাশ অন ডেলিভারি, অথবা SSLCOMMERZ দিয়ে বিকাশ / নগদ / কার্ড।";
@@ -3048,6 +3728,9 @@
       if (name === "wait" && !me()) { openAuth("login"); toast("লগইন করলে তালিকা দেখতে পারবেন"); return; }
       if (name === "orders" && !me()) { name = "track"; id = undefined; }
       if (name === "checkout" && !cart.length) { name = "cart"; id = undefined; }
+      if (vertical !== "book" && (name === "packs" || name === "pack" || name === "authors" || name === "author")) {
+        name = "home"; id = undefined;
+      }
 
       const oldSnap = nowSnap();
       const newId = name === "product" ? (id || productId)
@@ -3116,28 +3799,117 @@
       if (me()) go("wait");
       else { openAuth("login"); toast("লগইন করলে তালিকা দেখতে পারবেন"); }
     }
+    function vtabHtml() {
+      return Object.values(VERTICALS).map(v =>
+        `<button type="button" class="vtab ${vertical === v.id ? "on" : ""}" data-vert="${v.id}" onclick="goVertical('${v.id}')">${v.ico} ${v.name}</button>`
+      ).join("");
+    }
+    function fillVbar() {
+      const bar = document.getElementById("vbar");
+      const mob = document.getElementById("mnavVerts");
+      const html = vtabHtml();
+      if (bar) bar.innerHTML = html;
+      if (mob) mob.innerHTML = html;
+    }
+    function syncVerticalUI() {
+      document.body.classList.remove("vert-book", "vert-food", "vert-gadget");
+      document.body.classList.add("vert-" + vertical);
+      fillVbar();
+      const ph = V().search;
+      const q = document.getElementById("q");
+      const qm = document.getElementById("qMobile");
+      if (q) q.placeholder = ph;
+      if (qm) qm.placeholder = ph;
+      const bb = document.querySelector('[data-atab="books"]');
+      if (bb && !bb.dataset.pend) bb.textContent = V().prodTab;
+    }
+    function goVertical(id) {
+      if (!VERTICALS[id]) id = "book";
+      vertical = id;
+      try { localStorage.setItem(KEY + "_v", vertical); } catch (e) {}
+      activeCat = "সব";
+      adminBookCat = "";
+      adminBookSub = "";
+      shopPage = 1;
+      heroI = 0;
+      syncVerticalUI();
+      fillNavCats();
+      go("home");
+    }
+    let heroI = 0, heroTimer = null;
+    function heroStop() { if (heroTimer) { clearInterval(heroTimer); heroTimer = null; } }
+    function heroPlay() {
+      heroStop();
+      if (slidesOf().length < 2) return;
+      heroTimer = setInterval(() => { heroNext(); }, 5200);
+    }
+    function paintHero() {
+      const slides = slidesOf();
+      if (!slides.length) return;
+      heroI = ((heroI % slides.length) + slides.length) % slides.length;
+      const box = document.getElementById("heroSlides");
+      const dots = document.getElementById("heroDots");
+      if (box) {
+        box.innerHTML = slides.map((s, i) => {
+          const img = s.img ? `<img src="${esc(s.img)}" alt="${esc(s.title || s.cat || "")}">` : "";
+          const bg = s.img ? "" : `style="background:${s.tone || "linear-gradient(135deg,#7A2430,#C4A15A)"}"`;
+          return `<button type="button" class="hero-slide ${i === heroI ? "on" : ""}" ${bg} onclick="heroOpenCat()">${img}</button>`;
+        }).join("");
+      }
+      if (dots) {
+        dots.innerHTML = slides.map((_, i) =>
+          `<button type="button" class="${i === heroI ? "on" : ""}" onclick="heroGo(${i})" aria-label="স্লাইড ${bn(i + 1)}"></button>`
+        ).join("");
+      }
+      const meta = slides[heroI] || {};
+      const v = V();
+      const k = document.getElementById("heroKicker");
+      const t = document.getElementById("heroTitle");
+      const s = document.getElementById("heroSub");
+      const l = document.getElementById("heroLead");
+      if (k) k.innerHTML = `<i></i> ${esc(meta.kicker || meta.cat || v.kicker)}`;
+      if (t) t.textContent = meta.title || v.title;
+      if (s) s.textContent = meta.sub || v.sub;
+      if (l) l.textContent = meta.cat ? (meta.cat + " — " + v.lead) : v.lead;
+    }
+    function heroOpenCat() {
+      const s = slidesOf()[heroI] || {};
+      if (s.cat) goCat(s.cat);
+      else goFirstCat();
+    }
+    function heroGo(i) { heroI = i; paintHero(); heroPlay(); }
+    function heroNext() { heroI += 1; paintHero(); }
+    function heroPrev() { heroI -= 1; paintHero(); heroPlay(); }
 
     function cover(b) {
       const oos = !inStock(b);
       const extras = oos ? `<span class="ribbon stock">স্টক আউট</span><span class="stamp">স্টক আউট</span>` : "";
+      const plain = vertOf(b) !== "book" ? " pic-plain" : "";
+      const sub = vertOf(b) === "book" ? (b.author || "") : (b.unit || b.author || "");
+      const hover = b.image2 && b.image2 !== b.image
+        ? `<img class="pic-b" src="${b.image2}" alt="" aria-hidden="true">`
+        : "";
+      const tight = vertOf(b) === "gadget" ? " pic-tight" : "";
       const face = b.image
-        ? `<div class="cover has-pic">${extras}<img src="${b.image}" alt=""></div>`
-        : `<div class="cover" style="background:${b.color}">${extras}<div class="ct">${b.title}</div><div class="ca">${b.author}</div></div>`;
-      return `<div class="cover-wrap">${face}</div>`;
+        ? `<div class="cover has-pic${plain}${hover ? " has-hover" : ""}">${extras}<img class="pic-a" src="${b.image}" alt="">${hover}</div>`
+        : `<div class="cover${plain}" style="background:${b.color}">${extras}<div class="ct">${esc(b.title)}</div><div class="ca">${esc(sub)}</div></div>`;
+      return `<div class="cover-wrap${tight}">${face}</div>`;
     }
     function saleBadge(price, old, oos) {
       const d = disc(price, old);
-      return d && !oos ? `<span class="sale-badge">${bn(d)}%<small>OFF</small></span>` : "";
+      return d && !oos ? `<span class="sale-badge">-${bn(d)}%</span>` : "";
     }
     function card(b, i) {
       const oos = !inStock(b);
+      const meta = vertOf(b) === "book" ? (b.author || "") : (b.unit || b.author || "");
       return `<article class="card ${oos ? "oos" : ""}" style="animation-delay:${(i||0)*50}ms">
-        ${saleBadge(b.price, b.old, oos)}
-        <div onclick="go('product',${b.id})" style="cursor:pointer">${cover(b)}</div>
+        <div onclick="go('product',${b.id})" style="cursor:pointer;position:relative">
+          ${saleBadge(b.price, b.old, oos)}
+          ${cover(b)}
+        </div>
         <div class="card-body">
-          <h3>${b.title}</h3>
-          <div class="author">${b.cat ? bookCatLabel(b) + " · " : ""}${b.author}</div>
-          ${starsHtml(b)}
+          <h3>${esc(b.title)}</h3>
+          <div class="author">${esc(meta)}</div>
           <div class="card-foot">
             <div class="price">${priceHtml(b.price, b.old)}</div>
             ${oos ? waitBtn(b.id) : addCartBtn(`addBook(event,${b.id})`)}
@@ -3261,9 +4033,10 @@
       if (lab) lab.hidden = !list.length;
     }
     function catCount(c) {
-      if (c === "সব") return db.books.length;
+      const list = productsOf();
+      if (c === "সব") return list.length;
       const { parent, sub } = parseCatKey(c);
-      return db.books.filter(b => bookInCat(b, parent, sub)).length;
+      return list.filter(b => bookInCat(b, parent, sub)).length;
     }
     function sideCatsHtml() {
       const { parent: onP, sub: onS } = parseCatKey(activeCat === "সব" ? "" : activeCat);
@@ -3302,24 +4075,21 @@
       return html;
     }
     function renderHome() {
+      const v = V();
       const top = popular();
-      const stack = document.getElementById("heroStack");
-      if (stack) {
-        stack.innerHTML = top.slice(0,3).map((b,i)=>
-          b.image
-            ? `<div class="book3d b${i+1} has-pic" style="background-image:url('${b.image}')"></div>`
-            : `<div class="book3d b${i+1}" style="background:${b.color}"><b>${b.title}</b><span>${b.author}</span></div>`
-        ).join("");
-      }
-      const chips = document.getElementById("homeChips");
-      if (chips) {
-        chips.innerHTML = catsList().map(c => `<button type="button" class="hchip" onclick="${goCatAttr(c)}">${esc(c)}</button>`).join("");
-      }
+      paintHero();
+      heroPlay();
+      const popT = document.getElementById("homePopTitle");
+      if (popT) popT.textContent = v.popular;
+      const how1t = document.getElementById("how1t");
+      const how1p = document.getElementById("how1p");
+      if (how1t) how1t.textContent = v.how1;
+      if (how1p) how1p.textContent = v.how1p;
       fillNavCats();
       const grid = document.getElementById("bestGrid");
       if (grid) grid.innerHTML = top.slice(0, 12).map(card).join("");
       const packs = document.getElementById("homePacks");
-      if (packs) packs.innerHTML = db.packs.map(packCard).join("");
+      if (packs) packs.innerHTML = vertical === "book" ? db.packs.map(packCard).join("") : "";
       setupRail("bestRail");
       setupRail("packRail");
       fillNavCoupons();
@@ -3384,10 +4154,15 @@
     }
     function renderShop() {
       const q = (document.getElementById("q").value || "").trim();
+      if (activeCat && activeCat !== "সব") {
+        const { parent } = parseCatKey(activeCat);
+        const ok = catsList().includes(parent) || (vertical === "book" && GROUPS[parent]);
+        if (!ok) activeCat = catsList()[0] || "";
+      }
       let list = popular().filter(b => {
         const { parent, sub } = parseCatKey(activeCat);
         const catOk = bookInCat(b, parent, sub);
-        const qOk = !q || b.title.includes(q) || b.author.includes(q) || (b.cat||"").includes(q) || (b.sub||"").includes(q);
+        const qOk = !q || b.title.includes(q) || (b.author||"").includes(q) || (b.cat||"").includes(q) || (b.sub||"").includes(q) || (b.unit||"").includes(q);
         return catOk && qOk;
       });
       const sort = document.getElementById("sort").value;
@@ -3406,9 +4181,9 @@
         ? ` / <a href="#" onclick="${goCatAttr(crumbP)};return false;">${esc(crumbP)}</a> / <b>${esc(crumbS)}</b>`
         : ` / <b>${esc(GROUPS[crumbP] ? crumbP : crumbP)}</b>`;
       document.getElementById("shopCrumb").innerHTML = `হোম / ক্যাটাগরি${crumb}`;
-      document.getElementById("shopCount").textContent = `${bn(from)}–${bn(to)} / ${bn(list.length)}টি বই`;
+      document.getElementById("shopCount").textContent = `${bn(from)}–${bn(to)} / ${bn(list.length)}${V().countLab}`;
       document.getElementById("sideCats").innerHTML = sideCatsHtml();
-      document.getElementById("shopGrid").innerHTML = slice.map(card).join("") || `<div class="empty" style="grid-column:1/-1">এই ক্যাটাগরিতে বই নেই</div>`;
+      document.getElementById("shopGrid").innerHTML = slice.map(card).join("") || `<div class="empty" style="grid-column:1/-1">${V().empty}</div>`;
       const ps = document.getElementById("pageSize");
       if (ps) ps.value = String(pageSize);
       document.getElementById("pager").innerHTML = `
@@ -3420,7 +4195,7 @@
     }
     function authorsOf() {
       const map = new Map();
-      db.books.forEach(b => {
+      productsOf("book").forEach(b => {
         const name = b.author || "অজানা";
         if (!map.has(name)) map.set(name, { name, books: [], sold: 0, cats: {} });
         const a = map.get(name);
@@ -3481,7 +4256,7 @@
     }
     function renderAuthor() {
       const name = authorName;
-      const books = db.books.filter(b => b.author === name).sort((a, b) => b.sold - a.sold);
+      const books = productsOf("book").filter(b => b.author === name).sort((a, b) => b.sold - a.sold);
       const info = authorsOf().find(a => a.name === name);
       const color = books[0]?.color || colors[0];
       document.getElementById("authorCrumb").innerHTML = `হোম / <a href="#" onclick="go('authors');return false;">লেখক</a>${info ? " / " + info.groupTitle : ""} / <b>${name}</b>`;
@@ -3497,7 +4272,14 @@
     }
     function renderProduct() {
       const b = book(productId) || popular()[0];
+      if (b && vertOf(b) !== vertical) {
+        vertical = vertOf(b);
+        try { localStorage.setItem(KEY + "_v", vertical); } catch (e) {}
+        syncVerticalUI();
+        fillNavCats();
+      }
       qty = 1;
+      reviewStars = 0;
       const oos = !inStock(b);
       const waiting = inWait(b.id);
       const d = disc(b.price, b.old);
@@ -3505,9 +4287,13 @@
       const copies = remainOf(b);
       const enc = encodeURIComponent(b.author || "");
       const longDesc = (b.desc || "").length > 90;
+      const isBook = vertOf(b) === "book";
+      const meta = isBook
+        ? `<a href="#" onclick="goAuthor('${enc}');return false;">${esc(b.author || "")}</a>${b.cat ? ` <span>|</span> <a href="#" onclick="${goCatAttr(b.sub ? catKey(b.cat, b.sub) : b.cat)};return false;">${esc(bookCatLabel(b))}</a>` : ""}`
+        : `${esc(b.author || "")}${b.unit ? " · " + esc(b.unit) : ""}${b.cat ? ` <span>|</span> <a href="#" onclick="${goCatAttr(b.sub ? catKey(b.cat, b.sub) : b.cat)};return false;">${esc(bookCatLabel(b))}</a>` : ""}`;
       document.getElementById("productBox").innerHTML = `
-        <p class="crumb">হোম / ${b.sub ? `<a href="#" onclick="${goCatAttr(b.cat)};return false;">${esc(b.cat)}</a> / <a href="#" onclick="${goCatAttr(catKey(b.cat, b.sub))};return false;">${esc(b.sub)}</a>` : (b.cat ? `<a href="#" onclick="${goCatAttr(b.cat)};return false;">${esc(b.cat)}</a>` : "ক্যাটাগরি")} / <b>${b.title}</b></p>
-        <div class="product">
+        <p class="crumb">হোম / ${b.sub ? `<a href="#" onclick="${goCatAttr(b.cat)};return false;">${esc(b.cat)}</a> / <a href="#" onclick="${goCatAttr(catKey(b.cat, b.sub))};return false;">${esc(b.sub)}</a>` : (b.cat ? `<a href="#" onclick="${goCatAttr(b.cat)};return false;">${esc(b.cat)}</a>` : V().catLab)} / <b>${esc(b.title)}</b></p>
+        <div class="product with-reviews">
           <div class="cover-stage">
             ${d && !oos ? `<span class="pd-off">${bn(d)}%<small>ছাড়</small></span>` : ""}
             <div class="big-cover ${oos ? "oos" : ""} ${b.image ? "has-pic" : ""}" ${b.image ? "" : `style="background:${b.color}"`}>
@@ -3517,27 +4303,27 @@
             ${oos ? `<span class="stamp">স্টক আউট</span>` : ""}
           </div>
           <div>
-            <span class="stock-pill ${oos ? "out" : "in"}">${oos ? "এখন স্টকে নেই" : `স্টকে আছে (${bn(copies)} কপি)`}</span>
-            <div><span class="tag">${bookCatLabel(b) || "বই"} · ${bn(b.sold)} বিক্রি</span></div>
-            <h1>${b.title}</h1>
-            <p class="meta"><a href="#" onclick="goAuthor('${enc}');return false;">${b.author}</a>${b.cat ? ` <span>|</span> <a href="#" onclick="${goCatAttr(b.sub ? catKey(b.cat, b.sub) : b.cat)};return false;">${esc(bookCatLabel(b))}</a>` : ""}</p>
+            <span class="stock-pill ${oos ? "out" : "in"}">${oos ? "এখন স্টকে নেই" : `স্টকে আছে (${bn(copies)})`}</span>
+            <div><span class="tag">${bookCatLabel(b) || V().unit} · ${bn(b.sold)} বিক্রি</span></div>
+            <h1>${esc(b.title)}</h1>
+            <p class="meta">${meta}</p>
             ${sc.rank === 1 ? `<div class="pd-best">★ #১ বেস্ট সেলার · ${esc(bookCatLabel(b))}</div>` : ""}
             <div class="pd-rate">
-              <span class="pd-stars">★★★★★</span>
-              <span>${bn(sc.ratings)} রেটিং | ${bn(sc.reviews)} রিভিউ</span>
+              <span class="pd-stars">${starGlyphs(sc.score)}</span>
+              <span>${String(sc.score)} · ${bn(sc.reviews)} রিভিউ</span>
             </div>
             <div class="pd-love">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.4"/><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5"/><path d="M14 19c.3-2 1.6-3.4 3.5-3.6"/></svg>
-              ${bn(sc.love)} জনের পছন্দের তালিকায় আছে বইটি
+              ${bn(sc.love)} জনের পছন্দের তালিকায় আছে
             </div>
             <div class="price" style="font-size:28px">${priceHtml(b.price, b.old)}</div>
-            <p class="desc ${longDesc ? "clamp" : ""}" id="pdDesc">${b.desc || ""}</p>
+            <p class="desc ${longDesc ? "clamp" : ""}" id="pdDesc">${esc(b.desc || "")}</p>
             ${longDesc ? `<button type="button" class="pd-morebtn" id="pdMore" onclick="toggleDesc()">আরও পড়ুন</button>` : ""}
-            <p class="author" style="margin-top:10px">পৃষ্ঠা ${bn(b.pages)} · ভাষা বাংলা</p>
+            ${isBook ? `<p class="author" style="margin-top:10px">পৃষ্ঠা ${bn(b.pages || 0)} · ভাষা বাংলা</p>` : (b.unit ? `<p class="author" style="margin-top:10px">${esc(b.unit)}</p>` : "")}
             ${oos ? `
               <div class="oos-banner">
                 <div>
-                  <b>এই বইটি এখন স্টক আউট</b>
+                  <b>এই পণ্যটি এখন স্টক আউট</b>
                   <p>${me() ? "কার্টে যোগ করা যাবে না। চাইলে ভবিষ্যৎ অর্ডার তালিকায় রাখুন — স্টকে এলে এখান থেকেই কিনতে পারবেন।" : "কার্টে যোগ করা যাবে না। লগইন করলে ভবিষ্যৎ অর্ডার তালিকায় রাখতে পারবেন।"}</p>
                 </div>
               </div>
@@ -3563,9 +4349,9 @@
             </div>
             <p class="note">সারা বাংলাদেশে হোম ডেলিভারি · হেল্পলাইন ${HELP}</p>
           </div>
+          ${reviewsColHtml(b, sc)}
         </div>
-        <div class="section-head"><h2>এগুলোও চলছে</h2></div>
-        <div class="grid">${popular().filter(x=>x.id!==b.id && x.cat===b.cat).slice(0,4).map(card).join("") || popular().filter(x=>x.id!==b.id).slice(0,4).map(card).join("")}</div>`;
+        ${alsoRunHtml(b)}`;
     }
     function renderPack() {
       const p = pack(packId) || db.packs[0];
@@ -3658,10 +4444,10 @@
       if (c.kind === "pack") {
         const p = pack(c.id);
         const bs = (p.bookIds || []).map(book).filter(Boolean);
-        return { kind: "pack", id: p.id, title: p.title, sub: bn(bs.length) + "টি বইয়ের প্যাকেজ", cat: "প্যাকেজ", price: p.price, old: p.old, color: "#3D5A4C", books: bs };
+        return { kind: "pack", id: p.id, title: p.title, sub: bn(bs.length) + "টি বইয়ের প্যাকেজ", cat: "প্যাকেজ", price: p.price, old: p.old, color: "#3D5A4C", books: bs, vertical: "book" };
       }
       const b = book(c.id);
-      return { kind: "book", id: b.id, title: b.title, sub: b.author, cat: bookCatLabel(b) || "বই", price: b.price, old: b.old, color: b.color, image: b.image };
+      return { kind: "book", id: b.id, title: b.title, sub: b.unit || b.author, cat: bookCatLabel(b) || V().unit, price: b.price, old: b.old, color: b.color, image: b.image, vertical: vertOf(b) };
     }
     function subtotal() { return cart.reduce((s, c) => s + line(c).price * c.n, 0); }
     function ensureShip() {
@@ -3822,7 +4608,7 @@
           ${cartThumb(L)}
           <div class="cart-info">
             <h3 onclick="${goTo}">${L.title}</h3>
-            <div class="author">${L.sub}${L.cat ? " · " + L.cat : ""}</div>
+            <div class="author">${L.vertical && L.vertical !== "book" ? `<span class="vtag">${esc(VERTICALS[L.vertical]?.name || "")}</span>` : ""}${L.sub}${L.cat ? " · " + L.cat : ""}</div>
             <div class="cart-unit"><b>৳${bn(L.price)}</b>${L.old && L.old > L.price ? ` <span class="old">৳${bn(L.old)}</span>` : ""}</div>
           </div>
           <div class="cart-ops">
@@ -3848,8 +4634,8 @@
         box.innerHTML = `<div class="empty cart-empty">
           <img class="empty-art" src="icons/empty-cart.png" alt="কার্ট খালি" width="260" height="260">
           <p class="serif">কার্ট এখন খালি</p>
-          <p class="author">পছন্দের বই যোগ করুন — সব আইটেম এক লিস্টে দেখাবে।</p>
-          <button class="btn btn-primary" style="margin-top:16px" onclick="go('shop')">বই দেখুন</button>
+          <p class="author">পছন্দের পণ্য যোগ করুন — বই, খাবার ও গ্যাজেট এক কার্টে।</p>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="go('shop')">ক্যাটালগ দেখুন</button>
         </div>`;
         return;
       }
@@ -3882,8 +4668,8 @@
         body.innerHTML = `<div class="minicart-empty">
           <img class="empty-art" src="icons/empty-cart.png" alt="কার্ট খালি" width="200" height="200">
           <p class="serif" style="font-size:22px;color:var(--burgundy);margin-bottom:8px">কার্ট খালি</p>
-          <p class="author">পছন্দের বই যোগ করুন।</p>
-          <button class="btn add-cart" style="margin-top:16px" onclick="go('shop')">${icoCart} বই দেখুন</button>
+          <p class="author">পছন্দের পণ্য যোগ করুন।</p>
+          <button class="btn add-cart" style="margin-top:16px" onclick="go('shop')">${icoCart} ক্যাটালগ</button>
         </div>`;
         foot.innerHTML = "";
         return;
@@ -3895,6 +4681,7 @@
         ${t.why ? `<p class="ship-why" style="margin:0 0 8px">${esc(t.why)}</p>` : ""}
         <div class="row total"><span>মোট</span><span>৳${bn(t.grand)}</span></div>
         <button class="btn add-cart btn-wide" onclick="goCartPage()">${icoCart} চেকআউট</button>
+        ${miniAlsoHtml()}
         ${shipNoteHtml()}`;
     }
     function sumRows(t, withCoupon = false) {
@@ -3952,15 +4739,15 @@
           <h3 class="addr-head" style="margin-top:0">যোগাযোগ</h3>
           <div class="form-grid">
             <div>
-              <label>নাম</label>
+              <label class="lab-ico">${icoUser} পূর্ণ নাম</label>
               <div class="field-box">
                 <span class="field-ico">${icoUser}</span>
-                <input id="cName" type="text" value="${v("cName","name")}" placeholder="আপনার নাম" oninput="clearChkErr('cName')" />
+                <input id="cName" type="text" value="${v("cName","name")}" placeholder="আপনার পূর্ণ নাম" oninput="clearChkErr('cName')" />
               </div>
               <p class="field-warn" id="w-cName"></p>
             </div>
             <div>
-              <label>ফোন</label>
+              <label class="lab-ico">${icoPhone} ফোন</label>
               <div class="field-box">
                 <span class="field-ico">${icoPhone}</span>
                 <input id="cPhone" type="tel" value="${v("cPhone","phone")}" placeholder="01XXXXXXXXX" oninput="clearChkErr('cPhone')" />
@@ -3968,7 +4755,7 @@
               <p class="field-warn" id="w-cPhone"></p>
             </div>
             <div class="span-2">
-              <label>ইমেইল <span class="author">(ঐচ্ছিক)</span></label>
+              <label class="lab-ico">${icoMail} ইমেইল <span class="author">(ঐচ্ছিক)</span></label>
               <div class="field-box">
                 <span class="field-ico">${icoMail}</span>
                 <input id="cEmail" type="email" value="${v("cEmail","email")}" placeholder="name@email.com" oninput="clearChkErr('cEmail')" />
@@ -3977,26 +4764,22 @@
             </div>
           </div>
           <h3 class="addr-head">ডেলিভারি ঠিকানা</h3>
-          <p class="addr-sub">বিভাগ থেকে ইউনিয়ন বাছুন। গ্রাম, বাড়ি, রাস্তা আর ল্যান্ডমার্ক একসাথে লিখুন।</p>
+          <p class="addr-sub">জেলা ও উপজেলা বাছুন। ইউনিয়ন/পৌরসভা চাইলে দিন। গ্রাম, বাড়ি, রাস্তা আর ল্যান্ডমার্ক একসাথে লিখুন।</p>
+          <input type="hidden" id="cDiv" value="${esc(divOfDist(dist) || div)}" />
           <div class="form-grid">
             <div>
-              <label>বিভাগ</label>
-              <div class="field-box"><span class="field-ico">${icoPin}</span><select id="cDiv" onchange="clearChkErr('cDiv');geoDiv()">${opts(geoList(), "বিভাগ বাছুন", div)}</select></div>
-              <p class="field-warn" id="w-cDiv"></p>
-            </div>
-            <div>
               <label>জেলা</label>
-              <div class="field-box"><span class="field-ico">${icoPin}</span><select id="cDist" onchange="clearChkErr('cDist');geoDist()">${opts(geoList(div), "জেলা বাছুন", dist)}</select></div>
+              <div class="field-box"><span class="field-ico">${icoPin}</span><select id="cDist" onchange="clearChkErr('cDist');geoDist()">${opts(allDistricts(), "জেলা বাছুন", dist)}</select></div>
               <p class="field-warn" id="w-cDist"></p>
             </div>
             <div>
               <label>উপজেলা / থানা</label>
-              <div class="field-box"><span class="field-ico">${icoPin}</span><select id="cUpa" onchange="clearChkErr('cUpa');geoUpa()">${opts(geoList(div, dist), "উপজেলা / থানা বাছুন", upa)}</select></div>
+              <div class="field-box"><span class="field-ico">${icoPin}</span><select id="cUpa" onchange="clearChkErr('cUpa');geoUpa()">${opts(div && dist ? geoList(div, dist) : [], "উপজেলা / থানা বাছুন", upa)}</select></div>
               <p class="field-warn" id="w-cUpa"></p>
             </div>
-            <div>
-              <label>ইউনিয়ন / পৌরসভা / ওয়ার্ড</label>
-              <div class="field-box"><span class="field-ico">${icoPin}</span><select id="cUni" onchange="clearChkErr('cUni')">${opts(geoList(div, dist, upa), "ইউনিয়ন বাছুন", uni)}<option value="অন্যান্য" ${uni==="অন্যান্য"?"selected":""}>অন্যান্য</option></select></div>
+            <div class="span-2">
+              <label>ইউনিয়ন / পৌরসভা / ওয়ার্ড <span class="author">(ঐচ্ছিক)</span></label>
+              <div class="field-box"><span class="field-ico">${icoPin}</span><select id="cUni" onchange="clearChkErr('cUni')">${opts(div && dist && upa ? geoList(div, dist, upa) : [], "ইউনিয়ন / পৌরসভা (ঐচ্ছিক)", uni)}<option value="অন্যান্য" ${uni==="অন্যান্য"?"selected":""}>অন্যান্য</option></select></div>
               <p class="field-warn" id="w-cUni"></p>
             </div>
             <div class="span-2">
@@ -4047,12 +4830,10 @@
     }
     function validateCheckout() {
       const fields = [
-        { id: "cName", msg: "নাম লিখুন" },
+        { id: "cName", msg: "পূর্ণ নাম লিখুন" },
         { id: "cPhone", msg: "মোবাইল নম্বর দিন" },
-        { id: "cDiv", msg: "বিভাগ বাছুন" },
         { id: "cDist", msg: "জেলা বাছুন" },
         { id: "cUpa", msg: "উপজেলা / থানা বাছুন" },
-        { id: "cUni", msg: "ইউনিয়ন / পৌরসভা বাছুন" },
         { id: "cDetail", msg: "বিস্তারিত ঠিকানা লিখুন" }
       ];
       let ok = true, first = null;
@@ -4085,16 +4866,17 @@
         return;
       }
       snapChk();
+      chkDraft.cDiv = divOfDist(chkDraft.cDist) || chkDraft.cDiv || "";
       const t = totals();
       if (t.ship == null) {
         toast("জেলা বাছুন — তাহলে ডেলিভারি খরচ বসবে");
         markChkErr("cDist", "জেলা বাছুন");
         return;
       }
-      const full = [chkDraft.cDetail, chkDraft.cUni, chkDraft.cUpa, chkDraft.cDist, chkDraft.cDiv].filter(Boolean).join(", ");
+      const full = [chkDraft.cDetail, chkDraft.cUni, chkDraft.cUpa, chkDraft.cDist].filter(Boolean).join(", ");
       window._chk = {
         name: chkDraft.cName, phone: chkDraft.cPhone, email: chkDraft.cEmail,
-        div: chkDraft.cDiv, dist: chkDraft.cDist, upa: chkDraft.cUpa, uni: chkDraft.cUni,
+        div: chkDraft.cDiv, dist: chkDraft.cDist, upa: chkDraft.cUpa, uni: chkDraft.cUni || "",
         detail: chkDraft.cDetail, address: full
       };
       const u = me();
@@ -4102,6 +4884,109 @@
       persist();
       if (payMode === "cod") confirmCod();
       else go("ssl");
+    }
+    const SSL_PENDING = KEY + "_ssl";
+    const SSL_PROXYS = ["", "http://127.0.0.1:8787"];
+    let sslProxyBase = "";
+    async function sslStatus() {
+      for (const base of SSL_PROXYS) {
+        try {
+          const r = await fetch(base + "/api/ssl/status", { cache: "no-store" });
+          if (!r.ok) continue;
+          const j = await r.json();
+          if (j && j.ok) { sslProxyBase = base; return j; }
+        } catch (e) {}
+      }
+      sslProxyBase = "";
+      return null;
+    }
+    function saveSslPending(tran_id) {
+      try {
+        localStorage.setItem(SSL_PENDING, JSON.stringify({
+          tran_id, chk: window._chk, cart, coupon, payMethod, vertical, at: Date.now()
+        }));
+      } catch (e) {}
+    }
+    function readSslPending() {
+      try { return JSON.parse(localStorage.getItem(SSL_PENDING) || "null"); } catch (e) { return null; }
+    }
+    function clearSslPending() { try { localStorage.removeItem(SSL_PENDING); } catch (e) {} }
+    async function openSslGateway() {
+      const t = totals();
+      if (t.grand < 10) { toast("SSLCOMMERZ স্যান্ডবক্সে সর্বনিম্ন ৳১০"); return; }
+      const c = window._chk || {};
+      const info = await sslStatus();
+      if (!info) { toast("স্যান্ডবক্স সার্ভার চালু নেই"); renderSsl(); return; }
+      const tran_id = ("CLO" + Date.now()).slice(0, 30);
+      saveSslPending(tran_id);
+      persist();
+      showLoad("SSLCOMMERZ স্যান্ডবক্স খুলছে...");
+      try {
+        const r = await fetch((sslProxyBase || "") + "/api/ssl/init", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tran_id,
+            total_amount: t.grand,
+            cus_name: c.name || "Customer",
+            cus_email: c.email || "demo@cholo.shop",
+            cus_phone: c.phone || "01700000000",
+            cus_add1: c.detail || c.address || "Dhaka",
+            cus_city: c.dist || "Dhaka",
+            cus_state: c.div || "Dhaka",
+            product_name: (cart.map(x => line(x).title).filter(Boolean).join(", ") || "Cholo").slice(0, 240),
+            product_category: V().unit || "general"
+          })
+        });
+        const j = await r.json();
+        hideLoad();
+        if (j.status === "SUCCESS" && j.GatewayPageURL) {
+          location.href = j.GatewayPageURL;
+          return;
+        }
+        toast(j.failedreason || "গেটওয়ে খোলা যায়নি");
+        renderSsl();
+      } catch (err) {
+        hideLoad();
+        toast("স্যান্ডবক্স সার্ভারে পৌঁছানো যায়নি");
+        renderSsl();
+      }
+    }
+    function consumeSslReturn() {
+      const q = new URLSearchParams(location.search);
+      const st = q.get("ssl");
+      if (!st) return false;
+      const tran_id = q.get("tran_id") || "";
+      const val_id = q.get("val_id") || "";
+      history.replaceState({}, "", location.pathname + (location.hash || ""));
+      const pending = readSslPending();
+      if (st === "success") {
+        if (!pending || (pending.tran_id && tran_id && pending.tran_id !== tran_id)) {
+          toast("পেমেন্ট মিলছে না — আবার চেষ্টা করুন");
+          return true;
+        }
+        window._chk = pending.chk || window._chk;
+        if (pending.chk) {
+          chkDraft.cName = pending.chk.name || "";
+          chkDraft.cPhone = pending.chk.phone || "";
+          chkDraft.cEmail = pending.chk.email || "";
+          chkDraft.cDiv = pending.chk.div || "";
+          chkDraft.cDist = pending.chk.dist || "";
+          chkDraft.cUpa = pending.chk.upa || "";
+          chkDraft.cUni = pending.chk.uni || "";
+          chkDraft.cDetail = pending.chk.detail || "";
+        }
+        if (Array.isArray(pending.cart)) cart = pending.cart;
+        coupon = pending.coupon || coupon;
+        persist();
+        clearSslPending();
+        completeOrder("ssl", { sslTran: tran_id, sslVal: val_id });
+        return true;
+      }
+      toast(st === "cancel" ? "পেমেন্ট বাতিল হয়েছে" : "পেমেন্ট হয়নি");
+      clearSslPending();
+      go("checkout");
+      return true;
     }
     function showLoad(msg) {
       document.getElementById("loadMsg").textContent = msg;
@@ -4141,28 +5026,49 @@
       document.getElementById("sslBox").innerHTML = `
         <div class="ssl-head"><strong>SSLCOMMERZ</strong><span>৳${bn(t.grand)}</span></div>
         <div class="ssl-body">
-          <p style="margin-bottom:12px;color:#5a524a">Brothers Book House · নিরাপদ পেমেন্ট (ডেমো)</p>
+          <div id="sslLive" class="ssl-note warn">স্যান্ডবক্স সার্ভার খোঁজা হচ্ছে...</div>
+          <div class="ssl-test">
+            <div><b>স্যান্ডবক্স টেস্ট কার্ড</b> — আসল টাকা কাটে না</div>
+            <div>VISA <code>4111111111111111</code> · মেয়াদ 12/26 · CVV 111</div>
+            <div>Mastercard <code>5111111111111111</code> · OTP <code>111111</code></div>
+          </div>
           ${["bkash|বিকাশ","nagad|নগদ","visa|ভিসা / মাস্টারকার্ড"].map(x=>{
             const [id,l]=x.split("|");
             return `<div class="payopt ${payMethod===id?"on":""}" onclick="payMethod='${id}';renderSsl()"><b>${l}</b><span>${payMethod===id?"✓":""}</span></div>`;
           }).join("")}
-          <button class="btn btn-primary btn-wide" style="margin-top:8px;background:#1a3a6b" onclick="finishPay()">পেমেন্ট সম্পন্ন করুন</button>
+          <button class="btn btn-primary btn-wide" id="sslGo" style="margin-top:8px;background:#1a3a6b" onclick="openSslGateway()">স্যান্ডবক্স গেটওয়ে খুলুন</button>
+          <button class="btn btn-ghost btn-wide" style="margin-top:8px" onclick="finishPay()">ডেমো হিসেবে সম্পন্ন</button>
           <button class="btn btn-ghost btn-wide" style="margin-top:8px" onclick="go('checkout')">ফিরে যান</button>
         </div>`;
+      sslStatus().then(info => {
+        const box = document.getElementById("sslLive");
+        const btn = document.getElementById("sslGo");
+        if (!box) return;
+        if (info) {
+          box.className = "ssl-note ok";
+          box.innerHTML = `স্যান্ডবক্স কানেক্টেড · স্টোর <code>${esc(info.store_id)}</code> · ডোমেইন লাগে না, localhost চলে।`;
+          if (btn) btn.disabled = false;
+        } else {
+          box.className = "ssl-note warn";
+          box.innerHTML = `লাইভ ডোমেইন ছাড়া স্যান্ডবক্স চালাতে টার্মিনালে <code>node design/ssl-sandbox.mjs</code> চালিয়ে <code>http://127.0.0.1:8787/</code> খুলুন। স্টোর পাসওয়ার্ড ব্রাউজারে রাখা যায় না — এই ছোট সার্ভার SSLCOMMERZ-এ সেশন খোলে।`;
+          if (btn) btn.disabled = true;
+        }
+      });
     }
     function finishPay() { completeOrder("ssl"); }
-    function completeOrder(type) {
+    function completeOrder(type, extra) {
       const t = totals();
       if (t.ship == null) { toast("জেলা বাছুন"); go("checkout"); return; }
       const c = window._chk || {};
-      const id = "BBH-" + (2000 + db.orders.length + 1);
+      const id = "CLO-" + (2000 + db.orders.length + 1);
       const items = cart.map(x => line(x).title + " × " + bn(x.n)).join(", ");
       const lines = cart.map(x => {
         const L = line(x);
         const cost = x.kind === "pack" ? packCostOf(x.id) : (book(x.id)?.cost || 0);
         return {
           kind: x.kind, id: x.id, title: L.title, n: x.n, price: L.price, cost,
-          cat: L.cat, bookIds: x.kind === "pack" ? [...(pack(x.id)?.bookIds || [])] : undefined
+          cat: L.cat, vertical: L.vertical || (x.kind === "pack" ? "book" : "book"),
+          bookIds: x.kind === "pack" ? [...(pack(x.id)?.bookIds || [])] : undefined
         };
       });
       const ssl = type === "ssl";
@@ -4174,7 +5080,8 @@
         shipWhy: t.why, shipZone: t.zone,
         total: t.grand, status: PENDING_I, items, coupon,
         pay: ssl ? "SSLCOMMERZ" : "ক্যাশ অন ডেলিভারি",
-        paid: ssl, fee, guest: !me(), at: Date.now()
+        paid: ssl, fee, guest: !me(), at: Date.now(),
+        sslTran: extra?.sslTran || "", sslVal: extra?.sslVal || ""
       };
       db.orders.unshift(order);
       cart.forEach(x => {
@@ -4698,7 +5605,7 @@
       return String(s || "").replace(/[০-৯]/g, d => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/\D/g, "");
     }
     function orderKey(s) {
-      return String(s || "").trim().toLowerCase().replace(/\s+/g, "").replace(/^bbh-?/, "");
+      return String(s || "").trim().toLowerCase().replace(/\s+/g, "").replace(/^(clo|bbh)-?/, "");
     }
     function doTrack() {
       const raw = (document.getElementById("trackQ").value || "").trim();
@@ -4715,7 +5622,7 @@
         }
         return false;
       });
-      if (!list.length) { box.innerHTML = "<p class='author' style='margin-top:12px'>এই মোবাইল বা অর্ডার আইডিতে কোনো অর্ডার নেই। ডেমো: 01711111111 অথবা BBH-2041</p>"; return; }
+      if (!list.length) { box.innerHTML = "<p class='author' style='margin-top:12px'>এই মোবাইল বা অর্ডার আইডিতে কোনো অর্ডার নেই। ডেমো: 01711111111 অথবা CLO-2041</p>"; return; }
       box.innerHTML = list.map(o => `
         <div class="track-card">
           <div class="row total" style="border:0;padding:0;margin:0 0 6px"><span>${o.id}</span><span>৳${bn(o.total)}</span></div>
@@ -4758,7 +5665,7 @@
             <button class="on">লগইন</button>
             <button onclick="openAuth('signup')">সাইন আপ</button>
           </div>
-          <div class="hint">ডেমো ইউজার: rafi@gmail.com / 123456<br/>অ্যাডমিন: admin@brothersbookhouse.com / admin123</div>
+          <div class="hint">ডেমো ইউজার: rafi@gmail.com / 123456<br/>অ্যাডমিন: admin@cholo.shop / admin123</div>
           <label>ইমেইল অথবা মোবাইল</label>
           <div class="field-box"><span class="field-ico">${icoMail}</span><input id="aId" type="text" placeholder="ইমেইল বা 01xxxxxxxxx" /></div>
           <label>পাসওয়ার্ড</label>
@@ -4772,11 +5679,11 @@
             <button onclick="openAuth('login')">লগইন</button>
             <button class="on">সাইন আপ</button>
           </div>
-          <label>নাম</label>
-          <div class="field-box"><span class="field-ico">${icoUser}</span><input id="sName" type="text" placeholder="আপনার নাম" /></div>
-          <label>মোবাইল</label>
+          <label class="lab-ico">${icoUser} পূর্ণ নাম</label>
+          <div class="field-box"><span class="field-ico">${icoUser}</span><input id="sName" type="text" placeholder="আপনার পূর্ণ নাম" /></div>
+          <label class="lab-ico">${icoPhone} মোবাইল</label>
           <div class="field-box"><span class="field-ico">${icoPhone}</span><input id="sPhone" type="tel" placeholder="01xxxxxxxxx" /></div>
-          <label>ইমেইল <span class="author">(ঐচ্ছিক)</span></label>
+          <label class="lab-ico">${icoMail} ইমেইল <span class="author">(ঐচ্ছিক)</span></label>
           <div class="field-box"><span class="field-ico">${icoMail}</span><input id="sEmail" type="email" placeholder="name@email.com" /></div>
           <label>পাসওয়ার্ড</label>
           <div class="field-box"><span class="field-ico">${icoLock}</span><input id="sPw" type="password" placeholder="পাসওয়ার্ড" /></div>
@@ -4862,7 +5769,7 @@
         ${!items.length ? `<div class="empty">
           <p class="serif" style="font-size:22px;color:var(--burgundy);margin-bottom:8px">তালিকা খালি</p>
           <p class="author">স্টক আউট বইয়ের কার্ডে «তালিকায়» চাপলে এখানে জমা হবে।</p>
-          <button class="btn btn-primary" style="margin-top:14px" onclick="go('shop')">বই দেখুন</button>
+          <button class="btn btn-primary" style="margin-top:14px" onclick="go('shop')">ক্যাটালগ দেখুন</button>
         </div>` : items.map(x => `<div class="wait-item ${x.ready ? "back" : ""}">
           ${x.image
             ? `<div class="cover has-pic" style="cursor:pointer" onclick="go('product',${x.id})"><img src="${x.image}" alt=""></div>`
@@ -4890,11 +5797,11 @@
           ${u.role !== "admin" ? `<button class="btn btn-gold btn-sm" onclick="go('wait')">ভবিষ্যৎ অর্ডার (${bn(waitOf().length)})</button>` : ""}
           <button class="btn btn-ghost btn-sm" onclick="go('${u.role === "admin" ? "admin" : "orders"}')">${u.role === "admin" ? "অ্যাডমিন প্যানেল" : "আমার অর্ডার"}</button>
         </div>
-        <label>নাম</label>
+        <label class="lab-ico">${icoUser} পূর্ণ নাম</label>
         <div class="field-box"><span class="field-ico">${icoUser}</span><input id="pName" type="text" value="${u.name||""}" /></div>
-        <label>মোবাইল</label>
+        <label class="lab-ico">${icoPhone} মোবাইল</label>
         <div class="field-box"><span class="field-ico">${icoPhone}</span><input id="pPhone" type="tel" value="${u.phone||""}" /></div>
-        <label>ইমেইল <span class="author">(ঐচ্ছিক)</span></label>
+        <label class="lab-ico">${icoMail} ইমেইল <span class="author">(ঐচ্ছিক)</span></label>
         <div class="field-box"><span class="field-ico">${icoMail}</span><input id="pEmail" type="email" value="${u.email||""}" /></div>
         <h3 class="addr-head">ডিফল্ট ডেলিভারি ঠিকানা</h3>
         <p class="author">${[u.detail, u.uni, u.upa, u.dist, u.div].filter(Boolean).join(", ") || "এখনো সেভ নেই — চেকআউটে ঠিকানা দিন।"}</p>
@@ -5021,7 +5928,7 @@
         <button type="button" class="ofilt ${!adminBookSub ? "on" : ""}" onclick="setAdminBookSub('')">সব<span> ${bn(catCount(cur))}</span></button>
         ${subList.map(s => `<button type="button" class="ofilt ${adminBookSub === s ? "on" : ""}" onclick="setAdminBookSub(decodeURIComponent('${encodeURIComponent(s)}'))">${esc(s)}<span> ${bn(catCount(catKey(cur, s)))}</span></button>`).join("")}
       </div>` : "";
-      const list = cur ? db.books.filter(b => bookInCat(b, cur, adminBookSub)) : [];
+      const list = cur ? productsOf().filter(b => bookInCat(b, cur, adminBookSub)) : [];
       return `<div class="ord-bar">
         <div class="ord-bar-top">
           <span class="ord-meta">ক্যাটাগরি</span>
@@ -5042,6 +5949,8 @@
       if (me()?.role !== "admin") return;
       const pendN = db.orders.filter(isPending).length;
       const waitChat = waitChatCount();
+      const bb = document.querySelector('[data-atab="books"]');
+      if (bb) bb.textContent = V().prodTab;
       const ob = document.querySelector('[data-atab="orders"]');
       if (ob) ob.textContent = pendN ? `অর্ডার (${bn(pendN)})` : "অর্ডার";
       const cb = document.querySelector('[data-atab="chat"]');
@@ -5052,7 +5961,7 @@
         v.innerHTML = `<div class="acc admin-add ${addOn ? "on" : ""}" id="adminAddAcc">
           <button type="button" class="acc-head" onclick="toggleAdminAdd()">
             <div>
-              <b>নতুন বই যোগ</b>
+              <b>${esc(V().addTitle)}</b>
               <small>ফর্ম খুলতে ক্লিক করুন</small>
             </div>
             <span class="acc-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></span>
@@ -5060,7 +5969,7 @@
           <div class="acc-body">
             <div class="form-grid">
               <div><label>নাম</label><input id="bTitle" /></div>
-              <div><label>লেখক</label><input id="bAuthor" /></div>
+              <div><label>${esc(V().authorField)}</label><input id="bAuthor" /></div>
               <div><label>ক্যাটাগরি</label><select id="bCat" onchange="fillBookSubSel()">${catOptions(adminCat())}</select></div>
               <div><label>সাব-ক্যাটাগরি</label><select id="bSub">${subOptions(adminCat() || catsList()[0])}</select></div>
               <div><label>কেনা দাম</label><input id="bCost" type="number" min="0" placeholder="ক্রয়মূল্য" /></div>
@@ -5129,7 +6038,7 @@
           </div>
           <label>বই বেছে নিন (কমপক্ষে ২টি)</label>
           <input id="pkBookQ" type="search" placeholder="বই খুঁজুন..." oninput="filterPkBooks(this.value)" />
-          <div class="pk-pick" id="pkBookList">${db.books.map(b => `
+          <div class="pk-pick" id="pkBookList">${productsOf("book").map(b => `
             <label class="pk-row" data-q="${esc((b.title + " " + (b.author || "") + " " + bookCatLabel(b)).toLowerCase())}">
               <input class="pk-book" type="checkbox" value="${b.id}" onchange="onPkBookChange()" />
               <span>${esc(b.title)}<small>${esc([b.author, bookCatLabel(b)].filter(Boolean).join(" · "))}</small></span>
@@ -5178,7 +6087,7 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
               সেভ করুন
             </button>
-            <button class="btn btn-ghost" type="button" onclick="sessionStorage.removeItem('bbh_promo_seen'); toast('পরের রিফ্রেশে মডাল আবার দেখাবে')">টেস্ট: আবার দেখাও</button>
+            <button class="btn btn-ghost" type="button" onclick="sessionStorage.removeItem('cholo_promo_seen'); toast('পরের রিফ্রেশে মডাল আবার দেখাবে')">টেস্ট: আবার দেখাও</button>
           </div>
         </div>`;
       }
@@ -5269,6 +6178,17 @@
               <p class="hint-txt">শুধু SSLCOMMERZ অর্ডারে হিসাবের খরচ। কাস্টমার দেখবে না।</p>
             </div>
           </section>
+          <section class="ship-card">
+            <div class="ship-card-h">
+              <i class="ship-ico">${icoSsl}</i>
+              <div>
+                <h3>SSLCOMMERZ স্যান্ডবক্স</h3>
+                <p>লাইভ ডোমেইন ছাড়াই টেস্ট — localhost চলে। প্রোডাকশনে আসল ডোমেইন ও HTTPS লাগবে</p>
+              </div>
+            </div>
+            <p class="hint-txt" id="sslAdminStatus">স্ট্যাটাস দেখা হচ্ছে...</p>
+            <p class="hint-txt" style="margin-top:8px">টার্মিনাল: <code>node design/ssl-sandbox.mjs</code> — তারপর সাইট খুলুন <code>http://127.0.0.1:8787/</code>। ডিফল্ট স্টোর <code>testbox</code>। নিজের স্যান্ডবক্স স্টোর: <code>SSLCZ_STORE_ID</code> ও <code>SSLCZ_STORE_PASSWD</code>। টেস্ট কার্ড <code>4111111111111111</code> · 12/26 · 111 · OTP 111111।</p>
+          </section>
           <div class="save-row">
             <span class="hint-txt">সেভ করলে ইউজার সাইটে সাথে সাথে দেখবে</span>
             <button class="btn btn-save" type="button" onclick="saveShip()">
@@ -5277,6 +6197,13 @@
             </button>
           </div>
         </div>`;
+        sslStatus().then(info => {
+          const el = document.getElementById("sslAdminStatus");
+          if (!el) return;
+          el.textContent = info
+            ? `কানেক্টেড · স্টোর ${info.store_id} · ${info.base}`
+            : "সার্ভার বন্ধ — node design/ssl-sandbox.mjs চালিয়ে http://127.0.0.1:8787/ খুলুন";
+        });
       }
       if (aTab === "finance") {
         v.innerHTML = adminFinanceHtml();
@@ -5397,7 +6324,7 @@
       if (!name) { toast("ক্যাটাগরির নাম দিন"); return; }
       if (catsList().some(c => c === name)) { toast("এই ক্যাটাগরি আগেই আছে"); return; }
       if (sub && sub === name) { toast("সাব-ক্যাটাগরি আলাদা নাম দিন"); return; }
-      catTree().push({ name, subs: sub ? [sub] : [] });
+      catTreeAll().push({ name, subs: sub ? [sub] : [], vertical });
       live();
       toast(sub ? "ক্যাটাগরি ও সাব যোগ হয়েছে" : "ক্যাটাগরি যোগ হয়েছে · সাইটে দেখা যাচ্ছে");
     }
@@ -5414,17 +6341,17 @@
       toast("সাব-ক্যাটাগরি যোগ হয়েছে");
     }
     function delCatAdmin(name) {
-      const n = db.books.filter(b => b.cat === name).length;
-      if (n) { toast(bn(n) + "টি বই এই ক্যাটাগরিতে আছে · আগে অন্য ক্যাটাগরিতে সরান"); return; }
-      db.cats = catTree().filter(c => c.name !== name);
+      const n = productsOf().filter(b => b.cat === name).length;
+      if (n) { toast(bn(n) + "টি পণ্য এই ক্যাটাগরিতে আছে · আগে অন্য ক্যাটাগরিতে সরান"); return; }
+      db.cats = catTreeAll().filter(c => !(c.name === name && (c.vertical || "book") === vertical));
       if (parseCatKey(activeCat).parent === name) activeCat = catsList()[0] || "";
       if (adminBookCat === name) { adminBookCat = catsList()[0] || ""; adminBookSub = ""; }
       live();
       toast("ক্যাটাগরি মুছেছে");
     }
     function delSubCatAdmin(parent, sub) {
-      const n = db.books.filter(b => b.cat === parent && b.sub === sub).length;
-      if (n) { toast(bn(n) + "টি বই এই সাবে আছে · আগে অন্য ক্যাটাগরিতে সরান"); return; }
+      const n = productsOf().filter(b => b.cat === parent && b.sub === sub).length;
+      if (n) { toast(bn(n) + "টি পণ্য এই সাবে আছে · আগে অন্য ক্যাটাগরিতে সরান"); return; }
       const node = catNode(parent);
       if (!node) return;
       node.subs = (node.subs || []).filter(s => s !== sub);
@@ -5464,7 +6391,7 @@
       if (!title || !price) { toast("নাম ও নতুন দাম দিন"); return; }
       if (stockRaw === "" || stockRaw == null) { toast("আসল কপি সংখ্যা দিন · স্টক আউট হলে ০"); return; }
       const stock = Math.max(0, parseInt(stockRaw, 10) || 0);
-      const rec = { id: Date.now(), title, author, price, old, cost, sold: 0, pages: 100, color: colors[db.books.length % colors.length], cat: document.getElementById("bCat").value, desc: document.getElementById("bDesc").value || "নতুন সংযোজন।", copies: stock, stock, oos: stock === 0, freeShip: !!document.getElementById("bFreeShip")?.checked };
+      const rec = { id: Date.now(), title, author, price, old, cost, sold: 0, pages: 100, color: colors[db.books.length % colors.length], cat: document.getElementById("bCat").value, desc: document.getElementById("bDesc").value || "নতুন সংযোজন।", copies: stock, stock, oos: stock === 0, freeShip: !!document.getElementById("bFreeShip")?.checked, vertical };
       const sub = (document.getElementById("bSub")?.value || "").trim();
       if (sub) rec.sub = sub;
       if (pendingBookImg) rec.image = pendingBookImg;
@@ -5903,7 +6830,7 @@
       if (!title) { toast("প্যাকেজের নাম দিন"); return; }
       if (!price) { toast("নতুন দাম দিন"); return; }
       if (bookIds.length < 2) { toast("কমপক্ষে ২টি বই বেছে নিন"); return; }
-      db.packs.unshift({ id: Date.now(), title, price, old, bookIds, desc: "অ্যাডমিন প্যাকেজ", freeShip: !!document.getElementById("pkFree")?.checked });
+      db.packs.unshift({ id: Date.now(), title, price, old, bookIds, desc: "অ্যাডমিন প্যাকেজ", freeShip: !!document.getElementById("pkFree")?.checked, vertical: "book" });
       if (!live()) {
         db.packs.shift();
         persist();
@@ -5945,8 +6872,8 @@
     }
 
     function maybePromo() {
-      if (!db.promo.on || sessionStorage.getItem("bbh_promo_seen")) return;
-      sessionStorage.setItem("bbh_promo_seen", "1");
+      if (!db.promo.on || sessionStorage.getItem("cholo_promo_seen")) return;
+      sessionStorage.setItem("cholo_promo_seen", "1");
       const art = db.promo.image
         ? `<div class="promo-media"><img src="${db.promo.image}" alt=""></div>`
         : `<div class="promo-art">${esc(db.promo.title)}</div>`;
@@ -5956,7 +6883,7 @@
         <div class="body">
           <h2>${db.promo.title}</h2>
           <p class="author" style="margin:8px 0 14px">${db.promo.text}</p>
-          <button class="btn btn-primary btn-wide" onclick="coupon='${db.promo.code||""}';document.getElementById('promo').classList.remove('on');go('shop')">বই দেখুন</button>
+          <button class="btn btn-primary btn-wide" onclick="coupon='${db.promo.code||""}';document.getElementById('promo').classList.remove('on');go('shop')">ক্যাটালগ দেখুন</button>
         </div>`;
       setTimeout(() => document.getElementById("promo").classList.add("on"), 700);
     }
@@ -5965,8 +6892,12 @@
     updateBadge();
     fillTicker();
     fillNavCoupons();
-    renderHome();
-    history.replaceState({ name: "home", from: null }, "", "#/home");
+    syncVerticalUI();
+    fillNavCats();
+    if (!consumeSslReturn()) {
+      renderHome();
+      history.replaceState({ name: "home", from: null }, "", "#/home");
+    }
     window.addEventListener("popstate", ev => {
       const s = ev.state;
       if (s && s.name) go(s.name, s.id, true);
