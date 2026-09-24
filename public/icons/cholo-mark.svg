@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="16" fill="#7A2430"/>
+  <rect x="1.25" y="1.25" width="61.5" height="61.5" rx="14.75" stroke="#C4A15A" stroke-width="1.25"/>
+  <!-- woman symbol -->
+  <circle cx="45" cy="15.5" r="4.1" fill="#F6F0E4"/>
+  <path d="M37.4 23.2h15.2L56 42.6H34L37.4 23.2z" fill="#F6F0E4"/>
+  <path d="M38.2 42.2 36 49.6M47.2 42.2l2.4 7.6" stroke="#F6F0E4" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- man symbol -->
+  <circle cx="19.5" cy="15.5" r="4.1" fill="#E8D5A3"/>
+  <path d="M13.6 22.4h11.8c.7 0 1.2.6 1.2 1.3v9.6H12.4v-9.6c0-.7.5-1.3 1.2-1.3z" fill="#E8D5A3"/>
+  <path d="M15.6 33.2 11.2 47.8M23.4 33.2 28.6 49.2" stroke="#E8D5A3" stroke-width="2.7" stroke-linecap="round"/>
+  <path d="M13.6 26.2 9.4 31.4M25.4 26.6 31 37.2" stroke="#E8D5A3" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M51.6 27.4 44.8 36.8" stroke="#F6F0E4" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- basket toward the viewer -->
+  <path d="M27.2 38.2h18.2c.7 0 1.2.6 1.1 1.3l-2 8.4c-.2.8-.9 1.4-1.7 1.4H29.8c-.8 0-1.5-.6-1.7-1.4l-2-8.4c-.1-.7.4-1.3 1.1-1.3z" fill="#C4A15A"/>
+  <path d="M32.4 38.2c.7-3.1 3-5 5.1-5s4.4 1.9 5.1 5" stroke="#C4A15A" stroke-width="2" stroke-linecap="round"/>
+  <path d="M29.4 42h14.2M30 45.2h13" stroke="#7A2430" stroke-width=".8" stroke-linecap="round" opacity=".45"/>
+</svg>
