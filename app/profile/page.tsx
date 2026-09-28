@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { bn } from "@/lib/format";
-import { setUser, updateUser } from "@/store/slices/session-slice";
-import { setAuth, showToast } from "@/store/slices/ui-slice";
+import { updateUser } from "@/store/slices/session-slice";
+import { setAuth, setBye, showToast } from "@/store/slices/ui-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 function IcoUser() {
@@ -63,9 +63,7 @@ export default function ProfilePage() {
 
   function logout() {
     leftOnPurpose.current = true;
-    dispatch(setUser(null));
-    dispatch(showToast("লগআউট"));
-    router.push("/");
+    dispatch(setBye(user?.name.split(" ")[0] || ""));
   }
 
   if (admin) {

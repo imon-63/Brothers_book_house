@@ -10,6 +10,7 @@ type UiState = {
   chatOpen: boolean;
   toast: string;
   pendingWait: WaitItem | null;
+  bye: string | null;
 };
 
 const initialState: UiState = {
@@ -20,6 +21,7 @@ const initialState: UiState = {
   chatOpen: false,
   toast: "",
   pendingWait: null,
+  bye: null,
 };
 
 const uiSlice = createSlice({
@@ -47,11 +49,14 @@ const uiSlice = createSlice({
     setPendingWait(state, action: PayloadAction<WaitItem | null>) {
       state.pendingWait = action.payload;
     },
+    setBye(state, action: PayloadAction<string | null>) {
+      state.bye = action.payload;
+    },
     hydrateUi(state, action: PayloadAction<VerticalId>) {
       state.vertical = action.payload;
     },
   },
 });
 
-export const { setVertical, setMenu, setMiniCart, setAuth, setChat, showToast, setPendingWait, hydrateUi } = uiSlice.actions;
+export const { setVertical, setMenu, setMiniCart, setAuth, setChat, showToast, setPendingWait, setBye, hydrateUi } = uiSlice.actions;
 export const uiReducer = uiSlice.reducer;

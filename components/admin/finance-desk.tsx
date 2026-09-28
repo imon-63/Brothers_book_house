@@ -15,6 +15,15 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 type View = "sum" | "paper" | "buy" | "cash" | "pnl";
 
+const I = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2 } as const;
+const TABS: { id: View; label: string; hint: string; icon: React.ReactNode }[] = [
+  { id: "sum", label: "সারাংশ", hint: "বিল ও বকেয়া", icon: <svg {...I}><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6" /></svg> },
+  { id: "paper", label: "কাগজ", hint: "ইনভয়েস · রিসিট", icon: <svg {...I}><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v4h4M10 12h5M10 16h5" /></svg> },
+  { id: "buy", label: "ক্রয়", hint: "সাপ্লায়ার বিল", icon: <svg {...I}><path d="M6 6h15l-1.5 9h-12z" /><circle cx="9" cy="20" r="1.4" /><circle cx="18" cy="20" r="1.4" /><path d="M6 6 5 3H2" /></svg> },
+  { id: "cash", label: "ক্যাশবুক", hint: "দিনের ক্লোজ", icon: <svg {...I}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M16 15h2" /></svg> },
+  { id: "pnl", label: "লাভ-ক্ষতি", hint: "মার্জিন ও নেট", icon: <svg {...I}><circle cx="12" cy="12" r="8.5" /><path d="M12 7v10M14.5 9.5c-.5-1-1.5-1.5-2.5-1.5-1.4 0-2.5.8-2.5 2s1.1 1.7 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2.1-.6-2.6-1.6" /></svg> },
+];
+
 function noon(iso: string) {
   return dayRange(iso).start + 12 * 3600000;
 }
@@ -72,6 +81,15 @@ export function FinanceDesk() {
   const payable = supplierDue(books.purchases);
   const courier = courierDue(books.papers, books.cash);
   const pnlAll = pnlFor(books.papers, 0, now + 1);
+  const spark = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(now - (13 - i) * 86400000);
+    const key = isoDay(d.getTime());
+    const { start, end } = dayRange(key);
+    const sum = orders.filter((o) => o.status >= 0 && o.status !== 5 && o.at >= start && o.at < end).reduce((t, o) => t + o.total, 0);
+    return { key, sum, today: i === 13, label: d.toLocaleDateString("bn-BD", { day: "numeric", month: "short" }) };
+  });
+  const peak = Math.max(0, ...spark.map((d) => d.sum));
+  const month = orders.filter((o) => o.status >= 0 && o.status !== 5 && now - o.at < 30 * 86400000).reduce((t, o) => t + o.total, 0);
 
   const chips = (cur: string, set: (v: string) => void, items: [string, string][]) => (
     <div className="ord-chips">
@@ -83,21 +101,44 @@ export function FinanceDesk() {
 
   return (
     <div className="fin-page">
-      <div className="fin-hero">
-        <div>
-          <h2>হিসাবখাত</h2>
-          <p>বিক্রি কনফার্মে, টাকা ক্যাশবুকে, স্টক কেনা দামে। লাভ তখনই, যখন প্রতিটা পণ্যে কেনা দাম আছে।</p>
-          {chips(view, (v) => setView(v as View), [["sum", "সারাংশ"], ["paper", "কাগজ"], ["buy", "ক্রয়"], ["cash", "ক্যাশবুক"], ["pnl", "লাভ-ক্ষতি"]])}
+      <div className="fin-hero fin-hero-x">
+        <div className="fin-hero-copy">
+          <p className="fin-kick">চলো · হিসাবখাত</p>
+          <h2>৳{bn(cashNet.toLocaleString("en-IN"))}</h2>
+          <p className="fin-hero-sub">হাতে আছে · চার খাত মিলিয়ে</p>
+          <div className="fin-hero-pills">
+            <span className="up">▲ ৩০ দিনে ৳{bn(month.toLocaleString("en-IN"))}</span>
+            {due ? <span className="warn">COD বকেয়া ৳{bn(due.toLocaleString("en-IN"))}</span> : <span>কোনো বকেয়া নেই</span>}
+          </div>
+        </div>
+        <div className="fin-spark" aria-label="গত ১৪ দিনের বিক্রি">
+          <div className="fin-spark-head"><b>গত ১৪ দিন</b><small>সর্বোচ্চ ৳{bn(peak.toLocaleString("en-IN"))}</small></div>
+          <div className="fin-bars">
+            {spark.map((d, i) => (
+              <span key={d.key} className={d.today ? "today" : ""} title={`${d.label} · ৳${bn(d.sum)}`} style={{ ["--h" as string]: `${peak ? Math.max(4, (d.sum / peak) * 100) : 4}%`, animationDelay: `${i * 35}ms` }}>
+                <i />
+              </span>
+            ))}
+          </div>
+          <div className="fin-spark-axis"><small>{spark[0]?.label}</small><small>আজ</small></div>
         </div>
       </div>
+      <nav className="fin-tabs" aria-label="হিসাব">
+        {TABS.map((t) => (
+          <button key={t.id} type="button" className={view === t.id ? "on" : ""} onClick={() => setView(t.id)}>
+            <span className="fin-tab-ico">{t.icon}</span>
+            <span><b>{t.label}</b><small>{t.hint}</small></span>
+          </button>
+        ))}
+      </nav>
 
       {view === "sum" ? (
         <>
           {chips(range, setRange, [["today", "আজ"], ["7", "৭ দিন"], ["30", "৩০ দিন"], ["all", "সব"]])}
           <div className="fin-kpis">
-            <div className="fin-kpi ok"><span>কাস্টমার বিল</span><b>৳{bn(billed)}</b><small>{bn(list.length)}টি কনফার্মড অর্ডার</small></div>
-            <div className="fin-kpi ok"><span>হাতে টাকা</span><b>৳{bn(cashNet)}</b><small>চার খাত মিলিয়ে · SSL ফি {bn(fee)}%</small></div>
-            <div className={`fin-kpi ${due ? "warn" : "ok"}`}><span>COD বকেয়া</span><b>৳{bn(due)}</b><small>{due ? "পৌঁছালে হাতে আসবে" : "কোনো বকেয়া নেই"}</small></div>
+            <div className="fin-kpi ok"><i className="fin-kpi-ico">৳</i><span>কাস্টমার বিল</span><b>৳{bn(billed)}</b><small>{bn(list.length)}টি কনফার্মড অর্ডার</small></div>
+            <div className="fin-kpi ok"><i className="fin-kpi-ico">◎</i><span>হাতে টাকা</span><b>৳{bn(cashNet)}</b><small>চার খাত মিলিয়ে · SSL ফি {bn(fee)}%</small></div>
+            <div className={`fin-kpi ${due ? "warn" : "ok"}`}><i className="fin-kpi-ico">⏳</i><span>COD বকেয়া</span><b>৳{bn(due)}</b><small>{due ? "পৌঁছালে হাতে আসবে" : "কোনো বকেয়া নেই"}</small></div>
           </div>
           {missingCost ? (
             <div className="fin-notes"><div className="fin-note">{bn(missingCost)}টি পণ্যে কেনা দাম নেই। লাভের সংখ্যা বন্ধ — আগে কেনা দাম দিন। বিল ও বকেয়া উপরে আছে।</div></div>
@@ -375,7 +416,7 @@ function CashBook({
     <>
       <div className="fin-kpis fin-kpis-4">
         {balances.map((b) => (
-          <div key={b.account} className="fin-kpi"><span>{b.account}</span><b>৳{bn(b.amount)}</b><small>সব দিন মিলিয়ে</small></div>
+          <div key={b.account} className={`fin-kpi fin-acct a-${CASH_ACCOUNTS.indexOf(b.account)}`}><i className="fin-kpi-ico">{b.account.slice(0, 1)}</i><span>{b.account}</span><b>৳{bn(b.amount)}</b><small>সব দিন মিলিয়ে</small></div>
         ))}
       </div>
       <section className="fin-card">
@@ -472,13 +513,31 @@ function PnlView({
       ) : (
         <div className="fin-kpis">
           <div className="fin-kpi"><span>বিক্রি</span><b>৳{bn(pnl.sales)}</b><small>কুপন বাদ দিলে ৳{bn(salesNet)}</small></div>
-          <div className="fin-kpi ok"><span>গ্রস প্রফিট</span><b>৳{bn(gross)}</b><small>{bn(margin)}% · বিক্রির উপর</small></div>
+          <div className="fin-kpi ok fin-kpi-ring"><span>গ্রস প্রফিট</span><b>৳{bn(gross)}</b><small>{bn(margin)}% · বিক্রির উপর</small><i className="fin-ring" style={{ ["--p" as string]: Math.max(0, Math.min(100, margin)) }}><em>{bn(margin)}%</em></i></div>
           <div className={`fin-kpi ${net >= 0 ? "ok" : "warn"}`}><span>নেট</span><b>৳{bn(net)}</b><small>শিপ, কুরিয়ার, ফি, ফেরতের লস</small></div>
         </div>
       )}
       <section className="fin-card">
         <h3>{label} হিসাব</h3>
         <p className="sub">শুধু স্ন্যাপশটসহ ইনভয়েস ও ক্রেডিট নোট। পেন্ডিং গোনা হয় না। {pnl.skipped ? `${bn(pnl.skipped)}টিতে কেনা দামের স্ন্যাপশট নেই — সেগুলো লাভে বাদ।` : `${bn(pnl.invoices)} ইনভয়েস · ${bn(pnl.credits)} ক্রেডিট নোট।`}</p>
+        {costsReady && pnl.sales > 0 ? (() => {
+          const other = Math.max(0, pnl.coupon + pnl.courier + pnl.sslFee + pnl.courierLoss - pnl.shipIn);
+          const total = Math.max(1, pnl.cogs + other + Math.max(0, net));
+          return (
+            <div className="fin-flow">
+              <div className="fin-flow-bar">
+                <i className="c" style={{ width: `${(pnl.cogs / total) * 100}%` }} />
+                <i className="o" style={{ width: `${(other / total) * 100}%` }} />
+                <i className="n" style={{ width: `${(Math.max(0, net) / total) * 100}%` }} />
+              </div>
+              <div className="fin-flow-leg">
+                <span><em className="c" />কেনা দাম ৳{bn(pnl.cogs)}</span>
+                <span><em className="o" />অন্যান্য খরচ ৳{bn(other)}</span>
+                <span><em className="n" />নেট ৳{bn(net)}</span>
+              </div>
+            </div>
+          );
+        })() : null}
         {costsReady ? (
           <div className="fin-led">
             <div className="r plus"><span>বিক্রি</span><b className="v">৳{bn(pnl.sales)}</b></div>

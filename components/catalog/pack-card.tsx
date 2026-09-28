@@ -50,7 +50,7 @@ export function PackCard({ pack }: { pack: Pack }) {
         ) : null}
       </div>
       <div className="card-body">
-        <h3>{pack.title}</h3>
+        <h3 onClick={() => router.push(`/pack/${pack.id}`)} style={{ cursor: "pointer" }}>{pack.title}</h3>
         <div className="author">{bn(books.length)}টি বই{oos ? " · স্টক আউট" : ""}</div>
         <div className="card-foot">
           <div className="price-switch">

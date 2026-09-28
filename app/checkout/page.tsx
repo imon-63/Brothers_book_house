@@ -9,6 +9,7 @@ import { allDistricts, divOfDist, geoList } from "@/lib/geo";
 import { snapshotLines, stockShort, stockUnits } from "@/lib/orders/ledger";
 import { cartFreeShip, couponOff, quoteCheckout, shipNote } from "@/lib/demo/pricing";
 import { bn } from "@/lib/format";
+import { nextOrderId, rememberPlaced } from "@/lib/demo/placed";
 import { SSL_API, SSL_DONE, SSL_PENDING, sslQuery, type SslPending } from "@/lib/demo/ssl";
 import { clearCart } from "@/store/slices/cart-slice";
 import { holdStock } from "@/store/slices/shop-slice";
@@ -342,7 +343,7 @@ export default function CheckoutPage() {
       }));
       dispatch(clearCart());
       dispatch(showToast("অর্ডার নিশ্চিত হয়েছে"));
-      sessionStorage.setItem("cholo_placed", "1");
+      rememberPlaced(nextOrderId(orderCount), values.cPhone.trim());
       router.replace("/orders");
     }, 1600);
   }

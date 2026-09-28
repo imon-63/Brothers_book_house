@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { catTree, shopHref } from "@/lib/catalog/cats";
 import { guessCost } from "@/lib/catalog/cost";
@@ -20,7 +20,7 @@ import { commitSslPaid } from "@/lib/demo/ssl";
 import { hydrateOrders } from "@/store/slices/order-slice";
 import { hydrateShop, pushChat, type ShopState } from "@/store/slices/shop-slice";
 import { hydrateSession, registerUser, setPassword, setUser, toggleWait } from "@/store/slices/session-slice";
-import { hydrateUi, setAuth, setChat, setMenu, setMiniCart, setPendingWait, setVertical, showToast } from "@/store/slices/ui-slice";
+import { hydrateUi, setAuth, setBye, setChat, setMenu, setMiniCart, setPendingWait, setVertical, showToast } from "@/store/slices/ui-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { SearchBox } from "@/components/layout/search-box";
 import { IconCart, VerticalIcon } from "@/components/icons";
@@ -61,7 +61,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
   const [catsOn, setCatsOn] = useState(false);
   const [navGen, setNavGen] = useState(0);
   const [promo, setPromo] = useState(false);
-  const [gate, setGate] = useState<string | null>(null);
+  const [gate, setGate] = useState<{ name: string; admin: boolean } | null>(null);
   const gateToast = useRef("");
   const vertical = useAppSelector((s) => s.ui.vertical);
   const prevVert = useRef(vertical);
@@ -71,6 +71,8 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
   const authOpen = useAppSelector((s) => s.ui.authOpen);
   const chatOpen = useAppSelector((s) => s.ui.chatOpen);
   const toast = useAppSelector((s) => s.ui.toast);
+  const bye = useAppSelector((s) => s.ui.bye);
+  const lastPress = useRef<{ el: HTMLElement; at: number } | null>(null);
   const lines = useAppSelector((s) => s.cart.lines);
   const user = useAppSelector((s) => s.session.users.find((u) => u.id === s.session.userId) ?? null);
   const users = useAppSelector((s) => s.session.users);
@@ -128,7 +130,12 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
         dispatch(hydrateShop(raw.shop));
       }
     } catch { /* keep seed */ }
-    commitSslPaid(dispatch);
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null") as { orders?: DemoOrder[] } | null;
+      commitSslPaid(dispatch, saved?.orders?.length ?? SEED_ORDERS.length);
+    } catch {
+      commitSslPaid(dispatch, SEED_ORDERS.length);
+    }
     setReady(true);
     if (!sessionStorage.getItem("cholo_promo_seen")) setPromo(true);
   }, [dispatch]);
@@ -212,8 +219,33 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const press = (e: Event) => {
+      const el = (e.target as HTMLElement | null)?.closest<HTMLElement>("button, .btn, label.tog, label.pk-switch");
+      if (el) lastPress.current = { el, at: Date.now() };
+    };
+    const submit = (e: Event) => {
+      const el = (e as SubmitEvent).submitter as HTMLElement | null;
+      if (el) lastPress.current = { el, at: Date.now() };
+    };
+    document.addEventListener("click", press, true);
+    document.addEventListener("submit", submit, true);
+    return () => {
+      document.removeEventListener("click", press, true);
+      document.removeEventListener("submit", submit, true);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => dispatch(showToast("")), 1600);
+    const hit = lastPress.current;
+    if (hit && Date.now() - hit.at < 800 && toastTone(toast) === "ok" && hit.el.isConnected) {
+      hit.el.classList.remove("btn-ok");
+      void hit.el.offsetWidth;
+      hit.el.classList.add("btn-ok");
+      window.setTimeout(() => hit.el.classList.remove("btn-ok"), 900);
+    }
+    lastPress.current = null;
+    const t = setTimeout(() => dispatch(showToast("")), 2200);
     return () => clearTimeout(t);
   }, [toast, dispatch]);
 
@@ -227,6 +259,12 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
     if (next) dispatch(setVertical(next.id));
   }, [ready, user, vertical, hiddenVerts, dispatch]);
 
+  const isAdmin = user?.role === "admin";
+
+  useEffect(() => {
+    if (ready && isAdmin && !path.startsWith("/admin")) router.replace("/admin");
+  }, [ready, isAdmin, path, router]);
+
   function pickVertical(id: VerticalId) {
     dispatch(setVertical(id));
     router.push("/");
@@ -235,6 +273,28 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
   function copyCoupon(code: string) {
     navigator.clipboard?.writeText(code).catch(() => undefined);
     dispatch(showToast(`${code} কপি হয়েছে · চেকআউটে বসান`));
+  }
+
+  const overlays = (
+    <Fragment key="overlays">
+      {authOpen ? <AuthModal onEnter={(name, toast, admin) => { gateToast.current = toast; setGate({ name, admin }); }} /> : null}
+      {gate ? <LoginGate name={gate.name} admin={gate.admin} onDone={() => { setGate(null); if (gateToast.current) { dispatch(showToast(gateToast.current)); gateToast.current = ""; } }} /> : null}
+      <Toast text={toast} />
+      {bye != null ? <ByeGate name={bye} onLeave={() => { dispatch(setUser(null)); router.push("/"); }} onDone={() => { dispatch(setBye(null)); dispatch(showToast("লগআউট হয়েছে · আবার আসবেন")); }} /> : null}
+    </Fragment>
+  );
+
+  if (!ready && path.startsWith("/admin")) {
+    return <div className="adm-boot"><img src="/icons/cholo-mark.svg" alt="চলো" width={64} height={64} /></div>;
+  }
+
+  if (isAdmin) {
+    return (
+      <>
+        <main className="adm-root">{path.startsWith("/admin") ? children : <div className="adm-boot"><img src="/icons/cholo-mark.svg" alt="চলো" width={64} height={64} /></div>}</main>
+        {overlays}
+      </>
+    );
   }
 
   return (
@@ -435,8 +495,6 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
         ) : null}
         <ChatComposer placeholder="মেসেজ লিখুন..." onSend={(text) => dispatch(pushChat({ id: threadId, name: user?.name || "গেস্ট", from: "user", text }))} />
       </div>
-      {authOpen ? <AuthModal onEnter={(name, toast) => { gateToast.current = toast; setGate(name); }} /> : null}
-      {gate ? <LoginGate name={gate} onDone={() => { setGate(null); if (gateToast.current) { dispatch(showToast(gateToast.current)); gateToast.current = ""; } }} /> : null}
       {promo && shop.promo.on ? (
         <div className="overlay on" onClick={(e) => { if (e.target === e.currentTarget) { setPromo(false); sessionStorage.setItem("cholo_promo_seen", "1"); } }}>
           <div className="promo-card">
@@ -450,7 +508,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       ) : null}
-      {toast ? <div className="toast show">{toast}</div> : null}
+      {overlays}
     </>
   );
 }
@@ -656,30 +714,103 @@ type LoginValues = { id: string; password: string };
 type SignupValues = { name: string; phone: string; email: string; password: string };
 type ResetValues = { id: string; code: string; password: string };
 
-function LoginGate({ name, onDone }: { name: string; onDone: () => void }) {
+function toastTone(text: string): "ok" | "warn" | "off" {
+  if (/(দিন|ভুল|নেই|পারবেন না|আগে |অন্তত|কম দিন|পাওয়া যায়নি)/.test(text) && !/(হয়েছে|বসেছে|সেভ)/.test(text)) return "warn";
+  if (/(মুছে|সরানো|সরান|লুকানো|লগআউট|বাতিল)/.test(text)) return "off";
+  return "ok";
+}
+
+function Toast({ text }: { text: string }) {
+  const [cur, setCur] = useState("");
+  const [out, setOut] = useState(false);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (text) {
+      setCur(text);
+      setOut(false);
+      setN((k) => k + 1);
+      return;
+    }
+    setOut(true);
+    const t = window.setTimeout(() => setCur(""), 320);
+    return () => window.clearTimeout(t);
+  }, [text]);
+  if (!cur) return null;
+  const tone = toastTone(cur);
+  return (
+    <div className={`toast show t-${tone}${out ? " out" : ""}`} key={n} role="status" aria-live="polite">
+      <span className="t-ico" aria-hidden="true">
+        {tone === "ok" ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path className="t-tick" d="M5 12.5 10 17.5 19 7.5" /></svg>
+        ) : tone === "warn" ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 7v6" /><path d="M12 17h.01" /></svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 12h12" /></svg>
+        )}
+      </span>
+      <span className="t-txt">{cur}</span>
+      <i className="t-bar" aria-hidden="true" />
+    </div>
+  );
+}
+
+function ByeGate({ name, onLeave, onDone }: { name: string; onLeave: () => void; onDone: () => void }) {
+  const [phase, setPhase] = useState<"in" | "out">("in");
+  const leave = useRef(onLeave);
+  const done = useRef(onDone);
+  leave.current = onLeave;
+  done.current = onDone;
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const a = window.setTimeout(() => leave.current(), reduce ? 120 : 900);
+    const b = window.setTimeout(() => setPhase("out"), reduce ? 260 : 1500);
+    const c = window.setTimeout(() => done.current(), reduce ? 500 : 1950);
+    return () => { window.clearTimeout(a); window.clearTimeout(b); window.clearTimeout(c); };
+  }, []);
+  return (
+    <div className={`bye-gate${phase === "out" ? " bye" : ""}`} role="status" aria-live="polite" aria-label="লগআউট হচ্ছে">
+      <div className="bye-stage">
+        <div className="bye-mark">
+          <img src="/icons/cholo-mark.svg" alt="" width={84} height={84} />
+          <span className="bye-wave" aria-hidden="true">👋</span>
+        </div>
+        <small>চলো</small>
+        <h2>আবার দেখা হবে{name ? `, ${name}` : ""}</h2>
+        <p>নিরাপদে লগআউট হচ্ছে…</p>
+        <div className="bye-dots" aria-hidden="true"><i /><i /><i /></div>
+      </div>
+    </div>
+  );
+}
+
+function LoginGate({ name, admin, onDone }: { name: string; admin?: boolean; onDone: () => void }) {
   const [bye, setBye] = useState(false);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const hold = window.setTimeout(() => setBye(true), reduce ? 280 : 1680);
-    const end = window.setTimeout(() => doneRef.current(), reduce ? 520 : 2140);
+    const hold = window.setTimeout(() => setBye(true), reduce ? 280 : admin ? 2100 : 1680);
+    const end = window.setTimeout(() => doneRef.current(), reduce ? 520 : admin ? 2600 : 2140);
     return () => {
       window.clearTimeout(hold);
       window.clearTimeout(end);
     };
-  }, []);
+  }, [admin]);
   return (
-    <div className={`land-gate${bye ? " bye" : ""}`} role="status" aria-live="polite" aria-label={`স্বাগতম, ${name}`}>
+    <div className={`land-gate${admin ? " admin" : ""}${bye ? " bye" : ""}`} role="status" aria-live="polite" aria-label={`স্বাগতম, ${name}`}>
+      <span className="land-rays" aria-hidden="true" />
+      <span className="land-sparks" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ ["--i" as string]: i }} />)}</span>
       <div className="land-stage">
         <div className="land-mark">
           <span className="land-orbit" />
+          <span className="land-orbit two" />
           <img src="/icons/cholo-mark.svg" alt="" width={92} height={92} />
+          {admin ? <span className="land-crown" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></svg></span> : null}
         </div>
         <div className="land-copy">
-          <small>চলো</small>
+          <small>{admin ? "চলো · অ্যাডমিন ডেস্ক" : "চলো"}</small>
           <h2>স্বাগতম, {name}</h2>
-          <p>কিনে ফেলি</p>
+          <p>{admin ? "আপনার ডেস্ক প্রস্তুত হচ্ছে…" : "চলো, কিনে ফেলি"}</p>
           <div className="land-bar" aria-hidden="true"><i /></div>
         </div>
       </div>
@@ -687,7 +818,7 @@ function LoginGate({ name, onDone }: { name: string; onDone: () => void }) {
   );
 }
 
-function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void }) {
+function AuthModal({ onEnter }: { onEnter: (name: string, toast: string, admin: boolean) => void }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const users = useAppSelector((s) => s.session.users);
@@ -759,7 +890,7 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void
     }
     dispatch(setUser(hit.id));
     close();
-    onEnter(hit.name.split(" ")[0] || "চলো", keepPending(hit.id) ? "ভবিষ্যৎ অর্ডারে রাখা হয়েছে" : "");
+    onEnter(hit.name.split(" ")[0] || "চলো", keepPending(hit.id) ? "ভবিষ্যৎ অর্ডারে রাখা হয়েছে" : "", hit.role === "admin");
     if (hit.role === "admin") router.push("/admin");
   }
 
@@ -778,7 +909,7 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void
     const id = Math.max(0, ...users.map((u) => u.id)) + 1;
     dispatch(registerUser({ name: who, email: mail, phone: mobile, password: pw }));
     close();
-    onEnter(who.split(" ")[0] || "চলো", keepPending(id) ? "ভবিষ্যৎ অর্ডারে রাখা হয়েছে" : "");
+    onEnter(who.split(" ")[0] || "চলো", keepPending(id) ? "ভবিষ্যৎ অর্ডারে রাখা হয়েছে" : "", false);
   }
 
   function onReset(values: ResetValues) {
@@ -808,11 +939,20 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void
 
   return (
     <div className="overlay on" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-      <div className="modal">
+      <div className="modal auth-modal">
+        <div className="auth-head">
+          <button className="auth-x" type="button" aria-label="বন্ধ" onClick={close}>×</button>
+          <img src="/icons/cholo-mark.svg" alt="চলো" width={56} height={56} />
+          <div>
+            <small>চলো · কিনে ফেলি</small>
+            <h2>{view === "reset" ? "পাসওয়ার্ড রিসেট" : view === "signup" ? "নতুন অ্যাকাউন্ট" : "আবার স্বাগতম"}</h2>
+            <p>{view === "reset" ? "কোড দিয়ে নতুন পাসওয়ার্ড সেট করুন" : view === "signup" ? "এক মিনিটে অ্যাকাউন্ট খুলুন" : "লগইন করে অর্ডার ও অফার দেখুন"}</p>
+          </div>
+        </div>
+        <div className="auth-body">
         {view === "reset" ? (
           <form onSubmit={resetForm.handleSubmit(onReset)} noValidate>
-            <h2 style={{ marginBottom: 8 }}>পাসওয়ার্ড রিসেট</h2>
-            <p className="author">ইমেইল অথবা ফোনে কোড যাবে (ডেমো কোড: ১২৩৪)</p>
+            <p className="author" style={{ marginBottom: 10 }}>ইমেইল অথবা ফোনে কোড যাবে (ডেমো কোড: ১২৩৪)</p>
             <label>ইমেইল অথবা মোবাইল</label>
             <Field icon={<IcoMail />} autoComplete="username" warn={resetErr.id?.message} placeholder="ইমেইল বা ফোন" {...resetForm.register("id", { required: "ইমেইল অথবা মোবাইল দিন", onChange: () => resetForm.clearErrors("id") })} />
             <button className="btn btn-gold btn-wide" style={{ margin: "10px 0" }} type="button" onClick={() => dispatch(showToast("কোড পাঠানো হয়েছে · ডেমো: ১২৩৪"))}>কোড পাঠান</button>
@@ -834,7 +974,17 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void
             <div className="auth-pane" key={view}>
             {view === "login" ? (
               <>
-                <div className="hint">ডেমো ইউজার: rafi@gmail.com / 123456<br />অ্যাডমিন: admin@cholo.shop / admin123</div>
+                <div className="auth-demo">
+                  <span>ডেমো অ্যাকাউন্ট · চাপ দিলেই পূরণ হবে</span>
+                  <div>
+                    <button type="button" onClick={() => { loginForm.reset({ id: "rafi@gmail.com", password: "123456" }); }}>
+                      <b>ইউজার</b><small>rafi@gmail.com</small>
+                    </button>
+                    <button type="button" className="adm-demo" onClick={() => { loginForm.reset({ id: "admin@cholo.shop", password: "admin123" }); }}>
+                      <b>অ্যাডমিন</b><small>admin@cholo.shop</small>
+                    </button>
+                  </div>
+                </div>
                 <label>ইমেইল অথবা মোবাইল</label>
                 <Field icon={<IcoMail />} autoComplete="username" warn={loginErr.id?.message} placeholder="ইমেইল বা 01xxxxxxxxx" {...loginForm.register("id", { required: "ইমেইল অথবা মোবাইল দিন", onChange: () => loginForm.clearErrors("id") })} />
                 <label>পাসওয়ার্ড</label>
@@ -857,9 +1007,9 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void
             )}
             </div>
             </div>
-            <button className="btn btn-ghost btn-wide" style={{ marginTop: 8 }} type="button" onClick={close}>বন্ধ</button>
           </form>
         )}
+        </div>
       </div>
     </div>
   );

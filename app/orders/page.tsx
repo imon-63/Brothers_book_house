@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PaperView } from "@/components/books/paper";
 import { OrderFacts, OrderSteps, orderGlance } from "@/components/orders/delivery-track";
 import type { Paper } from "@/lib/books/ledger";
+import { clearCheer, guestOrderKeys } from "@/lib/demo/placed";
 import { bn } from "@/lib/format";
 import { setAuth } from "@/store/slices/ui-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -12,25 +13,61 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 export default function OrdersPage() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.session.users.find((u) => u.id === s.session.userId) ?? null);
-  const orders = useAppSelector((s) => s.orders.orders.filter((o) => user && (o.email === user.email || o.phone === user.phone)));
+  const all = useAppSelector((s) => s.orders.orders);
   const papers = useAppSelector((s) => s.books.papers);
+  const [guest, setGuest] = useState(guestOrderKeys);
+  const [cheerId, setCheerId] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Paper | null>(null);
-  const shown = openId ?? orders[0]?.id ?? null;
+
+  useEffect(() => {
+    const keys = guestOrderKeys();
+    setGuest(keys);
+    if (keys.cheerId) {
+      setCheerId(keys.cheerId);
+      clearCheer();
+    }
+  }, []);
+
+  const orders = useMemo(() => {
+    if (user) return all.filter((o) => o.email === user.email || o.phone === user.phone);
+    const digits = guest.phone;
+    return all.filter((o) => guest.ids.includes(o.id) || (digits && o.phone.replace(/\D/g, "") === digits));
+  }, [all, user, guest]);
+
+  const shown = openId ?? cheerId ?? orders[0]?.id ?? null;
+  const cheer = orders.find((o) => o.id === cheerId);
 
   return (
     <div className="wrap" style={{ paddingBottom: 48 }}>
       <div className="order-col">
       <p className="crumb">হোম / <b>আমার অর্ডার</b></p>
       <h2 style={{ marginBottom: 16 }}>আমার অর্ডার</h2>
-      {!user ? (
-        <div className="empty">
-          <p className="serif">লগইন করলে অর্ডার এখানে দেখাবে।</p>
-          <button className="btn btn-primary" type="button" style={{ marginTop: 12 }} onClick={() => dispatch(setAuth(true))}>লগইন</button>
-          <p style={{ marginTop: 12 }}><Link href="/track">অর্ডার আইডি দিয়ে খুঁজুন</Link></p>
+      {cheer ? (
+        <div className="cheer" role="status">
+          <span className="cheer-mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 13.2 9.2 17.5 19 7" /></svg>
+          </span>
+          <div>
+            <small>চলো</small>
+            <h3>অর্ডার হয়েছে</h3>
+            <p>ধন্যবাদ, {cheer.name.split(" ")[0]}। আপনার অর্ডার <b>{cheer.id}</b></p>
+          </div>
         </div>
-      ) : !orders.length ? (
-        <div className="empty"><p className="serif">এখনো কোনো অর্ডার নেই।</p></div>
+      ) : null}
+      {!orders.length ? (
+        <div className="empty">
+          {user ? (
+            <p className="serif">এখনো কোনো অর্ডার নেই।</p>
+          ) : (
+            <>
+              <p className="serif">এই সেশনে কোনো অর্ডার নেই।</p>
+              <p className="author" style={{ marginTop: 6 }}>আগের অর্ডার দেখতে লগইন করুন, অথবা আইডি দিয়ে খুঁজুন।</p>
+              <button className="btn btn-primary" type="button" style={{ marginTop: 12 }} onClick={() => dispatch(setAuth(true))}>লগইন</button>
+              <p style={{ marginTop: 12 }}><Link href="/track">অর্ডার আইডি দিয়ে খুঁজুন</Link></p>
+            </>
+          )}
+        </div>
       ) : (
         orders.map((o) => {
           const g = orderGlance(o);

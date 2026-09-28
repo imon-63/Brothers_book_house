@@ -1,4 +1,5 @@
 import type { DemoOrder } from "@/lib/demo/accounts";
+import { nextOrderId, rememberPlaced } from "@/lib/demo/placed";
 import { clearCart } from "@/store/slices/cart-slice";
 import { placeOrder } from "@/store/slices/order-slice";
 import { holdStock } from "@/store/slices/shop-slice";
@@ -22,7 +23,7 @@ export function sslQuery() {
   return { ssl, tran_id: q.get("tran_id") || "" };
 }
 
-export function commitSslPaid(dispatch: AppDispatch) {
+export function commitSslPaid(dispatch: AppDispatch, orderCount: number) {
   const q = sslQuery();
   if (!q || q.ssl !== "success") return false;
   if (sessionStorage.getItem(SSL_DONE)) return true;
@@ -34,10 +35,11 @@ export function commitSslPaid(dispatch: AppDispatch) {
   sessionStorage.setItem(SSL_DONE, pending.tran_id);
   sessionStorage.removeItem(SSL_PENDING);
   const { units, tran_id: _tran, ...order } = pending;
+  const id = nextOrderId(orderCount);
   dispatch(holdStock(units));
   dispatch(placeOrder({ ...order, pay: "SSLCOMMERZ", stockHeld: true }));
   dispatch(clearCart());
   dispatch(showToast("পেমেন্ট হয়েছে"));
-  sessionStorage.setItem("cholo_placed", "1");
+  rememberPlaced(id, order.phone);
   return true;
 }
