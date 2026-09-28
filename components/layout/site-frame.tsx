@@ -16,6 +16,7 @@ import { hydrateCart, setQty } from "@/store/slices/cart-slice";
 import { seedFromOrders, type BooksState } from "@/lib/books/ledger";
 import { DEMO_USERS, SEED_ORDERS, type DemoOrder, type DemoUser } from "@/lib/demo/accounts";
 import { hydrateBooks } from "@/store/slices/books-slice";
+import { commitSslPaid } from "@/lib/demo/ssl";
 import { hydrateOrders } from "@/store/slices/order-slice";
 import { hydrateShop, pushChat, type ShopState } from "@/store/slices/shop-slice";
 import { hydrateSession, registerUser, setPassword, setUser, toggleWait } from "@/store/slices/session-slice";
@@ -54,6 +55,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
   const ring = useRef<SVGCircleElement>(null);
   const prevCount = useRef(0);
   const prevPath = useRef("/");
+  const beforeCheckout = useRef("/");
   const [ready, setReady] = useState(false);
   const [dealClock, setDealClock] = useState(0);
   const [catsOn, setCatsOn] = useState(false);
@@ -126,6 +128,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
         dispatch(hydrateShop(raw.shop));
       }
     } catch { /* keep seed */ }
+    commitSslPaid(dispatch);
     setReady(true);
     if (!sessionStorage.getItem("cholo_promo_seen")) setPromo(true);
   }, [dispatch]);
@@ -166,7 +169,11 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
 
   useLayoutEffect(() => {
     const from = prevPath.current;
-    setFromLabel(pageName(from));
+    if (path.startsWith("/checkout") && !from.startsWith("/checkout")) beforeCheckout.current = from;
+    const placed = path.startsWith("/orders") && sessionStorage.getItem("cholo_placed") === "1";
+    if (placed) sessionStorage.removeItem("cholo_placed");
+    const shown = placed ? beforeCheckout.current : from;
+    setFromLabel(pageName(shown));
     setPageIn(path.startsWith("/checkout") && !from.startsWith("/checkout") ? "from-right" : "");
     prevPath.current = path;
   }, [path]);
@@ -686,17 +693,50 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void
   const users = useAppSelector((s) => s.session.users);
   const pending = useAppSelector((s) => s.ui.pendingWait);
   const [view, setView] = useState<"login" | "signup" | "reset">("login");
+  const [motion, setMotion] = useState<"" | "to-signup" | "to-login">("");
+  const swapRef = useRef<HTMLDivElement>(null);
+  const lockH = useRef<number | null>(null);
   const loginForm = useForm<LoginValues>({ defaultValues: { id: "", password: "" } });
   const signupForm = useForm<SignupValues>({ defaultValues: { name: "", phone: "", email: "", password: "" } });
   const resetForm = useForm<ResetValues>({ defaultValues: { id: "", code: "", password: "" } });
 
   function close() { dispatch(setAuth(false)); }
   function go(next: "login" | "signup" | "reset") {
+    if (next === view) return;
+    const swapping = (view === "login" && next === "signup") || (view === "signup" && next === "login");
+    if (swapping && swapRef.current) {
+      lockH.current = swapRef.current.offsetHeight;
+      setMotion(next === "signup" ? "to-signup" : "to-login");
+    } else {
+      lockH.current = null;
+      setMotion("");
+    }
     setView(next);
     loginForm.clearErrors();
     signupForm.clearErrors();
     resetForm.clearErrors();
   }
+
+  useLayoutEffect(() => {
+    const el = swapRef.current;
+    const from = lockH.current;
+    lockH.current = null;
+    if (!el || from == null) return;
+    const to = el.scrollHeight;
+    el.style.height = `${from}px`;
+    const frame = requestAnimationFrame(() => {
+      el.style.height = `${to}px`;
+    });
+    const done = (e: TransitionEvent) => {
+      if (e.propertyName !== "height") return;
+      el.style.height = "";
+    };
+    el.addEventListener("transitionend", done);
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener("transitionend", done);
+    };
+  }, [view]);
 
   function keepPending(userId: number) {
     if (!pending) return false;
@@ -785,10 +825,13 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void
           </form>
         ) : (
           <form onSubmit={view === "login" ? loginForm.handleSubmit(onLogin) : signupForm.handleSubmit(onSignup)} noValidate>
-            <div className="tabs">
+            <div className={`tabs auth-tabs${view === "signup" ? " sign" : ""}`}>
+              <i className="glide" aria-hidden="true" />
               <button type="button" className={view === "login" ? "on" : ""} onClick={() => go("login")}>লগইন</button>
               <button type="button" className={view === "signup" ? "on" : ""} onClick={() => go("signup")}>সাইন আপ</button>
             </div>
+            <div ref={swapRef} className={`auth-swap${motion ? ` ${motion}` : ""}`}>
+            <div className="auth-pane" key={view}>
             {view === "login" ? (
               <>
                 <div className="hint">ডেমো ইউজার: rafi@gmail.com / 123456<br />অ্যাডমিন: admin@cholo.shop / admin123</div>
@@ -812,6 +855,8 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string) => void
                 <button className="btn btn-primary btn-wide" style={{ marginTop: 14 }} type="submit">অ্যাকাউন্ট খুলুন</button>
               </>
             )}
+            </div>
+            </div>
             <button className="btn btn-ghost btn-wide" style={{ marginTop: 8 }} type="button" onClick={close}>বন্ধ</button>
           </form>
         )}

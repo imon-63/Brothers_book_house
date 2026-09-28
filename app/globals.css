@@ -2508,6 +2508,39 @@ th { background: #efe6d4; font-size: 13px; }
 .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
 .tabs button { flex: 1; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 8px; cursor: pointer; font-weight: 600; }
 .tabs button.on { background: var(--burgundy); color: #fff; border-color: var(--burgundy); }
+.auth-tabs {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  padding: 4px; background: #f4efe6; border-radius: 999px;
+}
+.auth-tabs .glide {
+  position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px;
+  width: calc(50% - 4px); border-radius: 999px; background: var(--burgundy);
+  box-shadow: 0 6px 14px rgba(122, 36, 48, .22);
+  transition: transform .42s cubic-bezier(.22, .8, .24, 1);
+}
+.auth-tabs.sign .glide { transform: translateX(100%); }
+.auth-tabs button {
+  position: relative; z-index: 1; border: 0; background: transparent;
+  color: var(--muted); transition: color .28s ease;
+}
+.auth-tabs button.on { background: transparent; color: #fff; border-color: transparent; }
+.auth-swap { overflow: hidden; transition: height .42s cubic-bezier(.22, .8, .24, 1); }
+.auth-pane { animation: authIn .42s cubic-bezier(.22, .8, .24, 1) both; }
+.auth-swap.to-signup .auth-pane { animation-name: authToSign; }
+.auth-swap.to-login .auth-pane { animation-name: authToLog; }
+@keyframes authIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes authToSign {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes authToLog {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-tabs .glide, .auth-swap, .auth-tabs button { transition: none; }
+  .auth-pane, .auth-swap.to-signup .auth-pane, .auth-swap.to-login .auth-pane { animation: none; }
+}
 .hint { background: #efe6d4; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; color: #5a3a30; }
 
 .promo-card {

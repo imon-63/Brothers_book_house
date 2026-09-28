@@ -9,6 +9,7 @@ import { allDistricts, divOfDist, geoList } from "@/lib/geo";
 import { snapshotLines, stockShort, stockUnits } from "@/lib/orders/ledger";
 import { cartFreeShip, couponOff, quoteCheckout, shipNote } from "@/lib/demo/pricing";
 import { bn } from "@/lib/format";
+import { SSL_API, SSL_DONE, SSL_PENDING, sslQuery, type SslPending } from "@/lib/demo/ssl";
 import { clearCart } from "@/store/slices/cart-slice";
 import { holdStock } from "@/store/slices/shop-slice";
 import { placeOrder, setCoupon } from "@/store/slices/order-slice";
@@ -44,6 +45,7 @@ function IcoTicket() {
 
 export default function CheckoutPage() {
   const lines = useAppSelector((s) => s.cart.lines);
+  const orderCount = useAppSelector((s) => s.orders.orders.length);
   const coupon = useAppSelector((s) => s.orders.coupon);
   const products = useAppSelector((s) => s.shop.products);
   const packs = useAppSelector((s) => s.shop.packs);
@@ -52,6 +54,11 @@ export default function CheckoutPage() {
   const user = useAppSelector((s) => s.session.users.find((u) => u.id === s.session.userId) ?? null);
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const [placing, setPlacing] = useState<"" | "run" | "fail" | "bye">("");
+  const [placeNote, setPlaceNote] = useState("ইন্টারনেট সংযোগ নেই");
+  const placingRef = useRef(false);
+  const phaseRef = useRef<"" | "run" | "fail" | "bye">("");
+  const placeTimers = useRef<number[]>([]);
 
   const form = useForm<CheckValues>({
     defaultValues: {
@@ -177,6 +184,109 @@ export default function CheckoutPage() {
     dispatch(showToast("কুপন সরানো হয়েছে"));
   }
 
+  function setPhase(next: "" | "run" | "fail" | "bye") {
+    phaseRef.current = next;
+    setPlacing(next);
+  }
+
+  function placeLater(fn: () => void, ms: number) {
+    const id = window.setTimeout(fn, ms);
+    placeTimers.current.push(id);
+  }
+
+  function failPay(note: string, toast: string) {
+    if (phaseRef.current === "fail" || phaseRef.current === "bye") return;
+    setPlaceNote(note);
+    setPhase("fail");
+    placeLater(() => {
+      setPhase("bye");
+      placeLater(() => {
+        placingRef.current = false;
+        setPhase("");
+        dispatch(showToast(toast));
+      }, 420);
+    }, 2200);
+  }
+
+  function failNetwork() {
+    failPay("ইন্টারনেট সংযোগ নেই", "ইন্টারনেট নেই। অর্ডার হয়নি");
+  }
+
+  const sslBack = useRef(false);
+  useEffect(() => {
+    const back = sslQuery();
+    if (!back) return;
+    if (back.ssl === "success") {
+      if (sessionStorage.getItem(SSL_DONE)) router.replace("/orders");
+      return;
+    }
+    if (sslBack.current) return;
+    sslBack.current = true;
+    window.history.replaceState(null, "", "/checkout");
+    sessionStorage.removeItem(SSL_PENDING);
+    failPay(back.ssl === "cancel" ? "পেমেন্ট বাতিল হয়েছে" : "পেমেন্ট হয়নি", back.ssl === "cancel" ? "পেমেন্ট বাতিল" : "পেমেন্ট হয়নি");
+  }, [orderCount, router]);
+
+  async function startSsl(values: CheckValues, address: string, snap: NonNullable<SslPending["lines"]>, units: SslPending["units"]) {
+    if (placingRef.current) return;
+    if (!(quote.grand >= 10)) {
+      dispatch(showToast("SSLCOMMERZ-এ সর্বনিম্ন ৳১০"));
+      return;
+    }
+    placingRef.current = true;
+    setPhase("run");
+    const tran_id = `CLO${Date.now()}`.slice(0, 30);
+    const pending: SslPending = {
+      tran_id,
+      units,
+      name: values.cName.trim(),
+      phone: values.cPhone.trim(),
+      email: values.cEmail.trim() || user?.email || "demo@cholo.shop",
+      total: quote.grand,
+      items: rows.map((r) => `${r.title} × ${r.n}`).join(", "),
+      address,
+      pay: "SSLCOMMERZ",
+      lines: snap,
+      sub: quote.sub,
+      coupon: coupon || undefined,
+      couponOff: quote.off,
+      ship: quote.ship ?? 0,
+      shipCost: values.cDist === "ঢাকা" ? shipRates.costDhaka : shipRates.costOutside,
+      stockHeld: true,
+    };
+    try {
+      const res = await fetch(`${SSL_API}/api/ssl/init`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          total_amount: quote.grand,
+          tran_id,
+          cus_name: pending.name,
+          cus_email: pending.email,
+          cus_phone: pending.phone,
+          cus_add1: address,
+          cus_city: values.cDist,
+          product_name: pending.items,
+        }),
+      });
+      const json = await res.json() as { status?: string; GatewayPageURL?: string; failedreason?: string };
+      if (json.status !== "SUCCESS" || !json.GatewayPageURL) {
+        placingRef.current = false;
+        failPay(json.failedreason || "পেমেন্ট শুরু হয়নি", "পেমেন্ট শুরু হয়নি");
+        return;
+      }
+      sessionStorage.setItem(SSL_PENDING, JSON.stringify(pending));
+      window.location.assign(json.GatewayPageURL);
+    } catch {
+      placingRef.current = false;
+      failPay("স্যান্ডবক্স সার্ভার চালু নেই", "স্যান্ডবক্স সার্ভার চালু নেই");
+    }
+  }
+
+  useEffect(() => () => {
+    placeTimers.current.forEach((id) => window.clearTimeout(id));
+  }, []);
+
   function onInvalid(fieldErrs: FieldErrors<CheckValues>) {
     const first = Object.keys(fieldErrs)[0];
     if (first) document.getElementById(first)?.closest(".field-box")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -189,10 +299,6 @@ export default function CheckoutPage() {
       dispatch(showToast("জেলা বাছুন — তাহলে ডেলিভারি খরচ বসবে"));
       return;
     }
-    if (values.pay === "ssl") {
-      dispatch(showToast("স্যান্ডবক্স সার্ভার চালু নেই"));
-      return;
-    }
     const address = [values.cDetail.trim(), values.cUni, values.cUpa, values.cDist].filter(Boolean).join(", ");
     const snap = snapshotLines(lines, products, packs);
     const units = stockUnits(snap);
@@ -201,26 +307,44 @@ export default function CheckoutPage() {
       dispatch(showToast(`${short} এর স্টক নেই`));
       return;
     }
-    dispatch(holdStock(units));
-    dispatch(placeOrder({
-      name: values.cName.trim(),
-      phone: values.cPhone.trim(),
-      email: values.cEmail.trim() || user?.email || "",
-      total: quote.grand,
-      items: rows.map((r) => `${r.title} × ${r.n}`).join(", "),
-      address,
-      pay: "ক্যাশ অন ডেলিভারি",
-      lines: snap,
-      sub: quote.sub,
-      coupon: coupon || undefined,
-      couponOff: quote.off,
-      ship: quote.ship ?? 0,
-      shipCost: values.cDist === "ঢাকা" ? shipRates.costDhaka : shipRates.costOutside,
-      stockHeld: true,
-    }));
-    dispatch(clearCart());
-    dispatch(showToast("অর্ডার নিশ্চিত হয়েছে"));
-    router.push("/orders");
+    if (values.pay === "ssl") {
+      void startSsl(values, address, snap, units);
+      return;
+    }
+    if (placingRef.current) return;
+    placingRef.current = true;
+    setPhase("run");
+    placeLater(() => {
+      if (!navigator.onLine) failNetwork();
+    }, 700);
+    placeLater(() => {
+      if (phaseRef.current !== "run") return;
+      if (!navigator.onLine) {
+        failNetwork();
+        return;
+      }
+      dispatch(holdStock(units));
+      dispatch(placeOrder({
+        name: values.cName.trim(),
+        phone: values.cPhone.trim(),
+        email: values.cEmail.trim() || user?.email || "",
+        total: quote.grand,
+        items: rows.map((r) => `${r.title} × ${r.n}`).join(", "),
+        address,
+        pay: "ক্যাশ অন ডেলিভারি",
+        lines: snap,
+        sub: quote.sub,
+        coupon: coupon || undefined,
+        couponOff: quote.off,
+        ship: quote.ship ?? 0,
+        shipCost: values.cDist === "ঢাকা" ? shipRates.costDhaka : shipRates.costOutside,
+        stockHeld: true,
+      }));
+      dispatch(clearCart());
+      dispatch(showToast("অর্ডার নিশ্চিত হয়েছে"));
+      sessionStorage.setItem("cholo_placed", "1");
+      router.replace("/orders");
+    }, 1600);
   }
 
   return (
@@ -325,7 +449,7 @@ export default function CheckoutPage() {
             </div>
             {!user ? <p className="guest-note">গেস্ট হিসেবে অর্ডার করতে পারবেন। পরে মোবাইল নম্বর অথবা অর্ডার আইডি দিয়ে ট্র্যাক করবেন।</p> : null}
             <p className="note">{shipNote(quote)}</p>
-            <button className="btn btn-primary btn-wide" type="submit" style={{ marginTop: 16 }}>
+            <button className="btn btn-primary btn-wide" type="submit" style={{ marginTop: 16 }} disabled={placing !== ""}>
               {pay === "cod" ? "অর্ডার নিশ্চিত করুন" : "SSLCOMMERZ-এ পেমেন্ট"}
             </button>
           </form>
@@ -418,6 +542,36 @@ export default function CheckoutPage() {
             <path d="M22 10h6M36 22h6" stroke="#C4A15A" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         </span>
+      ) : null}
+      {placing ? (
+        <div
+          className={`place-gate${placing === "fail" || placing === "bye" ? " fail" : ""}${placing === "bye" ? " bye" : ""}`}
+          role="status"
+          aria-live="polite"
+          aria-label={placing === "run" ? "অর্ডার রাখা হচ্ছে" : "অর্ডার হয়নি"}
+        >
+          <div className="land-stage">
+            <div className="land-mark">
+              <span className="land-orbit" />
+              <img src="/icons/cholo-mark.svg" alt="" width={92} height={92} />
+            </div>
+            {placing === "run" ? (
+              <div className="place-copy" key="run">
+                <small><i />চলো<i /></small>
+                <h2>অর্ডার রাখা হচ্ছে</h2>
+                <p>পণ্য · ঠিকানা · ডেলিভারি</p>
+                <div className="land-bar" aria-hidden="true"><i className="place-fill" /></div>
+              </div>
+            ) : (
+              <div className="place-copy" key="fail">
+                <small><i />চলো<i /></small>
+                <h2>অর্ডার হয়নি</h2>
+                <p>{placeNote}</p>
+                <div className="land-bar" aria-hidden="true"><i className="place-hold" /></div>
+              </div>
+            )}
+          </div>
+        </div>
       ) : null}
     </div>
   );
