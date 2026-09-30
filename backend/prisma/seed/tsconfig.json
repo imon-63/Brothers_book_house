@@ -1,0 +1,16 @@
+{
+  "//": "Compiles seed.ts to plain JS for the production image (no ts-node at runtime): npx tsc -p prisma/seed/tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "../../dist-seed",
+    "rootDir": "."
+  },
+  "files": ["seed.ts"]
+}

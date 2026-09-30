@@ -1,0 +1,61 @@
+{
+  "ticker": [
+    "চলো, কিনে ফেলি",
+    "বই · ঘরের বাজার · গ্যাজেট এক ঠিকানায়",
+    "সারা বাংলাদেশে হোম ডেলিভারি"
+  ],
+  "coupons": [
+    {
+      "code": "CHOLO10",
+      "off": 10,
+      "type": "pct"
+    },
+    {
+      "code": "BOI50",
+      "off": 50,
+      "type": "tk"
+    }
+  ],
+  "promo": {
+    "on": true,
+    "title": "প্রথম অর্ডারে ১০% ছাড়",
+    "text": "কুপন: CHOLO10 — চেকআউটে প্রয়োগ করুন।",
+    "code": "CHOLO10",
+    "image": ""
+  },
+  "ship": {
+    "dhaka": 60,
+    "outside": 120,
+    "costDhaka": 60,
+    "costOutside": 120,
+    "freeOnPack": false,
+    "freeOnBooks": false,
+    "freeAboveOn": true,
+    "freeAbove": 500,
+    "freeAllOn": false,
+    "freeFrom": "",
+    "freeTo": "",
+    "sslFeePct": 0
+  },
+  "quickReplies": [
+    "আসসালামু আলাইকুম, কীভাবে সাহায্য করতে পারি?",
+    "আপনার অর্ডার আইডিটা দিন, দেখে জানাচ্ছি।",
+    "ঢাকায় ১-২ দিন, বাইরে ২-৪ দিনে ডেলিভারি।",
+    "বইটি স্টকে আছে, অর্ডার করতে পারেন।",
+    "ধন্যবাদ! আর কিছু লাগলে জানাবেন।"
+  ],
+  "demoUsers": [
+    {
+      "name": "অ্যাডমিন",
+      "email": "admin@cholo.shop",
+      "phone": "01700000000",
+      "role": "admin"
+    },
+    {
+      "name": "রাফি আহমেদ",
+      "email": "rafi@gmail.com",
+      "phone": "01711111111",
+      "role": "user"
+    }
+  ]
+}

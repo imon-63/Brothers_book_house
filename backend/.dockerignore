@@ -1,0 +1,20 @@
+# keep the build context small and secret-free
+node_modules
+dist
+dist-seed
+coverage
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.git
+.github
+test
+docs
+README.md
+Dockerfile
+.dockerignore
+**/*.spec.ts
+prisma/seed/export-frontend-data.ts
+tsconfig.tsbuildinfo

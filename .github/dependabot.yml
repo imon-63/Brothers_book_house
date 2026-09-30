@@ -1,0 +1,49 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule: { interval: weekly, day: monday, time: "04:00", timezone: Asia/Dhaka }
+    open-pull-requests-limit: 10
+    labels: [dependencies, backend]
+    groups:
+      nestjs:
+        patterns: ["@nestjs/*"]
+      opentelemetry:
+        patterns: ["@opentelemetry/*", "@prisma/instrumentation"]
+      prisma:
+        patterns: ["prisma", "@prisma/client"]
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly, day: monday, time: "04:00", timezone: Asia/Dhaka }
+    open-pull-requests-limit: 5
+    labels: [dependencies, frontend]
+    groups:
+      react-next:
+        patterns: ["next", "react", "react-dom", "@types/react*"]
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule: { interval: weekly }
+    labels: [dependencies, docker]
+
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule: { interval: weekly }
+    labels: [dependencies, docker]
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: { interval: monthly }
+    labels: [dependencies, docker]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    labels: [dependencies, ci]
+    groups:
+      actions:
+        patterns: ["*"]

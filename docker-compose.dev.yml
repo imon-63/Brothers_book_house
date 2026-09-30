@@ -1,0 +1,107 @@
+# ════════════════════════════════════════════════════════════════════════
+#  Local development overlay
+#
+#    cp .env.example .env
+#    docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#    docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile seed run --rm seed
+#
+#  • api runs `nest start --watch` from ./backend (hot reload), Swagger at /api/docs
+#  • every service port is published on localhost
+#  • Grafana: anonymous admin, no login
+# ════════════════════════════════════════════════════════════════════════
+services:
+  postgres:
+    ports: ["127.0.0.1:${PG_LOCAL_PORT:-5433}:5432"]
+    command: ["postgres", "-c", "log_min_duration_statement=200", "-c", "shared_preload_libraries=pg_stat_statements"]
+    deploy: !reset {}
+
+  migrate:
+    image: cholo-api:dev
+    build:
+      context: ./backend
+      target: runtime
+      args: { APP_VERSION: dev }
+
+  seed:
+    image: cholo-api:dev
+    environment:
+      NODE_ENV: development # demo users admin@cholo.shop/admin123, rafi@gmail.com/123456
+
+  api:
+    image: cholo-api:dev-src
+    build:
+      context: ./backend
+      target: deps
+    working_dir: /app
+    command: ["sh", "-c", "npx prisma generate && npm run start:dev"]
+    environment:
+      NODE_ENV: development
+      CORS_ORIGINS: http://localhost:3000,http://localhost:8080
+      PUBLIC_WEB_URL: http://localhost:8080
+      PUBLIC_API_URL: http://localhost:8080
+      LOG_LEVEL: debug
+      ADMIN_BOOTSTRAP_EMAIL: admin@cholo.shop
+      ADMIN_BOOTSTRAP_PASSWORD: admin123
+    volumes:
+      - ./backend:/app
+      - api-node-modules:/app/node_modules # keep the container's linux node_modules
+    ports:
+      - "127.0.0.1:4000:4000"
+      - "127.0.0.1:9464:9464"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/api/v1/health/live >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 90s
+    deploy: !reset {}
+
+  web:
+    image: cholo-web:dev
+    build:
+      context: ./frontend
+      target: runtime
+      args: { NEXT_PUBLIC_API_URL: "/api/v1", APP_VERSION: dev }
+    ports: ["127.0.0.1:3000:3000"]
+    deploy: !reset {}
+
+  nginx:
+    ports: !override
+      - "127.0.0.1:8080:80"
+    environment:
+      DOMAIN: localhost
+
+  otel-collector:
+    environment:
+      DEPLOY_ENV: development
+      TRACE_SAMPLE_PCT: 100
+    ports:
+      - "127.0.0.1:4318:4318" # run the API outside Docker and still export traces
+      - "127.0.0.1:8889:8889"
+
+  tempo:
+    ports: ["127.0.0.1:3200:3200"]
+
+  prometheus:
+    ports: ["127.0.0.1:9090:9090"]
+
+  grafana:
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SECURITY_COOKIE_SECURE: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SERVER_ROOT_URL: http://localhost:8080/grafana/
+    ports: !override
+      - "127.0.0.1:3001:3000"
+
+  loki:
+    ports: ["127.0.0.1:3100:3100"]
+
+networks:
+  internal:
+    internal: false # allow publishing ports of internal-only services in dev
+
+volumes:
+  api-node-modules:

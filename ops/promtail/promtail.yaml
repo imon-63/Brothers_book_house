@@ -1,0 +1,50 @@
+# Promtail (optional, `--profile logs`): ships container stdout to Loki.
+# The API logs JSON (pino) with trace_id/span_id → Grafana links log ⇄ trace.
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /tmp/positions/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 15s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=cholo"]
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: service
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: container
+    pipeline_stages:
+      - match:
+          selector: '{service="api"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  trace_id: trace_id
+                  req_id: req.id
+                  status: res.statusCode
+            - labels:
+                level:
+            - structured_metadata:
+                trace_id:
+                req_id:
+      - match:
+          selector: '{service="nginx"}'
+          stages:
+            - json:
+                expressions:
+                  status: status
+            - labels:
+                status:

@@ -1,0 +1,8 @@
+# NGINX_MODE=http — plain HTTP (local / behind an external TLS terminator such as Cloudflare).
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name ${DOMAIN} www.${DOMAIN} _;
+
+  include /etc/nginx/snippets/cholo-locations.conf;
+}

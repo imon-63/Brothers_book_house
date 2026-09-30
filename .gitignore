@@ -1,4 +1,17 @@
 node_modules
 .next
 out
+dist
+coverage
 *.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# ops
+backups/
+ops/nginx/certs/*
+!ops/nginx/certs/README.md
+backend/dist-seed

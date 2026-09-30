@@ -1,0 +1,92 @@
+{
+  "book": [
+    {
+      "cat": "নবম-দশম",
+      "kicker": "এসএসসি",
+      "title": "নবম-দশম গাইড",
+      "sub": "বোর্ড প্রশ্ন ও সাজেশন",
+      "img": "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=1600&q=80"
+    },
+    {
+      "cat": "ইঞ্জিনিয়ারিং ভর্তি",
+      "kicker": "ভর্তি",
+      "title": "ইঞ্জিনিয়ারিং প্রস্তুতি",
+      "sub": "গণিত ও প্রশ্নব্যাংক",
+      "img": "https://images.unsplash.com/photo-14565130808-af29b1fef35b?auto=format&fit=crop&w=1600&q=80"
+    },
+    {
+      "cat": "মেডিকেল ভর্তি",
+      "kicker": "মেডিকেল",
+      "title": "মেডিকেল ভর্তি",
+      "sub": "বায়োলজি · রসায়ন · পদার্থ",
+      "img": "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=1600&q=80"
+    },
+    {
+      "cat": "ব্যাংক প্রস্তুতি",
+      "kicker": "চাকরি",
+      "title": "ব্যাংক নিয়োগ গাইড",
+      "sub": "গাইড · গণিত · ইংরেজি",
+      "img": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1600&q=80"
+    }
+  ],
+  "food": [
+    {
+      "cat": "তেল ও ঘি",
+      "kicker": "সরিষার তেল",
+      "title": "দেশি সরিষার তেল",
+      "sub": "১ লিটার থেকে ৫ লিটার",
+      "img": "https://cdn.ghorerbazar.com/productImages/vkVdH1767248022.jpg"
+    },
+    {
+      "cat": "মধু",
+      "kicker": "সুন্দরবন",
+      "title": "সুন্দরবনের মধু",
+      "sub": "১ কেজি · খাঁটি",
+      "img": "https://cdn.ghorerbazar.com/productImages/KWSqQ1785577173-light-1000x1000.jpg"
+    },
+    {
+      "cat": "খেজুর",
+      "kicker": "আজওয়া",
+      "title": "আজওয়া খেজুর",
+      "sub": "প্রিমিয়াম ফ্রেশ",
+      "img": "https://cdn.ghorerbazar.com/productImages/TY03p1782300772.webp"
+    },
+    {
+      "cat": "মসলা",
+      "kicker": "গুঁড়া",
+      "title": "হলুদ · মরিচ · ধনিয়া",
+      "sub": "৫০০ গ্রাম প্যাক",
+      "img": "https://cdn.ghorerbazar.com/productImages/TNMp41787487432-light-1000x1000.jpg"
+    }
+  ],
+  "gadget": [
+    {
+      "cat": "হোম",
+      "kicker": "হোম",
+      "title": "রিচার্জেবল ফ্যান",
+      "sub": "রিমোট কন্ট্রোল · পোর্টেবল",
+      "img": "https://techjhuli.com/wp-content/uploads/2026/09/521A5181-D00A-4F69-8FFA-1F2BED7015F5.avif"
+    },
+    {
+      "cat": "মোবাইল এক্সেসরিজ",
+      "kicker": "মোবাইল",
+      "title": "ইয়ারবাড ও পাওয়ার",
+      "sub": "প্রতিদিনের গ্যাজেট",
+      "img": "https://techjhuli.com/wp-content/uploads/2026/09/4501F450-166C-4DF4-BB39-5304544053BE.avif"
+    },
+    {
+      "cat": "স্মার্ট গ্যাজেট",
+      "kicker": "স্মার্ট",
+      "title": "মাইক ও ফ্ল্যাশলাইট",
+      "sub": "অডিও · টর্চ",
+      "img": "https://techjhuli.com/wp-content/uploads/2026/08/318BA3BA-3A90-4627-AB55-302C6C32C853.avif"
+    },
+    {
+      "cat": "কম্পিউটার",
+      "kicker": "ডেস্ক",
+      "title": "Mini DC UPS",
+      "sub": "রাউটার · ল্যাপটপ ব্যাকআপ",
+      "img": "https://techjhuli.com/wp-content/uploads/2026/09/AF3DF6A1-4605-4C70-AC92-F5319BAD1740.avif"
+    }
+  ]
+}

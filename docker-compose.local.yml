@@ -1,0 +1,178 @@
+# ════════════════════════════════════════════════════════════════════════
+#  Cholo · EVERYTHING locally with ONE command (no .env needed)
+#
+#    docker compose -f docker-compose.local.yml up --build
+#
+#  Builds the API + web from source, creates the database, runs migrations,
+#  seeds demo data (idempotent), and starts the full observability stack.
+#
+#    Storefront + admin   http://localhost:8080          (nginx → web + /api)
+#    Admin login          admin@cholo.shop / admin123
+#    API docs (Swagger)   http://localhost:8080/api/docs
+#    Grafana              http://localhost:3001           (no login; home = "API latency by route")
+#    Prometheus           http://localhost:9090
+#    Postgres             localhost:5433  cholo / cholo   (5433 so it never clashes with a local 5432)
+#
+#  Stop: Ctrl+C  ·  wipe data: docker compose -f docker-compose.local.yml down -v
+# ════════════════════════════════════════════════════════════════════════
+name: cholo-local
+
+x-db-url: &db-url postgresql://cholo:cholo@postgres:5432/cholo?schema=public
+
+x-api-build: &api-build
+  context: ./backend
+  target: runtime
+  args: { APP_VERSION: local }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cholo
+      POSTGRES_PASSWORD: cholo
+      POSTGRES_DB: cholo
+      TZ: UTC
+    command: ["postgres", "-c", "log_min_duration_statement=300", "-c", "max_connections=100"]
+    ports: ["127.0.0.1:5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cholo -d cholo"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  # one-shot: apply every Prisma migration (schema + constraints/triggers/views)
+  migrate:
+    image: cholo-api:local
+    build: *api-build
+    command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
+    restart: "no"
+    environment: { DATABASE_URL: *db-url, DIRECT_URL: *db-url, NODE_ENV: production }
+    depends_on: { postgres: { condition: service_healthy } }
+
+  # one-shot: reference + demo data (safe to re-run — upserts only)
+  seed:
+    image: cholo-api:local
+    command: ["node", "seed/seed.js"]
+    restart: "no"
+    environment:
+      DATABASE_URL: *db-url
+      DIRECT_URL: *db-url
+      NODE_ENV: development # demo users: admin@cholo.shop/admin123, rafi@gmail.com/123456
+      SEED_DEMO_USERS: "true"
+      SEED_ADMIN_EMAIL: admin@cholo.shop
+      SEED_ADMIN_PASSWORD: admin123
+    depends_on: { migrate: { condition: service_completed_successfully } }
+
+  api:
+    image: cholo-api:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      API_PREFIX: api
+      DATABASE_URL: *db-url
+      DIRECT_URL: *db-url
+      CORS_ORIGINS: http://localhost:8080,http://localhost:3000
+      PUBLIC_WEB_URL: http://localhost:8080
+      PUBLIC_API_URL: http://localhost:8080
+      JWT_ACCESS_SECRET: local-docker-secret-change-me-0123456789abcdef
+      ADMIN_BOOTSTRAP_EMAIL: admin@cholo.shop
+      ADMIN_BOOTSTRAP_PASSWORD: admin123
+      SSLCOMMERZ_STORE_ID: testbox
+      SSLCOMMERZ_STORE_PASSWORD: qwerty
+      SSLCOMMERZ_SANDBOX: "true"
+      LOG_LEVEL: info
+      SWAGGER_ENABLED: "true"
+      OTEL_ENABLED: "true"
+      OTEL_SERVICE_NAME: cholo-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_PROMETHEUS_PORT: 9464
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=local
+    ports: ["127.0.0.1:4000:4000", "127.0.0.1:9464:9464"]
+    volumes: [uploads:/app/uploads]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+      otel-collector: { condition: service_started }
+
+  web:
+    image: cholo-web:local
+    build:
+      context: ./frontend
+      target: runtime
+      # same-origin through nginx → no CORS, the refresh cookie just works
+      args: { NEXT_PUBLIC_API_URL: /api/v1, APP_VERSION: local }
+    restart: unless-stopped
+    environment: { NODE_ENV: production, PORT: 3000, HOSTNAME: 0.0.0.0 }
+    depends_on: { api: { condition: service_started } }
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["127.0.0.1:8080:80"]
+    environment: { DOMAIN: localhost }
+    volumes:
+      - ./ops/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ops/nginx/snippets:/etc/nginx/snippets:ro
+      - ./ops/nginx/templates/http:/etc/nginx/templates:ro
+    tmpfs: [/etc/nginx/conf.d]
+    depends_on:
+      web: { condition: service_started }
+      api: { condition: service_started }
+
+  # ───────── observability: OTel → Tempo (traces) + Prometheus (metrics) → Grafana ─────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    environment: { DEPLOY_ENV: local, TRACE_SAMPLE_PCT: 100 }
+    volumes:
+      - ./ops/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - /:/hostfs:ro # hostmetrics receiver (CPU/mem/disk of the Docker VM)
+    ports: ["127.0.0.1:4318:4318"]
+    depends_on: { tempo: { condition: service_started } }
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    command: ["-config.file=/etc/tempo/tempo.yaml", "-config.expand-env=true"]
+    environment: { TEMPO_RETENTION: 48h }
+    volumes: [./ops/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro, tempo:/var/tempo]
+    ports: ["127.0.0.1:3200:3200"]
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --web.enable-lifecycle
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus:/prometheus
+    ports: ["127.0.0.1:9090:9090"]
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/cholo-api-latency.json
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana:/var/lib/grafana
+    ports: ["127.0.0.1:3001:3000"]
+    depends_on: [prometheus, tempo]
+
+volumes:
+  pgdata:
+  uploads:
+  prometheus:
+  grafana:
+  tempo:

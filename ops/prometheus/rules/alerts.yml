@@ -1,0 +1,110 @@
+# Alert rules. Severity: page (wake someone) | ticket (next business day).
+# Every alert has a runbook section in backend/docs/observability.md#alerts.
+groups:
+  - name: cholo-availability
+    rules:
+      - alert: CholoApiDown
+        expr: up{job="cholo-api"} == 0 or absent(up{job="cholo-api"})
+        for: 2m
+        labels: { severity: page, team: backend }
+        annotations:
+          summary: "Cholo API metrics endpoint unreachable"
+          description: "Prometheus cannot scrape {{ $labels.instance }} for 2m. Check `docker compose ps api` and /api/v1/health/ready."
+          runbook_url: "https://github.com/cholo-shop/cholo/blob/main/backend/docs/observability.md#choloapidown"
+
+      - alert: CholoHigh5xxRate
+        expr: cholo:http_error_ratio_5xx:5m > 0.02 and cholo:http_requests:rate5m:total > 0.05
+        for: 5m
+        labels: { severity: page, team: backend }
+        annotations:
+          summary: "5xx ratio {{ $value | humanizePercentage }} over 5m (> 2%)"
+          description: "Open 'Cholo API · RED' → Errors by route, then jump to Tempo for status=error traces."
+          runbook_url: "https://github.com/cholo-shop/cholo/blob/main/backend/docs/observability.md#cholohigh5xxrate"
+
+      - alert: CholoHighLatencyP95
+        expr: cholo:http_latency_seconds:p95 > 0.8
+        for: 10m
+        labels: { severity: ticket, team: backend }
+        annotations:
+          summary: "API p95 latency {{ $value | humanizeDuration }} (> 800ms) for 10m"
+          description: "See 'Cholo API · RED' p95 by route; exemplars link to slow traces."
+          runbook_url: "https://github.com/cholo-shop/cholo/blob/main/backend/docs/observability.md#cholohighlatencyp95"
+
+  - name: cholo-business
+    rules:
+      - alert: CholoCheckoutFailuresSpike
+        expr: |
+          sum(increase(cholo_checkout_failures_total{job="cholo-api"}[10m])) > 10
+          and
+          sum(increase(cholo_checkout_failures_total{job="cholo-api"}[10m])) > 3 * (sum(increase(cholo_checkout_failures_total{job="cholo-api"}[6h] offset 10m)) / 36 + 1)
+        for: 5m
+        labels: { severity: page, team: backend }
+        annotations:
+          summary: "Checkout failures spiking ({{ $value | humanize }} in 10m)"
+          description: "Break down by `reason` on 'Cholo Business' → Checkout failures. Stock-outs and expired coupons are normal; `validation`/`internal` spikes usually mean a bad deploy."
+          runbook_url: "https://github.com/cholo-shop/cholo/blob/main/backend/docs/observability.md#cholocheckoutfailuresspike"
+
+      - alert: CholoPaymentFailureRatioHigh
+        expr: cholo:payment_failure_ratio:15m > 0.25 and sum(increase(cholo_payments_total{job="cholo-api"}[15m])) >= 8
+        for: 10m
+        labels: { severity: page, team: backend }
+        annotations:
+          summary: "{{ $value | humanizePercentage }} of gateway payments failing (15m)"
+          description: "SSLCOMMERZ may be degraded or credentials/IPN URL wrong. Check payment_events and the gateway status page."
+          runbook_url: "https://github.com/cholo-shop/cholo/blob/main/backend/docs/observability.md#cholopaymentfailureratiohigh"
+
+      - alert: CholoOutboxFailures
+        expr: sum(increase(cholo_outbox_deliveries_total{job="cholo-api",result=~"failed|error|FAILED"}[15m])) > 5
+        for: 5m
+        labels: { severity: ticket, team: backend }
+        annotations:
+          summary: "Notification outbox: {{ $value | humanize }} failed deliveries in 15m"
+          description: "SMS/email provider errors. Inspect notification_outbox WHERE status='FAILED' (last_error)."
+          runbook_url: "https://github.com/cholo-shop/cholo/blob/main/backend/docs/observability.md#cholooutboxfailures"
+
+      - alert: CholoNoOrdersForLong
+        expr: sum(increase(cholo_orders_placed_total{job="cholo-api"}[3h])) == 0 and on() hour() >= 3 and on() hour() < 17
+        for: 30m
+        labels: { severity: ticket, team: business }
+        annotations:
+          summary: "No orders placed in 3h during Dhaka daytime"
+          description: "Could be a broken storefront/checkout even if the API is up (hours are UTC; 03–17 UTC = 09–23 Dhaka)."
+
+  - name: cholo-runtime
+    rules:
+      - alert: CholoHeapHigh
+        expr: |
+          sum by (instance) (v8js_memory_heap_used{job="cholo-api"})
+          / clamp_min(sum by (instance) (v8js_memory_heap_limit{job="cholo-api"}), 1) > 0.85
+        for: 10m
+        labels: { severity: ticket, team: backend }
+        annotations:
+          summary: "API heap at {{ $value | humanizePercentage }} of the V8 limit on {{ $labels.instance }}"
+          description: "Possible leak. /health/ready fails at 768MiB heap; take a heap snapshot before restarting."
+
+      - alert: CholoEventLoopLag
+        expr: max by (instance) (nodejs_eventloop_delay_p99{job="cholo-api"}) > 0.2
+        for: 5m
+        labels: { severity: ticket, team: backend }
+        annotations:
+          summary: "Event-loop p99 delay {{ $value | humanizeDuration }} on {{ $labels.instance }}"
+          description: "CPU-bound work on the request path (argon2 bursts, big JSON, sync crypto). Check CPU and the slowest traces."
+
+      - alert: CholoHostDiskFilling
+        expr: |
+          max by (mountpoint) (system_filesystem_utilization{job="otel-collector"}) > 0.85
+          or
+          (1 - sum by (mountpoint) (system_filesystem_usage{job="otel-collector",state="free"}) / sum by (mountpoint) (system_filesystem_usage{job="otel-collector"})) > 0.85
+        for: 15m
+        labels: { severity: page, team: ops }
+        annotations:
+          summary: "Disk {{ $labels.mountpoint }} over 85% full"
+          description: "Postgres, Tempo and Prometheus all live on this disk. Prune images (`docker image prune -af`), check backups dir."
+
+      - alert: CholoOtelCollectorRefusing
+        expr: sum(rate(otelcol_receiver_refused_spans_total[5m])) > 0 or sum(rate(otelcol_receiver_refused_spans[5m])) > 0
+        for: 10m
+        labels: { severity: ticket, team: ops }
+        annotations:
+          summary: "OTel collector is refusing spans (memory_limiter)"
+          description: "Raise collector memory limit or lower TRACE_SAMPLE_PCT."

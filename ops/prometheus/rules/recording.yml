@@ -1,0 +1,83 @@
+# Normalises the HTTP server metrics. The installed @opentelemetry/instrumentation-http
+# (0.222) emits ONLY the stable metric, exposed on :9464 as
+#   http_server_request_duration_{bucket,sum,count}  (seconds; no unit suffix in the JS exporter)
+#   labels http_route, http_request_method, http_response_status_code, url_scheme, network_protocol_version
+# The other spellings below are kept as fallbacks so older SDKs / collector-exported
+# series still work:
+#
+#   new semconv (seconds):  http_server_request_duration{_bucket,_count,_sum}
+#                           labels http_request_method, http_response_status_code, http_route
+#   old semconv (ms):       http_server_duration{_bucket,_count,_sum}
+#                           labels http_method, http_status_code, http_route
+#   via OTel collector:     the same names with unit suffixes
+#                           (http_server_request_duration_seconds_*, http_server_duration_milliseconds_*)
+#
+# Output labels: route, method, status.  Latency outputs are always SECONDS.
+groups:
+  - name: cholo-http.recording
+    interval: 30s
+    rules:
+      # ── request rate by route/method/status ──
+      - record: cholo:http_requests:rate5m
+        expr: |
+          sum by (route, method, status) (
+            label_replace(label_replace(label_replace(
+                 rate(http_server_request_duration_count{job="cholo-api"}[5m])
+              or rate(http_server_request_duration_seconds_count[5m]),
+            "route", "$1", "http_route", "(.*)"), "method", "$1", "http_request_method", "(.*)"), "status", "$1", "http_response_status_code", "(.*)")
+          )
+          or
+          sum by (route, method, status) (
+            label_replace(label_replace(label_replace(
+                 rate(http_server_duration_count{job="cholo-api"}[5m])
+              or rate(http_server_duration_milliseconds_count[5m]),
+            "route", "$1", "http_route", "(.*)"), "method", "$1", "http_method", "(.*)"), "status", "$1", "http_status_code", "(.*)")
+          )
+
+      - record: cholo:http_requests:rate5m:total
+        expr: sum(cholo:http_requests:rate5m)
+
+      - record: cholo:http_errors_5xx:rate5m:total
+        expr: sum(cholo:http_requests:rate5m{status=~"5.."}) or vector(0)
+
+      - record: cholo:http_error_ratio_5xx:5m
+        expr: cholo:http_errors_5xx:rate5m:total / clamp_min(cholo:http_requests:rate5m:total, 1e-9)
+
+      # ── latency quantiles (seconds) overall and by route/method ──
+      - record: cholo:http_latency_seconds:p95
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_bucket{job="cholo-api"}[5m]) or rate(http_server_request_duration_seconds_bucket[5m])))
+          or
+          histogram_quantile(0.95, sum by (le) (rate(http_server_duration_bucket{job="cholo-api"}[5m]) or rate(http_server_duration_milliseconds_bucket[5m]))) / 1000
+
+      - record: cholo:http_latency_seconds:p99
+        expr: |
+          histogram_quantile(0.99, sum by (le) (rate(http_server_request_duration_bucket{job="cholo-api"}[5m]) or rate(http_server_request_duration_seconds_bucket[5m])))
+          or
+          histogram_quantile(0.99, sum by (le) (rate(http_server_duration_bucket{job="cholo-api"}[5m]) or rate(http_server_duration_milliseconds_bucket[5m]))) / 1000
+
+      - record: cholo:http_route_latency_seconds:p95
+        expr: |
+          histogram_quantile(0.95, sum by (le, route, method) (
+            label_replace(label_replace(
+                 rate(http_server_request_duration_bucket{job="cholo-api"}[5m])
+              or rate(http_server_request_duration_seconds_bucket[5m]),
+            "route", "$1", "http_route", "(.*)"), "method", "$1", "http_request_method", "(.*)")))
+          or
+          histogram_quantile(0.95, sum by (le, route, method) (
+            label_replace(label_replace(
+                 rate(http_server_duration_bucket{job="cholo-api"}[5m])
+              or rate(http_server_duration_milliseconds_bucket[5m]),
+            "route", "$1", "http_route", "(.*)"), "method", "$1", "http_method", "(.*)"))) / 1000
+
+  - name: cholo-business.recording
+    interval: 1m
+    rules:
+      - record: cholo:orders_placed:rate1h
+        expr: sum by (payment_method) (rate(cholo_orders_placed_total{job="cholo-api"}[1h]))
+      - record: cholo:payment_failure_ratio:15m
+        expr: |
+          sum(rate(cholo_payments_total{job="cholo-api",outcome=~"failed|expired|session_error|invalid"}[15m]))
+          / clamp_min(sum(rate(cholo_payments_total{job="cholo-api"}[15m])), 1e-9)
+      - record: cholo:usecase_latency_ms:p95
+        expr: histogram_quantile(0.95, sum by (le, usecase) (rate(cholo_usecase_duration_ms_bucket{job="cholo-api"}[5m])))

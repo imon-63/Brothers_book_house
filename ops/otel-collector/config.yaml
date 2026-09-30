@@ -1,0 +1,149 @@
+# OpenTelemetry Collector (contrib) — the single ingestion point for telemetry.
+#
+#   cholo-api ──OTLP/HTTP :4318──▶ collector ──▶ traces  → Tempo (OTLP gRPC)
+#                                            └─▶ metrics → :8889/metrics (scraped by Prometheus)
+#   hostmetrics (node CPU/mem/disk/net of the docker host) ─▶ metrics
+#
+# The API ALSO exposes :9464/metrics which Prometheus scrapes directly (job="cholo-api").
+# Metrics that arrive here via OTLP push are re-exported with job="otel-collector"
+# and exported_job="cholo-api" — dashboards select job="cholo-api" to avoid double counting.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 127.0.0.1:1777
+  zpages:
+    endpoint: 127.0.0.1:55679
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+  hostmetrics:
+    collection_interval: 30s
+    root_path: /hostfs
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization: { enabled: true }
+      load: {}
+      memory:
+        metrics:
+          system.memory.utilization: { enabled: true }
+      filesystem:
+        exclude_mount_points:
+          mount_points: ["/dev/*", "/proc/*", "/sys/*", "/run/*", "/var/lib/docker/*", "/snap/*"]
+          match_type: regexp
+      network: {}
+      paging: {}
+  # the collector's own health (queue sizes, refused spans…)
+  prometheus/self:
+    config:
+      scrape_configs:
+        - job_name: otel-collector-self
+          scrape_interval: 30s
+          static_configs:
+            - targets: ["127.0.0.1:8888"]
+
+processors:
+  # must be first: protects the collector from OOM under bursts
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  batch:
+    send_batch_size: 8192
+    send_batch_max_size: 16384
+    timeout: 5s
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 3s
+    override: false
+    system:
+      hostname_sources: [os]
+  resource/env:
+    attributes:
+      - key: deployment.environment.name
+        value: ${env:DEPLOY_ENV}
+        action: upsert
+  # never ship secrets or PII that slipped into span attributes
+  attributes/scrub:
+    actions:
+      - key: http.request.header.authorization
+        action: delete
+      - key: http.request.header.cookie
+        action: delete
+  # health probes / metrics scrapes are noise in traces
+  filter/noise:
+    error_mode: ignore
+    traces:
+      span:
+        - 'IsMatch(attributes["url.path"], "/api/v1/health/.*")'
+        - 'IsMatch(attributes["http.target"], "/api/v1/health/.*")'
+        - 'IsMatch(attributes["url.path"], "/metrics")'
+  # keep every error + slow trace, sample the rest (tune TRACE_SAMPLE_PCT)
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    policies:
+      - name: errors
+        type: status_code
+        status_code: { status_codes: [ERROR] }
+      - name: slow
+        type: latency
+        latency: { threshold_ms: 800 }
+      - name: checkout-and-payments
+        type: string_attribute
+        string_attribute: { key: http.route, values: ["/api/v1/orders.*", "/api/v1/payments.*", "/api/v1/checkout.*"], enabled_regex_matching: true }
+      - name: baseline
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: ${env:TRACE_SAMPLE_PCT}
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      queue_size: 5000
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 300s
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    # keep the same names the API's own /metrics endpoint uses
+    add_metric_suffixes: false
+    resource_to_telemetry_conversion:
+      enabled: false
+    enable_open_metrics: true
+    metric_expiration: 10m
+  debug:
+    verbosity: basic
+
+service:
+  extensions: [health_check, pprof, zpages]
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0 # scraped by Prometheus (job otel-collector-health); internal network only
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, filter/noise, attributes/scrub, resourcedetection, resource/env, tail_sampling, batch]
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp, hostmetrics, prometheus/self]
+      processors: [memory_limiter, resourcedetection, resource/env, batch]
+      exporters: [prometheus]
