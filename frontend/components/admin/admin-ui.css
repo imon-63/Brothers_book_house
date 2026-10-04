@@ -197,6 +197,9 @@ body.ap-lock { overflow: hidden; }
 .ap-modal-body { padding: 4px 18px 16px; overflow-y: auto; }
 .ap-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--ap-line2); background: var(--ap-surface2); }
 .ap-drawer label, .ap-modal label { display: block; margin: 10px 0 5px; font-size: 12px; font-weight: 800; color: var(--ap-soft); }
+/* design-system parts that are <label>s keep their own layout inside drawers/modals */
+.ap-drawer .ap-search, .ap-modal .ap-search { display: flex; margin: 0; font-size: inherit; font-weight: inherit; color: var(--ap-muted); }
+.ap-drawer .ap-toggle, .ap-modal .ap-toggle { display: inline-flex; margin: 0; }
 .ap-drawer input:not([type=checkbox]):not([type=radio]), .ap-drawer select, .ap-drawer textarea,
 .ap-modal input:not([type=checkbox]):not([type=radio]), .ap-modal select, .ap-modal textarea { min-height: 38px; padding: 7px 11px; font-size: 13.5px; border-radius: 10px; }
 .ap-drawer .ap-toggle, .ap-modal .ap-toggle { margin: 0; }
@@ -312,3 +315,38 @@ body.ap-lock { overflow: hidden; }
 /* number columns: header and value share the right edge (beats `.adm .ap-table th { text-align:left }`) */
 .adm .ap-table th.num, .adm .ap-table td.num, .ap-table th.num:not(#_), .ap-table td.num:not(#_) { text-align: right; }
 .adm .ap-table th.center, .adm .ap-table td.center { text-align: center; }
+
+/* ───────── document paper inside a modal (invoice / receipt / credit note) ───────── */
+.ap-doc-frame { border-radius: 14px; background: linear-gradient(180deg, #F6EFE2, #F1E8D8); padding: 10px; border: 1px solid var(--ap-line); }
+.ap-doc-frame iframe { display: block; width: 100%; border: 0; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgba(28,20,16,.06), 0 8px 22px rgba(60,30,20,.08); }
+.ap-doc-frame.loading, .ap-doc-frame.error { min-height: 180px; display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--ap-muted); }
+
+/* ───────── বিবরণ editor (intro + points) ───────── */
+.de { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: var(--ap-surface2); border: 1px solid var(--ap-line); }
+.adm .de label.de-intro, .de label.de-intro { display: grid; gap: 4px; margin: 0; font-size: 12px; font-weight: 800; color: var(--ap-soft); }
+.de-intro small, .de-head small { font-weight: 600; color: var(--ap-muted); margin-left: 4px; }
+.adm .de textarea, .de textarea { width: 100%; min-height: 0; margin: 0; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--ap-line); background: #fff; font: inherit; font-size: 13.5px; font-weight: 500; line-height: 1.5; color: var(--ap-text); resize: vertical; }
+.de textarea:focus, .de-row input:focus { outline: none; border-color: var(--ap-wine) !important; box-shadow: var(--ap-ring); }
+.de-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 2px; font-size: 12px; font-weight: 800; color: var(--ap-soft); }
+.de-head .de-tip { font-size: 10.5px; font-weight: 600; color: var(--ap-muted); }
+.de-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.de-row { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 8px; border-radius: 11px; background: #fff; border: 1px solid var(--ap-line); transition: border-color .2s, box-shadow .2s; animation: apIn .25s var(--ap-ease) both; }
+.de-row:focus-within { border-color: var(--ap-wine); box-shadow: var(--ap-ring); }
+.de-dot { width: 20px; height: 20px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 6px; background: #E6F2EA; color: var(--ap-green); }
+.de-dot svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.adm .de-row input, .de-row input { flex: 1; min-width: 0; height: 30px; margin: 0; padding: 0 2px; border: 0 !important; background: transparent !important; box-shadow: none !important; font: inherit; font-size: 13.5px; color: var(--ap-text); }
+.de-row:focus-within input { box-shadow: none !important; }
+.de-acts { display: flex; gap: 2px; opacity: .35; transition: opacity .2s; }
+.de-row:hover .de-acts, .de-row:focus-within .de-acts { opacity: 1; }
+.de-acts button { width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 7px; background: var(--ap-surface3); color: var(--ap-soft); font-size: 13px; font-weight: 800; cursor: pointer; }
+.de-acts button:hover:not(:disabled) { background: var(--ap-wine); color: #fff; }
+.de-acts button.del:hover { background: var(--ap-red); }
+.de-acts button:disabled { opacity: .3; cursor: default; }
+.de-add { justify-self: start; height: 30px; padding: 0 12px; border-radius: 99px; border: 1px dashed #CDBB9A; background: transparent; font: inherit; font-size: 12.5px; font-weight: 800; color: var(--ap-wine); cursor: pointer; transition: background .2s, border-color .2s; }
+.de-add:hover { background: #fff; border-color: var(--ap-wine); }
+.de-preview { margin-top: 4px; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1px dashed var(--ap-line); font-size: 13px; color: var(--ap-soft); }
+.de-preview > small { display: block; margin-bottom: 4px; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ap-muted); }
+.de-preview p { margin: 0 0 6px; white-space: pre-line; }
+.de-preview ul { margin: 0; padding-left: 18px; }
+.de-preview li { margin: 2px 0; }
+.de-preview li::marker { color: var(--ap-green); }

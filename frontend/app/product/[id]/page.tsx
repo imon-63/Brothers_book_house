@@ -5,6 +5,8 @@ import { use, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { DealChip } from "@/components/catalog/deal-chip";
+import { SoonNote } from "@/components/storefront/soon";
+import { parseDesc } from "@/lib/desc";
 import { AlsoStrip } from "@/components/catalog/like-strip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { offerOf, shopHref, useProduct } from "@/lib/api/catalog";
@@ -65,7 +67,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const score = Math.round((summary.average || 0) * 10) / 10;
   const social = { score, reviews: summary.count, love: dto?.wishlistCount ?? 0, rank: 0 };
   const isBook = product.vertical === "book";
-  const longDesc = product.desc.length > 90;
+  const descParts = parseDesc(product.desc);
+  const longDesc = descParts.intro.length > 160 || descParts.points.length > 4;
   const copies = 99;
   const author = dto?.authors?.[0];
 
@@ -141,7 +144,21 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             {off ? <span className="off">{bn(off)}%</span> : null}
           </div>
           {offer.on ? <DealChip until={offer.until} face="page" /> : null}
-          <p className={`desc${longDesc ? " clamp" : ""}${openDesc ? " on" : ""}`}>{product.desc}</p>
+          {!offer.on && product.soon ? <SoonNote soon={product.soon} price={offer.price} /> : null}
+          {descParts.intro || descParts.points.length ? (
+            <div className={`pd-desc${longDesc ? " clamp" : ""}${openDesc ? " on" : ""}`}>
+              {descParts.intro ? <p className="desc">{descParts.intro}</p> : null}
+              {descParts.points.length ? (
+                <ul className="pd-points">
+                  {descParts.points.map((pt, i) => (
+                    <li key={i} style={{ ["--i" as string]: i }}>
+                      <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" /></svg></span>{pt}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
           {longDesc ? <button type="button" className="pd-morebtn" onClick={() => setOpenDesc((v) => !v)}>{openDesc ? "কম দেখুন" : "আরও পড়ুন"}</button> : null}
           {isBook ? <p className="author" style={{ marginTop: 10 }}>{product.pages ? `পৃষ্ঠা ${bn(product.pages)} · ` : ""}ভাষা {dto?.book?.language || "বাংলা"}</p> : product.unit ? <p className="author" style={{ marginTop: 10 }}>{product.unit}</p> : null}
           {oos ? (

@@ -14,7 +14,16 @@ import type { CreateDealDto, DealsQueryDto } from '../dto/product-ops.dto';
 
 const OVERLAP = 'product_deals_no_overlap';
 
-type DealRow = Prisma.ProductDealGetPayload<{ include: { product: { select: { id: true; title: true; sku: true; price: true; section: { select: { code: true } } } } } }>;
+type DealRow = Prisma.ProductDealGetPayload<{
+  include: {
+    product: {
+      select: {
+        id: true; title: true; sku: true; price: true; section: { select: { code: true } };
+        images: { select: { media: { select: { url: true } } } };
+      };
+    };
+  };
+}>;
 
 /** সময়ের ছাড় — timed deal prices. Windows never overlap per product (DB exclusion constraint). */
 @Injectable()
@@ -104,14 +113,21 @@ export class DealService {
   }
 
   private include() {
-    return { product: { select: { id: true, title: true, sku: true, price: true, section: { select: { code: true } } } } } as const;
+    return {
+      product: {
+        select: {
+          id: true, title: true, sku: true, price: true, section: { select: { code: true } },
+          images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }], take: 1, select: { media: { select: { url: true } } } },
+        },
+      },
+    } satisfies Prisma.ProductDealInclude;
   }
 
   private view(d: DealRow, now: Date) {
     const state = d.cancelledAt ? 'cancelled' : d.endsAt <= now ? 'ended' : d.startsAt > now ? 'scheduled' : 'live';
     return {
       id: d.id,
-      product: { id: d.product.id, title: d.product.title, sku: d.product.sku, section: d.product.section.code, regularPrice: toNumber(d.product.price) },
+      product: { id: d.product.id, title: d.product.title, sku: d.product.sku, section: d.product.section.code, regularPrice: toNumber(d.product.price), cover: d.product.images[0]?.media.url ?? null },
       dealPrice: toNumber(d.dealPrice),
       discountPct: discountPct(d.dealPrice, d.product.price),
       label: d.label,

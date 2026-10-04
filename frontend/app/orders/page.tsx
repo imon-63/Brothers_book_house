@@ -8,6 +8,10 @@ import { api, get } from "@/lib/api/client";
 import { useMe } from "@/lib/api/auth";
 import { apiErrorText, startSslPayment, useCancelMyOrder, useGuestOrders, useMyOrders, placedOrders } from "@/lib/api/shop";
 import { bn } from "@/lib/format";
+import { EmptyState } from "@/components/storefront/empty-state";
+import { GBox } from "@/components/storefront/glyphs";
+import { PageHero } from "@/components/storefront/page-head";
+import { RowSkeleton } from "@/components/storefront/skeleton";
 import { setAuth, showToast } from "@/store/slices/ui-slice";
 import { useAppDispatch } from "@/store/hooks";
 
@@ -107,13 +111,29 @@ export default function OrdersPage() {
   const cheer = orders.find((o) => o.orderNo === cheerId);
   const busy = loading || (user ? mineQ.isLoading : guestQ.isLoading);
 
+  const liveN = orders.filter((o) => orderGlance(o).kind === "live" || orderGlance(o).kind === "hold").length;
+  const spent = orders.filter((o) => o.status !== "CANCELLED" && o.status !== "RETURNED").reduce((s2, o) => s2 + o.grandTotal, 0);
+
   return (
-    <div className="wrap" style={{ paddingBottom: 48 }}>
-      <div className="order-col">
-      <p className="crumb">হোম / <b>আমার অর্ডার</b></p>
-      <h2 style={{ marginBottom: 16 }}>আমার অর্ডার</h2>
+    <div className="wrap sf-orders" style={{ paddingBottom: 48 }}>
+      <div className="order-col sf-order-col">
+      <PageHero
+        crumbs={[{ label: "হোম", href: "/" }, { label: "আমার অর্ডার" }]}
+        kicker="অর্ডার ও ডেলিভারি"
+        icon={<GBox size={16} />}
+        title="আমার অর্ডার"
+        sub={user ? "প্রতিটা অর্ডারের ধাপ, রসিদ আর পেমেন্ট এক জায়গায়।" : "এই ডিভাইস থেকে করা অর্ডার এখানে দেখাবে।"}
+        aside={orders.length ? (
+          <>
+            <span className="sf-stat-chip"><b>{bn(orders.length)}</b><small>মোট অর্ডার</small></span>
+            <span className="sf-stat-chip"><b>{bn(liveN)}</b><small>চলমান</small></span>
+            {spent ? <span className="sf-stat-chip"><b>৳{bn(spent)}</b><small>কেনাকাটা</small></span> : null}
+          </>
+        ) : null}
+      />
       {cheer ? (
-        <div className="cheer" role="status">
+        <div className={`cheer sf-cheer${sslNote === "fail" || sslNote === "cancel" ? " warn" : ""}`} role="status">
+          <span className="sf-confetti" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ ["--i" as string]: i }} />)}</span>
           <span className="cheer-mark" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 13.2 9.2 17.5 19 7" /></svg>
           </span>
@@ -122,32 +142,33 @@ export default function OrdersPage() {
             <h3>{sslNote === "fail" || sslNote === "cancel" ? "অর্ডার রাখা হয়েছে · পেমেন্ট হয়নি" : "অর্ডার হয়েছে"}</h3>
             <p>ধন্যবাদ{cheer.name ? `, ${cheer.name.split(" ")[0]}` : ""}। আপনার অর্ডার <b>{cheer.orderNo}</b></p>
           </div>
+          <Link className="sf-cheer-go" href="/shop">আরও কেনাকাটা</Link>
         </div>
       ) : null}
-      {busy && !orders.length ? <div className="empty"><p className="serif">লোড হচ্ছে…</p></div> : !orders.length ? (
-        <div className="empty">
-          {user ? (
-            <p className="serif">এখনো কোনো অর্ডার নেই।</p>
-          ) : (
-            <>
-              <p className="serif">এই ডিভাইসে কোনো অর্ডার নেই।</p>
-              <p className="author" style={{ marginTop: 6 }}>আগের অর্ডার দেখতে লগইন করুন, অথবা মোবাইল নম্বর দিয়ে খুঁজুন।</p>
-              <button className="btn btn-primary" type="button" style={{ marginTop: 12 }} onClick={() => dispatch(setAuth(true))}>লগইন</button>
-              <p style={{ marginTop: 12 }}><Link href="/track">মোবাইল নম্বর দিয়ে খুঁজুন</Link></p>
-            </>
-          )}
-        </div>
+      {busy && !orders.length ? <RowSkeleton n={3} /> : !orders.length ? (
+        user ? (
+          <EmptyState art="box" title="এখনো কোনো অর্ডার নেই" text="প্রথম অর্ডারটা করে ফেলুন — ধাপে ধাপে ডেলিভারি এখানেই দেখবেন।">
+            <Link className="btn btn-primary" href="/shop">কেনাকাটা শুরু করুন</Link>
+          </EmptyState>
+        ) : (
+          <EmptyState art="truck" title="এই ডিভাইসে কোনো অর্ডার নেই" text="আগের অর্ডার দেখতে লগইন করুন, অথবা মোবাইল নম্বর দিয়ে খুঁজুন।">
+            <button className="btn btn-primary" type="button" onClick={() => dispatch(setAuth(true))}>লগইন</button>
+            <Link className="btn btn-ghost sf-btn-ghost" href="/track">মোবাইল নম্বর দিয়ে খুঁজুন</Link>
+          </EmptyState>
+        )
       ) : (
         orders.map((o) => {
           const g = orderGlance(o);
           const open = o.orderNo === shown;
+          const n = o.items.reduce((s2, it) => s2 + it.quantity, 0);
           return (
-            <div className={`acc ${g.kind}${open ? " on" : ""}`} key={o.orderNo}>
-              <button type="button" className="acc-head" onClick={() => setOpenId(open ? "" : o.orderNo)}>
+            <div className={`acc sf-ord ${g.kind}${open ? " on" : ""}`} key={o.orderNo}>
+              <button type="button" className="acc-head" aria-expanded={open} onClick={() => setOpenId(open ? "" : o.orderNo)}>
                 <i className="order-ico"><img src={g.icon} alt="" /></i>
                 <div className="acc-main">
-                  <div className="acc-top"><b>{o.orderNo}</b></div>
+                  <div className="acc-top"><b>{o.orderNo}</b><span className={`sf-ord-chip ${g.kind}`}>{g.chip}</span></div>
                   <div className="now-line">{g.title}</div>
+                  <div className="sf-ord-meta">{o.placedAt ? new Date(o.placedAt).toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" }) : ""}{n ? ` · ${bn(n)}টি আইটেম` : ""}</div>
                 </div>
                 <div className="acc-sum">৳{bn(o.grandTotal)}</div>
                 <span className="acc-chev" aria-hidden="true">

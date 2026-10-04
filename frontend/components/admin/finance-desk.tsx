@@ -12,8 +12,7 @@ import {
   type CashAccount, type CashEntry, type Pnl, type ReportPeriod,
 } from "@/lib/api/admin/finance";
 import { isSslMethod } from "@/lib/admin/status";
-import { DocFrame } from "@/components/admin/doc-frame";
-import { Modal } from "@/components/admin/ui";
+import { DocModal } from "@/components/admin/doc-frame";
 
 type View = "sum" | "paper" | "buy" | "cash" | "pnl";
 type Tenure = "day" | "month" | "year";
@@ -155,9 +154,7 @@ export function FinanceDesk() {
       {view === "buy" ? <Purchases accounts={accountsQ.data?.items ?? []} /> : null}
       {view === "cash" ? <CashBook day={day} setDay={setDay} accounts={accountsQ.data?.items ?? []} payable={sum?.supplierDue ?? 0} courier={sum?.courierDue ?? 0} /> : null}
       {view === "pnl" ? <PnlView tenure={tenure} setTenure={setTenure} period={tenureP} stockValue={sum?.stockValue ?? 0} onExport={(kind) => exportFinance(kind, tenureP).then(() => toast("CSV নামানো হয়েছে")).catch((e) => toast(adminErrorText(e)))} /> : null}
-      <Modal open={!!open} onClose={() => setOpen(null)} width={760} title={open ? `${open.kindLabel} · ${open.docNo}` : undefined} sub={open?.orderNo ?? undefined}>
-        {open ? <DocFrame id={open.id} height={620} /> : null}
-      </Modal>
+      <DocModal doc={open} onClose={() => setOpen(null)} title={open ? `${open.kindLabel} · ${open.docNo}` : undefined} sub={open?.orderNo ? `অর্ডার ${open.orderNo} · Document` : undefined} />
     </div>
   );
 }

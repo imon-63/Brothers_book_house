@@ -39,6 +39,7 @@ export class PublicProductQueryDto extends PageQueryDto {
 
   @ApiPropertyOptional() @IsOptional() @ToBool() @IsBoolean() inStock?: boolean;
   @ApiPropertyOptional() @IsOptional() @ToBool() @IsBoolean() onDeal?: boolean;
+  @ApiPropertyOptional({ description: 'Products whose timed deal starts within the next 7 days (cards carry nextDeal)' }) @IsOptional() @ToBool() @IsBoolean() upcomingDeal?: boolean;
   @ApiPropertyOptional() @IsOptional() @ToBool() @IsBoolean() freeShipping?: boolean;
 
   @ApiPropertyOptional({ description: 'Min effective price (৳)' })

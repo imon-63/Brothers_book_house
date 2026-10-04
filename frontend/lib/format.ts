@@ -26,3 +26,11 @@ export function timeAgo(ts: number) {
   if (days < 30) return bn(days) + " দিন আগে";
   return bn(Math.max(1, Math.floor(days / 30))) + " মাস আগে";
 }
+
+/** Display a Bangladeshi number the local way: "+8801712345678" → "01712345678" (other formats untouched). */
+export function localPhone(p: string | null | undefined) {
+  if (!p) return "";
+  const s = String(p).trim();
+  const m = s.replace(/[\s-]/g, "").match(/^\+?88(01\d{9})$/);
+  return m ? m[1] : s;
+}

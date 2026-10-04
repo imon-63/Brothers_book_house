@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { useSections, type CategoryDto, type SectionDto } from "./catalog";
+import { readHomeLayout, type HomeLayout } from "@/lib/home-layout";
 
 export type CatNode = { name: string; slug: string; count: number; subs: { name: string; slug: string; count: number }[] };
 
@@ -21,6 +22,8 @@ export type SectionView = {
   /** emoji / short glyph from section.content.icon (for codes without a built-in icon) */
   icon: string | null;
   tree: CatNode[];
+  /** admin-arranged home page (Admin → হোম পেজ) */
+  home: HomeLayout;
 };
 
 function toTree(cats: CategoryDto[]): CatNode[] {
@@ -48,6 +51,7 @@ export function toSectionView(s: SectionDto): SectionView {
     how1p: content.how1p || "ক্যাটাগরি বা সার্চ থেকে পছন্দের পণ্য কার্টে দিন।",
     icon: typeof content.icon === "string" && content.icon ? content.icon : null,
     tree: toTree(s.categories ?? []),
+    home: readHomeLayout(content, s.code),
   };
 }
 
@@ -64,6 +68,7 @@ const EMPTY: SectionView = {
   how1p: "",
   icon: null,
   tree: [],
+  home: readHomeLayout(null, "book"),
 };
 
 /**

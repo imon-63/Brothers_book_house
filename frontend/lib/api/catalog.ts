@@ -50,6 +50,8 @@ export type ProductCardDto = {
   compareAt: number | null;
   discountPct: number;
   deal: { endsAt: string } | null;
+  /** only on ?upcomingDeal=true lists */
+  nextDeal?: { dealPrice: number; startsAt: string; endsAt: string } | null;
   stockStatus: StockStatus;
   rating: { average: number; count: number };
   soldCount: number;
@@ -130,6 +132,8 @@ export type Product = {
   old: number;
   /** deal end (ISO) or "" */
   until: string;
+  /** a timed deal that has not started yet ("আসছে") */
+  soon?: { price: number; from: string; until: string };
   sold: number;
   color: string;
   cat: string;
@@ -180,6 +184,7 @@ export function toProduct(p: ProductCardDto): Product {
     price: p.price,
     old: p.compareAt ?? 0,
     until: p.deal?.endsAt ?? "",
+    soon: p.nextDeal ? { price: p.nextDeal.dealPrice, from: p.nextDeal.startsAt, until: p.nextDeal.endsAt } : undefined,
     sold: p.soldCount,
     color: p.cover.color || FALLBACK_COLOR,
     cat: p.category?.name ?? "",
@@ -272,6 +277,7 @@ export type ProductQuery = {
   sort?: "relevance" | "popular" | "new" | "price_asc" | "price_desc" | "rating";
   inStock?: boolean;
   onDeal?: boolean;
+  upcomingDeal?: boolean;
   page?: number;
   pageSize?: number;
 };

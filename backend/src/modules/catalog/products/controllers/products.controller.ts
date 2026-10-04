@@ -26,6 +26,13 @@ export class ProductsController {
     return this.catalog.detail(idOrSlug);
   }
 
+  @Get('products/:id/next-deal')
+  @PublicCache(15)
+  @ApiOperation({ summary: 'Upcoming timed deal for one product (cart asks before adding at the regular price)' })
+  nextDeal(@Param('id') id: string) {
+    return this.catalog.nextDeal(id);
+  }
+
   @Get('search/suggest')
   @PublicCache(30)
   @ApiOperation({ summary: 'Search-box suggestions: products, authors, categories, bundles' })

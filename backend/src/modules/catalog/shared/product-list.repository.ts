@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, type ContentStatus } from '@prisma/client';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { DEFAULT_LOW_STOCK } from '../domain/stock';
+import { UPCOMING_DAYS } from './product-card.loader';
 import { containsPattern, normaliseQuery, searchTokens } from '../domain/search';
 import { isUuid } from './query-transforms';
 
@@ -18,6 +19,8 @@ export type ProductListFilter = {
   q?: string;
   inStock?: boolean;
   onDeal?: boolean;
+  /** a timed deal starts within UPCOMING_DAYS */
+  upcomingDeal?: boolean;
   freeShipping?: boolean;
   minPrice?: number;
   maxPrice?: number;
@@ -146,6 +149,11 @@ export class ProductListRepository {
 
     if (f.inStock) c.push(SELLABLE);
     if (f.onDeal) c.push(Prisma.sql`ld.deal_price IS NOT NULL`);
+    if (f.upcomingDeal) {
+      c.push(Prisma.sql`EXISTS (SELECT 1 FROM product_deals ud
+                                 WHERE ud.product_id = p.id AND ud.cancelled_at IS NULL AND ud.deal_price < p.price
+                                   AND ud.starts_at > ${at} AND ud.starts_at <= ${at} + make_interval(days => ${UPCOMING_DAYS}::int))`);
+    }
     if (f.freeShipping != null) c.push(f.freeShipping ? Prisma.sql`p.free_shipping` : Prisma.sql`NOT p.free_shipping`);
     if (f.minPrice != null) c.push(Prisma.sql`${EFF} >= ${f.minPrice}`);
     if (f.maxPrice != null) c.push(Prisma.sql`${EFF} <= ${f.maxPrice}`);

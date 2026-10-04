@@ -1,8 +1,8 @@
 "use client";
 
 import "./customers.css";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { bn } from "@/lib/format";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { bn, localPhone } from "@/lib/format";
 import { DAY, phoneKey, SEGMENT_LABEL, type Segment } from "@/lib/admin/insights";
 import { isSslMethod } from "@/lib/admin/status";
 import { useAdminSection } from "@/lib/admin/section-context";
@@ -41,6 +41,33 @@ function toCustomer(r: CustomerRow): Customer {
 }
 const metaOf = (c: Customer): CustomerMeta => ({ note: "", tags: c.tags, blocked: c.blocked });
 
+/* ───────── tag pills — each tag in its own colour (customer_tags.color) ───────── */
+
+function useTagColor() {
+  const q = useCustomerTags();
+  const map = useMemo(() => new Map((q.data?.tags ?? []).map((t) => [t.name, t.color || ""])), [q.data]);
+  return useCallback((name: string) => map.get(name) || "#8A6230", [map]);
+}
+
+function TagPill({ name, color }: { name: string; color: string }) {
+  const vip = name.trim().toUpperCase() === "VIP";
+  return (
+    <i className={`cu-tag${vip ? " vip" : ""}`} style={{ ["--tc" as string]: color }} title={`ট্যাগ · ${name}`}>
+      {vip ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="currentColor" /></svg> : <span className="cu-tag-dot" aria-hidden="true" />}
+      {name}
+    </i>
+  );
+}
+
+function TagPills({ tags, max, color }: { tags: string[]; max: number; color: (n: string) => string }) {
+  return (
+    <>
+      {tags.slice(0, max).map((t) => <TagPill key={t} name={t} color={color(t)} />)}
+      {tags.length > max ? <i className="cu-tag more" title={tags.slice(max).join(", ")}>+{bn(tags.length - max)}</i> : null}
+    </>
+  );
+}
+
 const SEG_TONE: Record<Segment, Tone> = { vip: "gold", regular: "green", new: "blue", sleep: "ink", risk: "red" };
 const SEG_ORDER: Segment[] = ["vip", "regular", "new", "sleep", "risk"];
 const SORTS: { id: SortKey; bn: string; en: string }[] = [
@@ -50,7 +77,7 @@ const SORTS: { id: SortKey; bn: string; en: string }[] = [
   { id: "aov", bn: "গড় অর্ডার", en: "AOV" },
   { id: "name", bn: "নাম", en: "Name" },
 ];
-const PAGE = 30;
+const PAGE_SIZES = [10, 25, 50, 100];
 
 /* ───────── helpers ───────── */
 
@@ -99,6 +126,7 @@ function useNarrow(query = "(max-width: 980px)") {
 
 export function CustomersTab() {
   const toast = useToast();
+  const tagColor = useTagColor();
   const { focus, go, clearFocus } = useAdminNav();
 
   const [view, setView] = useState<View>("list");
@@ -109,7 +137,8 @@ export function CustomersTab() {
   const [tag, setTag] = useState("");
   const [sort, setSort] = useState<SortKey>("last");
   const [dir, setDir] = useState<1 | -1>(-1);
-  const [limit, setLimit] = useState(PAGE);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(10);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const selection = useSelection<string>();
   const narrow = useNarrow();
@@ -126,7 +155,7 @@ export function CustomersTab() {
     sort,
     order: dir === 1 ? "asc" : "desc",
   }), [term, seg, kind, tag, sort, dir]);
-  const listQ = useCustomers(filter, Math.min(100, limit));
+  const listQ = useCustomers(filter, size, page);
   const kpiQ = useCustomerKpis();
   const tagsQ = useCustomerTags();
   const bulkTagM = useBulkCustomerTag();
@@ -158,7 +187,24 @@ export function CustomersTab() {
   };
   const customers = { length: kpi.total };
 
-  useEffect(() => setLimit(PAGE), [term, seg, kind, tag, sort, dir]);
+  useEffect(() => setPage(1), [term, seg, kind, tag, sort, dir, size]);
+  const pages = Math.max(1, Math.ceil(totalFound / size));
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  /* new page → back to the top of the list; edge shadows follow the scroll position */
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    markScroll(el);
+  }, [list, size]);
+  useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
+  const goPage = (n: number) => {
+    setPage(Math.min(Math.max(1, n), pages));
+    document.querySelector(".cu-table-card, .cu-cards")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+  const pager = totalFound > 0
+    ? <CustomerPager page={page} pages={pages} total={totalFound} size={size} loading={listQ.isFetching} onPage={goPage} onSize={setSize} />
+    : null;
 
   const visible = list;
   const filtered = !!q || seg !== "all" || kind !== "all" || !!tag;
@@ -315,7 +361,7 @@ export function CustomersTab() {
         </Card>
       ) : shown === "list" ? (
         <Card pad={false} className="cu-table-card">
-          <div className="ap-table-wrap">
+          <div className="ap-table-wrap cu-scroll" ref={scrollRef} onScroll={(e) => markScroll(e.currentTarget)}>
             <table className="ap-table cu-table">
               <thead>
                 <tr>
@@ -356,8 +402,7 @@ export function CustomersTab() {
                               {m.blocked ? <Badge tone="red">ব্লক</Badge> : null}
                             </b>
                             <span className="cu-tags">
-                              {m.tags.length ? m.tags.slice(0, 3).map((t) => <i key={t}>{t}</i>) : <small>{c.registered ? "নিবন্ধিত · Registered" : "গেস্ট · Guest"}</small>}
-                              {m.tags.length > 3 ? <i>+{bn(m.tags.length - 3)}</i> : null}
+                              {m.tags.length ? <TagPills tags={m.tags} max={3} color={tagColor} /> : <small>{c.registered ? "নিবন্ধিত · Registered" : "গেস্ট · Guest"}</small>}
                             </span>
                           </div>
                         </div>
@@ -365,7 +410,7 @@ export function CustomersTab() {
                       <td>
                         <div className="cu-contact">
                           {c.phone ? (
-                            <span className="cu-phone">{bn(c.phone)}<CopyBtn text={c.phone} onCopied={() => toast("ফোন নম্বর কপি হয়েছে")} /></span>
+                            <span className="cu-phone">{bn(localPhone(c.phone))}<CopyBtn text={localPhone(c.phone)} onCopied={() => toast("ফোন নম্বর কপি হয়েছে")} /></span>
                           ) : <span className="muted">ফোন নেই</span>}
                           {c.email ? <small className="cu-ellip">{c.email}</small> : null}
                         </div>
@@ -393,7 +438,7 @@ export function CustomersTab() {
               </tbody>
             </table>
           </div>
-          <MoreBar shown={visible.length} total={Math.min(totalFound, 100)} onMore={() => setLimit((l) => Math.min(100, l + PAGE))} />
+          {pager}
         </Card>
       ) : (
         <>
@@ -404,7 +449,7 @@ export function CustomersTab() {
                 onCopied={() => toast("ফোন নম্বর কপি হয়েছে")} />
             ))}
           </div>
-          <MoreBar shown={visible.length} total={Math.min(totalFound, 100)} onMore={() => setLimit((l) => Math.min(100, l + PAGE))} />
+          {pager}
         </>
       )}
 
@@ -522,13 +567,53 @@ function SortHead({ k, sort, dir, onSort, children }: { k: SortKey; sort: SortKe
   );
 }
 
-function MoreBar({ shown, total, onMore }: { shown: number; total: number; onMore: () => void }) {
-  if (total <= shown) return null;
+function markScroll(el: HTMLElement) {
+  el.classList.toggle("scrolled", el.scrollTop > 2);
+  el.classList.toggle("at-end", el.scrollTop + el.clientHeight >= el.scrollHeight - 2);
+}
+
+function pageList(cur: number, pages: number): (number | "gap")[] {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+  const out: (number | "gap")[] = [1];
+  const from = Math.max(2, cur - 1);
+  const to = Math.min(pages - 1, cur + 1);
+  if (from > 2) out.push("gap");
+  for (let n = from; n <= to; n++) out.push(n);
+  if (to < pages - 1) out.push("gap");
+  out.push(pages);
+  return out;
+}
+
+function CustomerPager({ page, pages, total, size, loading, onPage, onSize }: {
+  page: number; pages: number; total: number; size: number; loading: boolean; onPage: (n: number) => void; onSize: (n: number) => void;
+}) {
+  const first = (page - 1) * size + 1;
+  const last = Math.min(total, page * size);
+  const pct = Math.round((last / total) * 100);
   return (
-    <div className="cu-more">
-      <span>{num(shown)} / {num(total)} দেখানো হচ্ছে</span>
-      <button type="button" className="ap-btn sm" onClick={onMore}>আরও {num(Math.min(PAGE, total - shown))} জন দেখুন</button>
-    </div>
+    <nav className={`cu-pager${loading ? " busy" : ""}`} aria-label="কাস্টমার পৃষ্ঠা">
+      <div className="cu-pager-info">
+        <span className="cu-pager-range"><b>{bn(first)}–{bn(last)}</b> <small>/ {num(total)} জন</small></span>
+        <span className="cu-pager-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
+      </div>
+      <div className="cu-pager-pages">
+        <button type="button" className="cu-pg nav" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="আগের পৃষ্ঠা">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg><span>আগের</span>
+        </button>
+        {pageList(page, pages).map((n, i) => n === "gap"
+          ? <span key={`g${i}`} className="cu-pg-gap" aria-hidden="true">···</span>
+          : <button key={n} type="button" className={`cu-pg${n === page ? " on" : ""}`} aria-current={n === page ? "page" : undefined} onClick={() => onPage(n)}>{bn(n)}</button>)}
+        <button type="button" className="cu-pg nav" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="পরের পৃষ্ঠা">
+          <span>পরের</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+        </button>
+      </div>
+      <div className="cu-pager-size" role="group" aria-label="প্রতি পৃষ্ঠায়">
+        <small>প্রতি পৃষ্ঠায়</small>
+        {PAGE_SIZES.map((n) => (
+          <button key={n} type="button" className={n === size ? "on" : ""} aria-pressed={n === size} onClick={() => onSize(n)}>{bn(n)}</button>
+        ))}
+      </div>
+    </nav>
   );
 }
 
@@ -546,6 +631,7 @@ function CustomerCard({ c, meta, spark, index, selected, onToggle, onOpen, onCop
   onToggle: () => void; onOpen: () => void; onCopied: () => void;
 }) {
   const wa = waLink(c.phone);
+  const tagColor = useTagColor();
   return (
     <article className={`cu-card seg-${c.segment}${selected ? " sel" : ""}${meta.blocked ? " cu-blocked" : ""}`} style={{ animationDelay: `${Math.min(index, 16) * 28}ms` }}
       onClick={onOpen} onKeyDown={(e) => { if (e.key === "Enter") onOpen(); }} tabIndex={0} role="button" aria-label={`${c.name} — বিস্তারিত`}>
@@ -563,7 +649,7 @@ function CustomerCard({ c, meta, spark, index, selected, onToggle, onOpen, onCop
         </span>
       </header>
       <div className="cu-card-contact">
-        {c.phone ? <span className="cu-phone">{Ico.phone}{bn(c.phone)}<CopyBtn text={c.phone} onCopied={onCopied} /></span> : <span className="muted">ফোন নেই</span>}
+        {c.phone ? <span className="cu-phone">{Ico.phone}{bn(localPhone(c.phone))}<CopyBtn text={localPhone(c.phone)} onCopied={onCopied} /></span> : <span className="muted">ফোন নেই</span>}
         {c.email ? <small className="cu-ellip">{Ico.mail}{c.email}</small> : null}
       </div>
       <dl className="cu-card-stats">
@@ -576,7 +662,7 @@ function CustomerCard({ c, meta, spark, index, selected, onToggle, onOpen, onCop
       </div>
       <footer className="cu-card-foot">
         <span className="cu-card-last">{Ico.clock}{c.last ? ago(c.last) : "এখনও অর্ডার নেই"}</span>
-        <span className="cu-tags">{meta.tags.slice(0, 2).map((t) => <i key={t}>{t}</i>)}{meta.tags.length > 2 ? <i>+{bn(meta.tags.length - 2)}</i> : null}</span>
+        <span className="cu-tags"><TagPills tags={meta.tags} max={2} color={tagColor} /></span>
         <span className="cu-card-acts" onClick={(e) => e.stopPropagation()}>
           {c.phone ? <a className="ap-icon-btn sm" href={`tel:${c.phone}`} aria-label="কল" title="কল করুন">{Ico.phone}</a> : null}
           {wa ? <a className="ap-icon-btn sm cu-wa" href={wa} target="_blank" rel="noreferrer" aria-label="WhatsApp" title="WhatsApp">{Ico.whatsapp}</a> : null}
@@ -612,6 +698,7 @@ function CustomerDrawerBody({ d, pos, count, onStep, onClose, onGo }: {
   const { byCode } = useAdminSection();
   const tagsQ = useCustomerTags();
   const setTagsM = useSetCustomerTags();
+  const tagColor = useTagColor();
   const blockM = useBlockCustomer();
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [blockReason, setBlockReason] = useState("");
@@ -726,7 +813,7 @@ function CustomerDrawerBody({ d, pos, count, onStep, onClose, onGo }: {
         </div>
         <dl className="ap-kv cu-contact-kv">
           <dt>ফোন</dt>
-          <dd>{c.phone ? <span className="cu-kv-copy">{bn(c.phone)}<button type="button" className="ap-icon-btn sm" onClick={() => copy(c.phone, "ফোন নম্বর")} aria-label="কপি">{Ico.copy}</button></span> : "—"}</dd>
+          <dd>{c.phone ? <span className="cu-kv-copy">{bn(localPhone(c.phone))}<button type="button" className="ap-icon-btn sm" onClick={() => copy(localPhone(c.phone), "ফোন নম্বর")} aria-label="কপি">{Ico.copy}</button></span> : "—"}</dd>
           <dt>ইমেইল</dt>
           <dd>{c.email ? <span className="cu-kv-copy">{c.email}<button type="button" className="ap-icon-btn sm" onClick={() => copy(c.email, "ইমেইল")} aria-label="কপি">{Ico.copy}</button></span> : "—"}</dd>
         </dl>
@@ -849,8 +936,8 @@ function CustomerDrawerBody({ d, pos, count, onStep, onClose, onGo }: {
             {allTags.map((t) => {
               const on = meta.tags.includes(t);
               return (
-                <button key={t} type="button" className={`ap-chip${on ? " on" : ""}`} aria-pressed={on}
-                  onClick={() => toggleTag(t)}>
+                <button key={t} type="button" className={`cu-tag-chip${on ? " on" : ""}`} aria-pressed={on}
+                  style={{ ["--tc" as string]: tagColor(t) }} onClick={() => toggleTag(t)}>
                   {on ? Ico.check : Ico.plus}{t}
                 </button>
               );

@@ -2,6 +2,7 @@
  * Customer segmentation — the exact rules of the admin CRM
  * (frontend/lib/admin/insights.ts → buildCustomers), evaluated in order:
  *
+ *   0. vip     — tagged "VIP" by staff (a manual decision always wins)
  *   1. risk    — ≥2 orders and cancel rate ≥50 %
  *   2. vip     — ≥5 live orders or ≥৳5,000 spent
  *   3. sleep   — last order more than 60 days ago
@@ -40,10 +41,20 @@ export type SegmentInput = {
   cancelledOrders: number;
   totalSpent: number;
   lastOrderAt: Date | null;
+  /** staff gave this customer the "VIP" tag */
+  vipTagged?: boolean;
 };
+
+/** Tag name that marks a customer VIP by hand (case-insensitive). */
+export const VIP_TAG = 'VIP';
+
+export function hasVipTag(names: string[]): boolean {
+  return names.some((n) => n.trim().toUpperCase() === VIP_TAG);
+}
 
 export function segmentOf(c: SegmentInput, now: Date = new Date()): Segment {
   const r = SEGMENT_RULES;
+  if (c.vipTagged) return 'vip';
   if (c.ordersCount >= r.riskMinOrders && c.cancelledOrders / c.ordersCount >= r.riskCancelRate) return 'risk';
   if (c.liveOrders >= r.vipMinLive || c.totalSpent >= r.vipMinSpent) return 'vip';
   if (c.lastOrderAt && now.getTime() - c.lastOrderAt.getTime() > r.sleepDays * DAY_MS) return 'sleep';
@@ -64,6 +75,8 @@ export function segmentCaseSql(alias = 'c'): string {
   const r = SEGMENT_RULES;
   const a = alias;
   return `CASE
+    WHEN EXISTS (SELECT 1 FROM customer_tags ct JOIN tags t ON t.id = ct.tag_id
+                  WHERE ct.customer_id = ${a}.id AND upper(btrim(t.name)) = '${VIP_TAG}') THEN 'vip'
     WHEN ${a}.orders_count >= ${r.riskMinOrders} AND ${a}.cancelled_orders * ${1 / r.riskCancelRate} >= ${a}.orders_count THEN 'risk'
     WHEN ${a}.live_orders >= ${r.vipMinLive} OR ${a}.total_spent >= ${r.vipMinSpent} THEN 'vip'
     WHEN ${a}.last_order_at IS NOT NULL AND ${a}.last_order_at < (now() - interval '${r.sleepDays} days') THEN 'sleep'

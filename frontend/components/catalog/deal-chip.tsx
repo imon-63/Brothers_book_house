@@ -40,10 +40,15 @@ export function DealChip({ until, face = "card" }: { until: string; face?: "card
   if (!clock) return null;
   if (face === "page") {
     return (
-      <p className="deal-banner">
-        <b>এই পণ্যে ছাড় চলছে</b>
-        <span>{new Date(until).toLocaleString("bn-BD", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit" })} পর্যন্ত</span>
-        <Clock {...clock} />
+      <p className="deal-line" role="timer" aria-label={`ছাড় চলছে · আর ${bn(clock.h)} ঘণ্টা ${bn(clock.m)} মিনিট`}>
+        <span className="deal-line-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12z" /></svg>
+        </span>
+        <b>ছাড় চলছে</b>
+        <span className="deal-line-until">{new Date(until).toLocaleString("bn-BD", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })} পর্যন্ত</span>
+        <span className="deal-line-clock" aria-hidden="true">
+          <em>{pad(clock.h)}<small>ঘ</small></em><s>:</s><em>{pad(clock.m)}<small>মি</small></em><s>:</s><em>{pad(clock.s)}<small>সে</small></em>
+        </span>
       </p>
     );
   }

@@ -5,6 +5,7 @@ import { useMe } from "@/lib/api/auth";
 import { ms } from "@/lib/api/admin/core";
 import { useCreateStaff, useResetStaffPassword, useSetStaffEnabled, useSetStaffRole, useStaff, type StaffRole } from "@/lib/api/admin/staff";
 import { Avatar, Badge, CopyBtn, Empty, Ico, Modal, Toggle, ago } from "@/components/admin/ui";
+import { localPhone } from "@/lib/format";
 
 const ROLES: { id: StaffRole; bn: string; hint: string }[] = [
   { id: "OWNER", bn: "মালিক", hint: "সব কিছু" },
@@ -59,7 +60,7 @@ export function StaffPanel() {
                 <Avatar name={u.name} size={32} />
                 <span style={{ flex: 1, minWidth: 0, display: "grid" }}>
                   <b>{u.name}{self ? <Badge tone="sage">আপনি</Badge> : null}</b>
-                  <small style={{ color: "var(--ap-muted, #8a7a70)" }}>{u.email ?? u.phone ?? ""} · শেষ লগইন {u.lastLoginAt ? ago(ms(u.lastLoginAt)) : "—"}</small>
+                  <small style={{ color: "var(--ap-muted, #8a7a70)" }}>{u.email ?? localPhone(u.phone)} · শেষ লগইন {u.lastLoginAt ? ago(ms(u.lastLoginAt)) : "—"}</small>
                 </span>
                 <select value={u.role} disabled={!canEdit || self} onChange={(e) => roleM.mutate({ id: u.id, role: e.target.value as StaffRole })}>
                   {ROLES.map((r) => <option key={r.id} value={r.id}>{r.bn}</option>)}

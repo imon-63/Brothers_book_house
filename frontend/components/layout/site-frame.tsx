@@ -19,9 +19,15 @@ import { hydrateUi, setAuth, setBye, setChat, setMenu, setMiniCart, setSection, 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { SearchBox } from "@/components/layout/search-box";
 import { IconCart, SectionGlyph } from "@/components/icons";
+import { GCash, GHeadset, GPhone, GShield, GTruck } from "@/components/storefront/glyphs";
+import { SoonConfirm } from "@/components/storefront/soon";
 
 const SECTION_KEY = "cholo_section";
 const QUICK = ["অর্ডার কোথায়?", "বই স্টকে আছে?", "ডেলিভারি চার্জ", "কুপন কোড"];
+
+function isAdminView(path: string) {
+  return path.startsWith("/admin");
+}
 
 function pageName(path: string) {
   if (path.startsWith("/shop")) return "ক্যাটাগরি";
@@ -42,6 +48,8 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const path = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [glass, setGlass] = useState(false);
+  const headRef = useRef<HTMLElement>(null);
   const [scrollPct, setScrollPct] = useState(0);
   const [badgePop, setBadgePop] = useState(false);
   const [fromLabel, setFromLabel] = useState("হোম");
@@ -192,6 +200,17 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [toast, dispatch]);
 
+  /* header: glass look once the page scrolls; publish its height for sticky page toolbars */
+  useEffect(() => {
+    const onScroll = () => setGlass((g) => (window.scrollY > 8) === g ? g : window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    const el = headRef.current;
+    const ro = el ? new ResizeObserver(() => document.documentElement.style.setProperty("--sf-head", `${Math.round(el.getBoundingClientRect().height)}px`)) : null;
+    if (el && ro) ro.observe(el);
+    return () => { window.removeEventListener("scroll", onScroll); ro?.disconnect(); };
+  }, [isAdminView(path)]);
+
   /* hidden sections never come back from GET /sections — fall back to the first live one */
   const showVerts = sections;
   useEffect(() => {
@@ -259,7 +278,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <header className="site">
+      <header className={`site sf-head${glass ? " sf-glass" : ""}`} ref={headRef}>
         <div className="wrap nav">
           <button className="icon-btn menu-btn" type="button" aria-label="মেনু" onClick={() => dispatch(setMenu(true))}>☰</button>
           <Link className="logo" href="/">
@@ -318,7 +337,8 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
                 className={`vtab${vertical === v.code ? " on" : ""}`}
                 onClick={() => pickVertical(v.code)}
               >
-                <SectionGlyph code={v.code} icon={v.icon} /> {v.name}
+                <span className="vtab-ico"><SectionGlyph code={v.code} icon={v.icon} /></span>
+                <span className="vtab-txt">{v.name}</span>
               </button>
             ))}
           </div>
@@ -369,37 +389,60 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
 
       <main className={pageIn ? `page-${pageIn}` : undefined} key={pageIn || "page"}>{children}</main>
 
-      <footer className="site">
-        <div className="wrap fgrid">
+      <footer className="site sf-foot">
+        <div className="wrap sf-foot-trust">
+          <div><span><GTruck size={22} /></span><p><b>সারা দেশে ডেলিভারি</b><small>ঢাকায় ১–২ দিন · বাইরে ২–৪ দিন</small></p></div>
+          <div><span><GCash size={22} /></span><p><b>ক্যাশ অন ডেলিভারি</b><small>হাতে পেয়ে টাকা দিন</small></p></div>
+          <div><span><GShield size={22} /></span><p><b>১০০% আসল পণ্য</b><small>সমস্যা হলে বদলে দেব</small></p></div>
+          <div><span><GHeadset size={22} /></span><p><b>হেল্পলাইন</b><small>{content?.settings?.support_hours || "প্রতিদিন খোলা"}</small></p></div>
+        </div>
+        <div className="wrap fgrid sf-fgrid">
           <div className="foot-brand">
             <img className="mark" src="/icons/cholo-mark.svg" alt="চলো" width={56} height={56} />
             <div>
               <h4>চলো</h4>
               <p className="foot-tag">চলো, কিনে ফেলি</p>
               <p className="foot-lead">বই, ঘরের বাজার ও গ্যাজেট — এক ঠিকানায়। সারা দেশে হোম ডেলিভারি।</p>
+              <div className="sf-foot-sec">
+                {showVerts.map((v) => (
+                  <button key={v.code} type="button" onClick={() => pickVertical(v.code)}><SectionGlyph code={v.code} icon={v.icon} /> {v.name}</button>
+                ))}
+              </div>
             </div>
           </div>
-          <div>
-            <h4>লিংক</h4>
+          <nav aria-label="কেনাকাটা">
+            <h4>কেনাকাটা</h4>
             <Link href="/shop">ক্যাটাগরি</Link>
             <Link className="book-only" href="/packs">প্যাকেজ</Link>
             <Link className="book-only" href="/authors">লেখক</Link>
-            <Link href="/orders">অর্ডার</Link>
+            <Link href="/cart">কার্ট</Link>
             {isStaff ? null : <Link href="/wait">ভবিষ্যৎ অর্ডার</Link>}
+          </nav>
+          <nav aria-label="সাহায্য">
+            <h4>সাহায্য</h4>
+            <Link href="/orders">অর্ডার</Link>
             <Link href="/track">অর্ডার খুঁজুন</Link>
-          </div>
+            <p><button type="button" onClick={() => dispatch(setChat(true))}>লাইভ চ্যাট</button></p>
+            <Link href="/profile">আমার অ্যাকাউন্ট</Link>
+          </nav>
           <div>
             <h4>হেল্পলাইন</h4>
-            <p><a href={`tel:${helpline}`}>{helpline}</a></p>
+            <p><a className="sf-foot-call" href={`tel:${helpline}`}><GPhone size={16} /> {helpline}</a></p>
+            {content?.settings?.support_hours ? <p>{content.settings.support_hours}</p> : null}
             <p>পেমেন্ট: SSLCOMMERZ</p>
-            <p><button type="button" onClick={() => dispatch(setChat(true))}>লাইভ চ্যাট</button></p>
-            <p>বিকাশ · নগদ · কার্ড</p>
+            <div className="sf-foot-pay" aria-label="পেমেন্ট মাধ্যম">
+              <span>বিকাশ</span><span>নগদ</span><span>কার্ড</span><span>ক্যাশ অন ডেলিভারি</span>
+            </div>
           </div>
         </div>
-        <div className="wrap copy">© ২০২৬ চলো · চলো, কিনে ফেলি</div>
+        <div className="wrap copy sf-copy">
+          <span>© ২০২৬ চলো · চলো, কিনে ফেলি</span>
+          <span>যত্ন করে প্যাক · দ্রুত ডেলিভারি</span>
+        </div>
       </footer>
 
       <MiniCart open={miniOpen} onClose={() => dispatch(setMiniCart(false))} />
+      <SoonConfirm />
 
       <button className={`scroll-top${scrolled ? " show" : ""}`} type="button" aria-label={`উপরে যান · ${bn(scrollPct)}%`} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
         <svg className="ring" viewBox="0 0 58 58" aria-hidden><circle ref={ring} cx="29" cy="29" r="26" /></svg>

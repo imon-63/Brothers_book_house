@@ -35,12 +35,26 @@ export function Rail({ children, kind = "books" }: { children: React.ReactNode; 
     const onNext = (e: Event) => { e.preventDefault(); i += 1; sync(); };
     prev.addEventListener("click", onPrev);
     next.addEventListener("click", onNext);
+    /* touch: a horizontal swipe steps the rail like the arrow buttons */
+    let tx = 0, ty = 0;
+    const onStart = (e: TouchEvent) => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; };
+    const onEnd = (e: TouchEvent) => {
+      const t = e.changedTouches[0];
+      const dx = t.clientX - tx, dy = t.clientY - ty;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+      i += dx < 0 ? Math.max(1, vis() - 1) : -Math.max(1, vis() - 1);
+      sync();
+    };
+    view.addEventListener("touchstart", onStart, { passive: true });
+    view.addEventListener("touchend", onEnd, { passive: true });
     const ro = new ResizeObserver(sync);
     ro.observe(view);
     sync();
     return () => {
       prev.removeEventListener("click", onPrev);
       next.removeEventListener("click", onNext);
+      view.removeEventListener("touchstart", onStart);
+      view.removeEventListener("touchend", onEnd);
       ro.disconnect();
     };
   }, [children]);

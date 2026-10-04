@@ -123,6 +123,7 @@ services:
   # ───────── observability: OTel → Tempo (traces) + Prometheus (metrics) → Grafana ─────────
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.120.0
+    restart: unless-stopped
     command: ["--config=/etc/otelcol/config.yaml"]
     environment: { DEPLOY_ENV: local, TRACE_SAMPLE_PCT: 100 }
     volumes:
@@ -133,6 +134,7 @@ services:
 
   tempo:
     image: grafana/tempo:2.7.2
+    restart: unless-stopped
     command: ["-config.file=/etc/tempo/tempo.yaml", "-config.expand-env=true"]
     environment: { TEMPO_RETENTION: 48h }
     volumes: [./ops/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro, tempo:/var/tempo]
@@ -140,6 +142,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v3.2.1
+    restart: unless-stopped
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -155,6 +158,7 @@ services:
 
   grafana:
     image: grafana/grafana:11.5.2
+    restart: unless-stopped
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin

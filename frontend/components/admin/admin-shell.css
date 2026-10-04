@@ -119,7 +119,9 @@
 .ap-top-btn:hover, .ap-top-btn.on { color: var(--ap-wine); border-color: #D8C9B0; }
 .ap-bell-n { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 99px; display: grid; place-items: center; font-style: normal; font-size: 10.5px; font-weight: 800; color: #fff; background: #D23F31; box-shadow: 0 0 0 2px var(--ap-bg); animation: apPop .3s var(--ap-ease) both; }
 .ap-burger { display: none; }
-.ap-page { animation: apIn .35s var(--ap-ease) both; }
+/* "backwards", not "both": a transform left on .ap-page after the entrance would turn it into the
+   containing block for position:fixed children (bulk bars landed below the screen) */
+.ap-page { animation: apIn .35s var(--ap-ease) backwards; }
 
 /* ── notifications ── */
 .ap-notes { width: min(380px, calc(100vw - 24px)); }

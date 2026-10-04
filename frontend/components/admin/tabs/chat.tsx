@@ -3,7 +3,7 @@
 import { useAdminNav } from "@/components/admin/nav";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { bn, timeAgo } from "@/lib/format";
+import { bn, timeAgo, localPhone } from "@/lib/format";
 import { statusLabel, statusTone } from "@/lib/admin/status";
 import { ms } from "@/lib/api/admin/core";
 import {
@@ -143,7 +143,7 @@ export function ChatTab() {
           <h4>{who.name}</h4>
           <p className="chat-info-sub">চলো ক্রেতা</p>
           <div className="chat-info-rows">
-            {who.phone ? <p><i>মোবাইল</i><b>{who.phone}</b></p> : null}
+            {who.phone ? <p><i>মোবাইল</i><b>{localPhone(who.phone)}</b></p> : null}
             {who.email ? <p><i>ইমেইল</i><b>{who.email}</b></p> : null}
           </div>
           <div className="chat-info-kpis">

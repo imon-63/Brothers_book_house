@@ -50,12 +50,12 @@ export type CustomerFilter = { q?: string; segment?: ApiSegment; kind?: "registe
 
 const clean = <T extends object>(f: T) => Object.fromEntries(Object.entries(f).filter(([, v]) => v !== undefined && v !== "")) as Partial<T>;
 
-export function useCustomers(filter: CustomerFilter, pageSize: number) {
+export function useCustomers(filter: CustomerFilter, pageSize: number, page = 1) {
   const f = clean(filter);
   return useQuery({
-    queryKey: [...adminKeys.customers, "list", f, pageSize],
+    queryKey: [...adminKeys.customers, "list", f, pageSize, page],
     placeholderData: (p) => p,
-    queryFn: () => get<Paged<CustomerRow>>("/admin/customers", { ...f, pageSize }),
+    queryFn: () => get<Paged<CustomerRow>>("/admin/customers", { ...f, pageSize, page }),
   });
 }
 

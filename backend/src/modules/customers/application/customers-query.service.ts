@@ -8,7 +8,7 @@ import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { Traced } from '@/infrastructure/telemetry/traced.decorator';
 import { dhakaMonthStart, favourite, LIVE_STATUSES, monthlySeries, share } from '../domain/customer-stats';
 import { toCsv } from '../domain/csv';
-import { cancelRate, segmentCaseSql, segmentOf, SEGMENT_LABEL, SEGMENTS, type Segment } from '../domain/segment';
+import { cancelRate, hasVipTag, segmentCaseSql, segmentOf, SEGMENT_LABEL, SEGMENTS, type Segment } from '../domain/segment';
 import { bundleStock, productStock } from '../domain/stock-status';
 import type { CustomerFilterDto, CustomerListQueryDto, CustomerSort } from '../dto/admin-customers.dto';
 import { addressInclude, mapAddress, mapCustomerRow, type CustomerListRow } from '../mappers/customer.mapper';
@@ -156,7 +156,10 @@ export class CustomersQueryService {
     ]);
 
     const spent = toNumber(c.totalSpent);
-    const segment = segmentOf({ ordersCount: c.ordersCount, liveOrders: c.liveOrders, cancelledOrders: c.cancelledOrders, totalSpent: spent, lastOrderAt: c.lastOrderAt }, now);
+    const segment = segmentOf(
+      { ordersCount: c.ordersCount, liveOrders: c.liveOrders, cancelledOrders: c.cancelledOrders, totalSpent: spent, lastOrderAt: c.lastOrderAt, vipTagged: hasVipTag(c.tags.map((t) => t.tag.name)) },
+      now,
+    );
     const totalOrders = methods.reduce((s, m) => s + m._count._all, 0);
     const cod = methods.find((m) => m.paymentMethod === 'COD')?._count._all ?? 0;
     const ssl = methods.find((m) => m.paymentMethod === 'SSLCOMMERZ')?._count._all ?? 0;

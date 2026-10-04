@@ -3,7 +3,7 @@
 import "./admin-shell.css";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { bn } from "@/lib/format";
+import { bn, localPhone } from "@/lib/format";
 import { logout, useMe } from "@/lib/api/auth";
 import { useAttention } from "@/lib/api/admin/dashboard";
 import { AdminSectionProvider, useAdminSection } from "@/lib/admin/section-context";
@@ -22,10 +22,11 @@ import { ChatTab } from "@/components/admin/tabs/chat";
 import { ProductsTab } from "@/components/admin/tabs/products";
 import { PacksTab } from "@/components/admin/tabs/packs";
 import { CategoriesTab } from "@/components/admin/tabs/categories";
+import { HomeBuilderTab } from "@/components/admin/tabs/home-builder";
 import { SettingsTab } from "@/components/admin/tabs/settings";
 import { ActivityTab } from "@/components/admin/tabs/activity";
 
-const TABS = new Set<AdminTab>(["dashboard", "orders", "customers", "chat", "products", "packs", "cats", "finance", "activity", "settings"]);
+const TABS = new Set<AdminTab>(["dashboard", "orders", "customers", "chat", "products", "packs", "cats", "home", "finance", "activity", "settings"]);
 /** Screens that draw their own PageHead (with their own actions). */
 const OWN_HEAD = new Set<AdminTab>(["dashboard", "orders", "customers", "products", "activity"]);
 const GO_KEYS: Record<string, AdminTab> = { d: "dashboard", o: "orders", c: "customers", i: "chat", p: "products", b: "packs", f: "finance", a: "activity", s: "settings" };
@@ -33,7 +34,7 @@ const COLLAPSE_KEY = "cholo_admin_rail";
 
 const TAB_ICON: Record<AdminTab, ReactNode> = {
   dashboard: Ico.dashboard, orders: Ico.orders, customers: Ico.customers, chat: Ico.chat, products: Ico.products,
-  packs: Ico.packs, cats: Ico.cats, finance: Ico.finance, activity: Ico.activity, settings: Ico.settings,
+  packs: Ico.packs, cats: Ico.cats, home: Ico.store, finance: Ico.finance, activity: Ico.activity, settings: Ico.settings,
 };
 
 function readHash(): { tab: AdminTab; focus: string | null } {
@@ -180,7 +181,7 @@ function AdminShell() {
               trigger={() => (
                 <button type="button" className="ap-me-btn">
                   <Avatar name={me?.name || "অ"} size={36} tone={4} />
-                  <span className="ap-me-txt"><b>{me?.name || "অ্যাডমিন"}</b><small>{me?.email || me?.phone}</small></span>
+                  <span className="ap-me-txt"><b>{me?.name || "অ্যাডমিন"}</b><small>{me?.email || localPhone(me?.phone)}</small></span>
                   {Ico.chevD}
                 </button>
               )}
@@ -240,6 +241,7 @@ function AdminShell() {
             {tab === "products" ? <ProductsTab /> : null}
             {tab === "packs" ? <PacksTab /> : null}
             {tab === "cats" ? <CategoriesTab /> : null}
+            {tab === "home" ? <HomeBuilderTab /> : null}
             {tab === "finance" ? <FinanceDesk /> : null}
             {tab === "activity" ? <ActivityTab /> : null}
             {tab === "settings" ? <SettingsTab /> : null}

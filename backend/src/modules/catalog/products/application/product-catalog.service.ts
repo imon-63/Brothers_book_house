@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { skipTake, toPage } from '@/common/dto/pagination.dto';
 import { NotFoundError } from '@/common/errors/domain.error';
+import { toNumber } from '@/common/utils/money';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { Traced } from '@/infrastructure/telemetry/traced.decorator';
 import { searchTokens } from '../../domain/search';
@@ -48,6 +49,7 @@ export class ProductCatalogService {
         q: q.q,
         inStock: q.inStock,
         onDeal: q.onDeal,
+        upcomingDeal: q.upcomingDeal,
         freeShipping: q.freeShipping,
         minPrice: q.minPrice,
         maxPrice: q.maxPrice,
@@ -67,7 +69,20 @@ export class ProductCatalogService {
     const key: Prisma.ProductWhereInput = isUuid(idOrSlug) ? { id: idOrSlug } : /^\d{1,9}$/.test(idOrSlug) ? { legacyId: Number(idOrSlug) } : { slug: idOrSlug };
     const p = await this.prisma.product.findFirst({ where: { ...key, ...publicProductWhere(now) }, include: productDetailInclude(now) });
     if (!p) throw new NotFoundError('Product', idOrSlug);
-    return toProductDetail(p, await this.related(p.id, p.categoryId, p.sectionId, now), now);
+    const related = await this.cards.withNextDeal(await this.related(p.id, p.categoryId, p.sectionId, now), now);
+    const next = await this.cards.nextDeals([p.id], now);
+    return { ...toProductDetail(p, related, now), nextDeal: next.get(p.id) ?? null };
+  }
+
+  /** Cart guard: is a timed deal about to start on this product? (buying now = regular price) */
+  @Traced('catalog.products.next_deal')
+  async nextDeal(id: string) {
+    const now = new Date();
+    if (!isUuid(id)) throw new NotFoundError('Product', id);
+    const p = await this.prisma.product.findFirst({ where: { id, ...publicProductWhere(now) }, select: { id: true, title: true, price: true } });
+    if (!p) throw new NotFoundError('Product', id);
+    const d = (await this.cards.nextDeals([id], now)).get(id) ?? null;
+    return { productId: p.id, title: p.title, regularPrice: toNumber(p.price), nextDeal: d };
   }
 
   /** Same category first (best sellers), topped up from the same section. */

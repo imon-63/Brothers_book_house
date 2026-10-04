@@ -4,7 +4,7 @@ import { createContext, useContext } from "react";
 
 export type AdminTab =
   | "dashboard" | "orders" | "customers" | "chat"
-  | "products" | "packs" | "cats"
+  | "products" | "packs" | "cats" | "home"
   | "finance" | "activity" | "settings";
 
 export type AdminNav = {
@@ -42,6 +42,7 @@ export const NAV_GROUPS: { label: string; items: { id: AdminTab; bn: string; en:
       { id: "products", bn: "পণ্য", en: "Products" },
       { id: "packs", bn: "প্যাকেজ", en: "Bundles" },
       { id: "cats", bn: "ক্যাটাগরি", en: "Categories" },
+      { id: "home", bn: "হোম পেজ", en: "Home layout" },
     ],
   },
   {
@@ -65,6 +66,7 @@ export const TAB_META: Record<AdminTab, { bn: string; en: string; sub: string }>
   products: { bn: "পণ্য", en: "Products", sub: "দাম, স্টক, ছাড় · Inventory" },
   packs: { bn: "প্যাকেজ", en: "Bundles", sub: "বইয়ের বান্ডেল অফার" },
   cats: { bn: "ক্যাটাগরি", en: "Categories", sub: "ক্যাটাগরি ও সাব-ক্যাটাগরি সাজান" },
+  home: { bn: "হোম পেজ", en: "Home layout", sub: "প্রতিটি বিভাগের হোম পেজ সাজান · আজকের ছাড় · Storefront" },
   finance: { bn: "হিসাব", en: "Finance", sub: "বিক্রি, ক্যাশবুক, লাভ-ক্ষতি · Accounting" },
   activity: { bn: "অ্যাক্টিভিটি", en: "Activity log", sub: "কে কখন কী বদলেছে · Audit trail" },
   settings: { bn: "সেটিংস", en: "Settings", sub: "ডেলিভারি, কুপন, অফার, টপবার · Store setup" },

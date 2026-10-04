@@ -6,8 +6,15 @@ import type { Slide } from "@/lib/api/content";
 import type { SectionView } from "@/lib/api/section";
 import { shopHref } from "@/lib/api/catalog";
 import { bn } from "@/lib/format";
+import { SectionGlyph } from "@/components/icons";
 
-export function Hero({ slides, vertical }: { slides: Slide[]; vertical: SectionView }) {
+const TICK = 5200;
+
+function two(n: number) {
+  return bn(String(n).padStart(2, "0"));
+}
+
+export function Hero({ slides, vertical, loading = false }: { slides: Slide[]; vertical: SectionView; loading?: boolean }) {
   const router = useRouter();
   const [i, setI] = useState(0);
   const n = slides.length;
@@ -17,13 +24,15 @@ export function Hero({ slides, vertical }: { slides: Slide[]; vertical: SectionV
 
   useEffect(() => {
     if (n < 2) return;
-    const t = setInterval(() => setI((x) => (x + 1) % n), 5200);
+    const t = setInterval(() => setI((x) => (x + 1) % n), TICK);
     return () => clearInterval(t);
   }, [n, vertical.code]);
 
   if (!slide) {
     return (
-      <div className="hero-stage">
+      <div className={`hero-stage sf-hero sf-hero-empty${loading ? " is-loading" : ""}`}>
+        <span className="sf-hero-glow" aria-hidden="true" />
+        <span className="sf-hero-grain" aria-hidden="true" />
         <div className="hero-copy wrap">
           <div className="inner">
             <p className="hero-kicker"><i></i> {vertical.kicker}</p>
@@ -34,24 +43,28 @@ export function Hero({ slides, vertical }: { slides: Slide[]; vertical: SectionV
             </div>
           </div>
         </div>
+        <span className="sf-hero-badge" aria-hidden="true"><SectionGlyph code={vertical.code} icon={vertical.icon} /></span>
       </div>
     );
   }
 
   return (
-    <div className="hero-stage">
+    <div className="hero-stage sf-hero" aria-roledescription="ক্যারোসেল" aria-label={vertical.name || "অফার"}>
       <div className="hero-slides">
         {slides.map((s, idx) => (
           <button
             key={s.key}
             type="button"
+            tabIndex={-1}
+            aria-hidden={idx !== i}
             className={`hero-slide${idx === i ? " on" : ""}`}
             onClick={() => router.push(s.catSlug ? shopHref(s.catSlug) : "/shop")}
           >
-            <img src={s.img} alt={s.title} />
+            <img src={s.img} alt={s.title || s.cat || vertical.name} />
           </button>
         ))}
       </div>
+      <span className="sf-hero-tint" aria-hidden="true" />
       <button className="hs-nav prev" type="button" aria-label="আগের স্লাইড" onClick={() => setI((x) => (x - 1 + n) % n)}>‹</button>
       <button className="hs-nav next" type="button" aria-label="পরের স্লাইড" onClick={() => setI((x) => (x + 1) % n)}>›</button>
       <div className="hs-dots">
@@ -70,6 +83,30 @@ export function Hero({ slides, vertical }: { slides: Slide[]; vertical: SectionV
           </div>
         </div>
       </div>
+      {n > 1 ? (
+        <div className="sf-hero-rail wrap" aria-label="স্লাইড বাছুন">
+          <span className="sf-hero-count" aria-live="polite"><b>{two(i + 1)}</b> / {two(n)}</span>
+          <div className="sf-hero-thumbs">
+            {slides.map((s, idx) => (
+              <button
+                key={s.key}
+                type="button"
+                className={`sf-hero-thumb${idx === i ? " on" : ""}`}
+                aria-current={idx === i ? "true" : undefined}
+                aria-label={`${s.title || s.cat || `স্লাইড ${bn(idx + 1)}`}`}
+                onClick={() => setI(idx)}
+              >
+                <img src={s.img} alt="" />
+                <span className="sf-hero-thumb-txt">
+                  <small>{s.cat || vertical.name}</small>
+                  <b>{s.title || vertical.title}</b>
+                </span>
+                {idx === i ? <i className="sf-hero-bar" key={`${vertical.code}-${i}`} style={{ animationDuration: `${TICK}ms` }} aria-hidden="true" /> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

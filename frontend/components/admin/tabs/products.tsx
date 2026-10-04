@@ -19,6 +19,7 @@ import {
 } from "@/lib/api/admin/products";
 import { COLORS, readFile, Pager } from "@/components/admin/shared";
 import { useAdminNav } from "@/components/admin/nav";
+import { DescEditor } from "@/components/admin/desc-editor";
 import {
   Badge, Columns, Drawer, Empty, Ico, Modal, PageHead, SearchInput, Segmented, Stat, StatusPill, Toggle,
   dateOnly, downloadCsv, num, tk, useSelection,
@@ -33,22 +34,22 @@ type BulkKind = null | "price" | "discount" | "restock" | "move";
 type Cat = { id: string; name: string; hidden: boolean; count: number; subs: { id: string; name: string; hidden: boolean; count: number }[] };
 
 /** API row → the shape this screen was designed around. */
-type ShopProduct = {
+export type ShopProduct = {
   id: string; title: string; author: string; price: number; old: number; cost: number; sold: number; color: string;
   cat: string; catId: string; sub?: string; subId?: string; desc: string; vertical: string; stock: number; copies: number;
-  freeShip: boolean; image?: string; deal?: { id: string; price: number; until: string }; version: number; hidden: boolean;
+  freeShip: boolean; image?: string; deal?: { id: string; price: number; until: string; from?: string }; version: number; hidden: boolean;
 };
-function toLocalDt(iso: string) {
+export function toLocalDt(iso: string) {
   const d = new Date(iso);
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
-function toShop(r: AdminProductRow): ShopProduct {
+export function toShop(r: AdminProductRow): ShopProduct {
   return {
     id: r.id, title: r.title, author: r.authorLine ?? r.subtitle ?? "", price: r.regularPrice, old: r.storedCompareAt ?? 0, cost: r.costPrice ?? 0,
     sold: r.soldCount, color: r.cover.color || "#7A2430", cat: r.category?.name ?? "", catId: r.category?.id ?? "", sub: r.subcategory?.name ?? undefined,
     subId: r.subcategory?.id ?? undefined, desc: "", vertical: r.section.code, stock: r.stock.onHand, copies: Math.max(r.stock.initialCopies, r.stock.onHand),
-    freeShip: r.freeShipping, image: r.cover.url ?? undefined, deal: r.deal ? { id: r.deal.id, price: r.deal.dealPrice, until: toLocalDt(r.deal.endsAt) } : undefined,
+    freeShip: r.freeShipping, image: r.cover.url ?? undefined, deal: r.deal ? { id: r.deal.id, price: r.deal.dealPrice, until: toLocalDt(r.deal.endsAt), from: toLocalDt(r.deal.startsAt) } : undefined,
     version: r.version, hidden: r.categoryHidden,
   };
 }
@@ -432,7 +433,7 @@ export function ProductsTab() {
                     {npSubs.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                   </select>
                 </div>
-                <div className="span-2"><label>বিবরণ</label><textarea rows={2} {...addForm.register("desc")} placeholder="ছোট করে পণ্যের পরিচয় · খালি থাকলে «নতুন সংযোজন।»" /></div>
+                <div className="span-2"><label>বিবরণ</label><DescEditor value={addForm.watch("desc")} onChange={(t) => addForm.setValue("desc", t, { shouldDirty: true })} /></div>
               </div>
             </section>
 
@@ -1094,7 +1095,7 @@ function ProductDrawer({ id, low, cats, onClose, onDeal, onDelete, onOrder }: {
             <div className="span-2"><label>{who}</label><input value={draft.author} onChange={(e) => set("author", e.target.value)} /></div>
             <div><label>ক্যাটাগরি</label><select value={draft.cat} onChange={(e) => setDraft((d) => (d ? { ...d, cat: e.target.value, sub: "" } : d))}>{cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}{cats.some((c) => c.id === draft.cat) ? null : <option value={draft.cat}>{product.cat}</option>}</select></div>
             <div><label>সাব-ক্যাটাগরি</label><select value={draft.sub} onChange={(e) => set("sub", e.target.value)}><option value="">—</option>{subs.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}{draft.sub && !subs.some((x) => x.id === draft.sub) ? <option value={draft.sub}>{product.sub}</option> : null}</select></div>
-            <div className="span-2"><label>বিবরণ</label><textarea rows={3} value={draft.desc} onChange={(e) => set("desc", e.target.value)} /></div>
+            <div className="span-2"><label>বিবরণ</label><DescEditor value={draft.desc} onChange={(t) => set("desc", t)} /></div>
           </div>
         </section>
 
@@ -1178,18 +1179,42 @@ function ProductDrawer({ id, low, cats, onClose, onDeal, onDelete, onOrder }: {
 /* ───────── timed deal ───────── */
 
 /** DealDialog uses legacy `.adm .overlay` styles; portal it above the drawer inside an `.adm` shell. */
-function DealLayer({ children }: { children: ReactNode }) {
+export function DealLayer({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
   return createPortal(<div className="adm pr-deal-layer">{children}</div>, document.body);
 }
 
-function DealDialog({ product, onClose }: { product: ShopProduct | null; onClose: () => void }) {
+const DURATIONS = [
+  { h: 3, label: "৩ ঘণ্টা" },
+  { h: 6, label: "৬ ঘণ্টা" },
+  { h: 12, label: "১২ ঘণ্টা" },
+  { h: 24, label: "১ দিন" },
+  { h: 72, label: "৩ দিন" },
+  { h: 168, label: "৭ দিন" },
+];
+
+function spanText(ms: number) {
+  const mins = Math.round(ms / 60000);
+  const d = Math.floor(mins / 1440);
+  const h = Math.floor((mins % 1440) / 60);
+  const m = mins % 60;
+  return [d ? `${bn(d)} দিন` : "", h ? `${bn(h)} ঘণ্টা` : "", m && !d ? `${bn(m)} মিনিট` : ""].filter(Boolean).join(" ") || "০ মিনিট";
+}
+
+/**
+ * সময়ের ছাড় — deal price + when it starts (now or scheduled) + when it ends.
+ * A scheduled deal changes nothing until its start; at the end the price returns by itself.
+ */
+export function DealDialog({ product, onClose, scheduled = false }: { product: ShopProduct | null; onClose: () => void; scheduled?: boolean }) {
   const toast = useToast();
   const createM = useCreateDeal();
   const cancelM = useCancelDeal();
+  const upcoming = Boolean(product?.deal?.from && Date.parse(product.deal.from) > Date.now());
   const [price, setPrice] = useState(product?.deal?.price ? String(product.deal.price) : "");
+  const [later, setLater] = useState(scheduled || upcoming);
+  const [from, setFrom] = useState(upcoming ? product!.deal!.from! : "");
   const [until, setUntil] = useState(product?.deal?.until || "");
   useEffect(() => {
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
@@ -1200,19 +1225,39 @@ function DealDialog({ product, onClose }: { product: ShopProduct | null; onClose
   const live = offerOf(product).on;
   const dealN = n0(price);
   const save_off = dealN > 0 && dealN < product.price ? Math.round((1 - dealN / product.price) * 100) : 0;
+  const startMs = later && from ? Date.parse(from) : Date.now();
+  const endMs = until ? Date.parse(until) : NaN;
+
+  function quick(hours: number) {
+    if (later && !from) {
+      toast("আগে শুরুর সময় বাছুন");
+      return;
+    }
+    setUntil(toLocalDt(new Date(startMs + hours * 3_600_000).toISOString()));
+  }
 
   function save() {
     const n = n0(price);
-    const end = Date.parse(until);
     if (!(n > 0) || n >= product!.price) {
       toast("ছাড়ের দাম আগের দামের চেয়ে কম দিন");
       return;
     }
-    if (!until || !(end > Date.now())) {
+    if (later && !(Date.parse(from) > Date.now())) {
+      toast("শুরুর সময় সামনে দিন");
+      return;
+    }
+    if (!until || !(endMs > Date.now())) {
       toast("শেষ হওয়ার সময় সামনে দিন");
       return;
     }
-    createM.mutate({ id: product!.id, dealPrice: n, endsAt: new Date(end).toISOString() }, { onSuccess: onClose });
+    if (!(endMs > startMs)) {
+      toast("শেষের সময় শুরুর পরে দিন");
+      return;
+    }
+    createM.mutate(
+      { id: product!.id, dealPrice: n, endsAt: new Date(endMs).toISOString(), ...(later ? { startsAt: new Date(Date.parse(from)).toISOString() } : {}) },
+      { onSuccess: onClose },
+    );
   }
 
   function clear() {
@@ -1222,7 +1267,7 @@ function DealDialog({ product, onClose }: { product: ShopProduct | null; onClose
 
   return (
     <div className="overlay on" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="box" style={{ maxWidth: 440, margin: "10vh auto" }}>
+      <div className="box pr-deal-box" style={{ maxWidth: 460, margin: "8vh auto" }}>
         <button type="button" className="x" onClick={onClose}>×</button>
         <h3 className="serif">সময়ের ছাড়</h3>
         <p className="author">{product.title}</p>
@@ -1230,11 +1275,38 @@ function DealDialog({ product, onClose }: { product: ShopProduct | null; onClose
         <label>ছাড়ের দাম</label>
         <input type="number" min={1} value={price} onChange={(e) => setPrice(e.target.value)} />
         {save_off ? <p className="author">ক্রেতা পাবে {bn(save_off)}% ছাড়{n0(product.cost) > 0 && dealN < n0(product.cost) ? " · সাবধান, কেনা দামের নিচে" : ""}</p> : null}
-        <BnDateField label="শেষ হবে" withTime end value={until} onChange={setUntil} emptyText="তারিখ ও সময় বাছুন" />
+
+        <label>কখন শুরু হবে</label>
+        <div className="pr-deal-when" role="radiogroup">
+          <button type="button" role="radio" aria-checked={!later} className={!later ? "on" : ""} onClick={() => setLater(false)}>
+            <b>এখনই</b><small>সেভ করলেই চালু</small>
+          </button>
+          <button type="button" role="radio" aria-checked={later} className={later ? "on" : ""} onClick={() => setLater(true)}>
+            <b>নির্দিষ্ট সময়ে</b><small>শিডিউল · আসছে তালিকায় থাকবে</small>
+          </button>
+        </div>
+        {later ? <BnDateField label="শুরু হবে" withTime value={from} onChange={setFrom} emptyText="শুরুর তারিখ ও সময়" /> : null}
+
+        <label>কতক্ষণ চলবে</label>
+        <div className="pr-deal-chips">
+          {DURATIONS.map((d) => {
+            const on = Number.isFinite(endMs) && Math.abs(endMs - startMs - d.h * 3_600_000) < 60_000;
+            return <button key={d.h} type="button" className={on ? "on" : ""} onClick={() => quick(d.h)}>{d.label}</button>;
+          })}
+        </div>
+        <BnDateField label="অথবা শেষ হবে" withTime end value={until} onChange={setUntil} emptyText="তারিখ ও সময় বাছুন" />
+
+        {Number.isFinite(endMs) && endMs > startMs ? (
+          <p className="pr-deal-sum">
+            {later && from ? <>শুরু <b>{fmtShipDt(from)}</b> · </> : <>এখনই শুরু · </>}
+            শেষ <b>{fmtShipDt(until)}</b> · মোট <b>{spanText(endMs - startMs)}</b> চলবে
+          </p>
+        ) : null}
         {live && product.deal ? <p className="author">এখন চলছে · {fmtShipDt(product.deal.until)} পর্যন্ত</p> : null}
+        {upcoming && product.deal?.from ? <p className="author">শিডিউল করা · {fmtShipDt(product.deal.from)} থেকে শুরু</p> : null}
         <div className="save-row">
           {product.deal ? <button type="button" className="btn btn-ghost" onClick={clear}>টাইমার সরান</button> : <span />}
-          <button type="button" className="btn btn-primary" disabled={createM.isPending} onClick={save}>বসান</button>
+          <button type="button" className="btn btn-primary" disabled={createM.isPending} onClick={save}>{later ? "শিডিউল করুন" : "বসান"}</button>
         </div>
       </div>
     </div>

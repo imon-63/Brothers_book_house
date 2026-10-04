@@ -1,5 +1,6 @@
 import type { DocumentKind } from '@prisma/client';
 import { D, type MoneyLike } from '@/common/utils/money';
+import { localPhone } from '@/common/utils/text';
 import { bnDateTime, bnDigits, bnTaka, isZero } from '../../shared/domain/bn-format';
 import type { DocLine } from './document-snapshot';
 
@@ -87,7 +88,7 @@ export function renderDocumentHtml(doc: PrintableDocument): string {
 <div class="print"><button type="button" onclick="window.print()">প্রিন্ট</button></div>
 <div class="head"><div><div class="shop"><b>চলো</b><span>কিনে ফেলি</span></div><h1>${title}</h1></div><p class="no">${escapeHtml(doc.docNo)}</p></div>
 <div class="facts"><span><i>তারিখ</i>${escapeHtml(bnDateTime(doc.issuedAt))}</span><span><i>অর্ডার</i>${escapeHtml(doc.orderNo)}</span><span><i>পেমেন্ট</i>${escapeHtml(doc.paymentLabel)}</span></div>
-<div class="who"><i>ক্রেতা</i><b>${escapeHtml(doc.customerName)}</b> <span>${escapeHtml(doc.customerPhone)}</span>${doc.address ? `<p>${escapeHtml(doc.address)}</p>` : ''}</div>
+<div class="who"><i>ক্রেতা</i><b>${escapeHtml(doc.customerName)}</b> <span>${escapeHtml(localPhone(doc.customerPhone))}</span>${doc.address ? `<p>${escapeHtml(doc.address)}</p>` : ''}</div>
 ${rows ? `<table><thead><tr><th>পণ্য</th><th class="num">পরিমাণ</th><th class="num">দাম</th><th class="num">মোট</th></tr></thead><tbody>${rows}</tbody></table>` : ''}
 <div class="sum">${sum.join('')}</div>
 <p class="note">${note}</p>

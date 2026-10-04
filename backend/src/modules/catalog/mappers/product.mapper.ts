@@ -10,6 +10,9 @@ type MediaRow = { id: string; url: string; alt: string | null; width: number | n
 
 export type ImageView = { id: string; url: string; alt: string | null; width: number | null; height: number | null; blurhash: string | null; isPrimary: boolean; sortOrder: number };
 
+/** A timed deal that has not started yet ("আসছে"). */
+export type NextDeal = { dealPrice: number; startsAt: string; endsAt: string };
+
 export type ProductCard = {
   id: string;
   legacyId: number | null;
@@ -29,6 +32,8 @@ export type ProductCard = {
   rating: { average: number; count: number };
   soldCount: number;
   freeShipping: boolean;
+  /** next scheduled deal, when one is coming (attached by ProductCardLoader / detail) */
+  nextDeal?: NextDeal | null;
 };
 
 export type ProductDetail = ProductCard & {

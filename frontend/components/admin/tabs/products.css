@@ -403,3 +403,16 @@
   .adm .pr .pr-table td:nth-child(8), .adm .pr .pr-table td:nth-child(11) { text-align: right; }
   .adm .pr .pr-table td.num .pr-deal-price { padding-right: 0; }
 }
+
+/* সময়ের ছাড় — start now / scheduled + quick durations */
+.pr-deal-when { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+.pr-deal-when button { display: grid; gap: 1px; text-align: left; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--ap-line, #EAE0CE); background: #fff; font: inherit; color: inherit; cursor: pointer; transition: border-color .2s, box-shadow .2s, background .2s; }
+.pr-deal-when button b { font-size: 13.5px; }
+.pr-deal-when button small { font-size: 11px; font-weight: 600; color: var(--ap-muted, #8F8275); }
+.pr-deal-when button.on { border-color: var(--ap-wine, #7A2430); background: #FFF9F4; box-shadow: 0 0 0 3px rgba(122,36,48,.12); }
+.pr-deal-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.pr-deal-chips button { height: 30px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--ap-line, #EAE0CE); background: #fff; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ap-soft, #5E4E43); cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
+.pr-deal-chips button:hover { border-color: #D8C9B0; }
+.pr-deal-chips button.on { background: var(--ap-wine, #7A2430); border-color: var(--ap-wine, #7A2430); color: #fff; }
+.pr-deal-sum { margin: 10px 0 0; padding: 9px 12px; border-radius: 12px; background: #F6EEDF; font-size: 12.5px; color: #5E4E43; }
+.pr-deal-sum b { color: var(--ap-wine, #7A2430); }

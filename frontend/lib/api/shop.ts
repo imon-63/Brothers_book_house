@@ -13,6 +13,7 @@ import { useMe } from "./auth";
 import { cartKey, useCartActions, type QuoteDto } from "./cart";
 import { setAuth, setMiniCart, setPendingWait, showToast } from "@/store/slices/ui-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { askSoon } from "@/lib/soon-confirm";
 
 export function apiErrorText(err: unknown) {
   if (err instanceof ApiError && err.errors?.length) return err.errors.slice(0, 2).join(" · ");
@@ -27,10 +28,24 @@ export function useShopToast() {
 /* ───────── cart ───────── */
 
 /** Add a product/bundle to the server cart, toast, and open the mini cart. */
+type NextDealCheck = { productId: string; title: string; regularPrice: number; nextDeal: { dealPrice: number; startsAt: string; endsAt: string } | null };
+
 export function useAddToCart() {
   const actions = useCartActions();
   const d = useAppDispatch();
+  const qc = useQueryClient();
   return useCallback(async (kind: "book" | "pack", id: string, n = 1, openMini = true) => {
+    /* a timed deal is about to start → say so before adding at today's (regular) price */
+    if (kind === "book") {
+      const check = await qc
+        .fetchQuery({ queryKey: ["next-deal", id], staleTime: 15_000, queryFn: () => get<NextDealCheck>(`/products/${id}/next-deal`) })
+        .catch(() => null);
+      const nd = check?.nextDeal;
+      if (check && nd && Date.parse(nd.startsAt) > Date.now()) {
+        const ok = await askSoon({ title: check.title, regularPrice: check.regularPrice, dealPrice: nd.dealPrice, startsAt: nd.startsAt, endsAt: nd.endsAt });
+        if (!ok) return false;
+      }
+    }
     try {
       await actions.add(kind, id, n);
       d(showToast("কার্টে যোগ হয়েছে"));
@@ -40,7 +55,7 @@ export function useAddToCart() {
       d(showToast(apiErrorText(e)));
       return false;
     }
-  }, [actions, d]);
+  }, [actions, d, qc]);
 }
 
 /* ───────── wishlist (ভবিষ্যৎ অর্ডার) ───────── */

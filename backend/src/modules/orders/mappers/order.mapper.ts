@@ -227,17 +227,20 @@ export function toCustomerOrder(o: OrderDetailRow) {
   };
 }
 
-/** Public tracker — masked contact, no address line. */
+/**
+ * Public tracker — only reachable with the order's own phone number, so the
+ * buyer sees their name and the bill; the street address stays private.
+ */
 export function toTrackedOrder(o: OrderDetailRow) {
-  const name = o.contactName.trim();
   return {
     orderNo: o.orderNo,
     status: o.status,
     statusLabel: STATUS_LABEL_BN[o.status],
     placedAt: o.placedAt,
-    customer: name ? `${name.slice(0, 1)}${'*'.repeat(Math.max(1, Math.min(6, name.length - 1)))}` : '',
+    customer: o.contactName.trim(),
     district: o.shipDistrict,
-    items: o.items.map((i) => ({ title: i.title, quantity: i.quantity })),
+    items: o.items.map((i) => ({ title: i.title, quantity: i.quantity, kind: i.kind, unitPrice: n(i.unitPrice), lineTotal: n(i.lineTotal) })),
+    money: { itemsSubtotal: n(o.itemsSubtotal), discountTotal: n(o.discountTotal), couponCode: o.couponCode, shippingFee: n(o.shippingFee), grandTotal: n(o.grandTotal) },
     grandTotal: n(o.grandTotal),
     paymentMethod: o.paymentMethod,
     paid: o.paymentStatus !== 'UNPAID',

@@ -3,6 +3,7 @@ import { AppProviders } from "@/components/providers/app-providers";
 import { SiteFrame } from "@/components/layout/site-frame";
 import "./globals.css";
 import "./motion.css";
+import "./storefront.css";
 
 export const metadata: Metadata = {
   title: "চলো — কিনে ফেলি",

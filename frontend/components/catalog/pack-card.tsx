@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { packHref, type Pack } from "@/lib/api/catalog";
 import { bn, discount } from "@/lib/format";
@@ -22,6 +23,9 @@ export function PackCard({ pack }: { pack: Pack }) {
   const books = pack.books;
   const oos = pack.oos;
   const off = discount(pack.price, pack.old);
+  const href = packHref(pack);
+  const unit = pack.vertical === "book" ? "বই" : "পণ্য";
+  const saving = pack.saving || (pack.old > pack.price ? pack.old - pack.price : 0);
 
   function add(e: React.MouseEvent) {
     e.stopPropagation();
@@ -30,10 +34,19 @@ export function PackCard({ pack }: { pack: Pack }) {
   }
 
   return (
-    <article className={`pkg${oos ? " oos" : ""}`}>
+    <article className={`pkg sf-pk${oos ? " oos" : ""}`}>
       {off && !oos ? <span className="sale-badge">-{bn(off)}%</span> : null}
-      <div className="pkg-stack" onClick={() => router.push(packHref(pack))} style={{ cursor: "pointer" }}>
+      <div
+        className="pkg-stack"
+        role="link"
+        tabIndex={0}
+        aria-label={`${pack.title} · ${bn(books.length)}টি ${unit}`}
+        onClick={() => router.push(href)}
+        onKeyDown={(e) => { if (e.key === "Enter") router.push(href); }}
+        style={{ cursor: "pointer" }}
+      >
         <PackSpines books={books} />
+        {pack.freeShipping && !oos ? <span className="sf-pk-free">ফ্রি ডেলিভারি</span> : null}
         {oos ? (
           <>
             <span className="ribbon stock">স্টক আউট</span>
@@ -42,8 +55,8 @@ export function PackCard({ pack }: { pack: Pack }) {
         ) : null}
       </div>
       <div className="card-body">
-        <h3 onClick={() => router.push(packHref(pack))} style={{ cursor: "pointer" }}>{pack.title}</h3>
-        <div className="author">{bn(books.length)}টি বই{oos ? " · স্টক আউট" : ""}</div>
+        <h3><Link href={href} prefetch={false}>{pack.title}</Link></h3>
+        <div className="author">{bn(books.length)}টি {unit}{oos ? " · স্টক আউট" : saving ? ` · ৳${bn(saving)} সাশ্রয়` : ""}</div>
         <div className="card-foot">
           <div className="price-switch">
             <div className="price">

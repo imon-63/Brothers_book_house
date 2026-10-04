@@ -3,7 +3,7 @@
 import "./orders.css";
 import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
 import { BnRangeButton } from "@/components/ui/bangla-calendar";
-import { bn } from "@/lib/format";
+import { bn, localPhone } from "@/lib/format";
 import { phoneKey } from "@/lib/admin/insights";
 import { FLOW, isClosedStatus, isSslMethod, statusLabel, statusTone, type OrderStatus } from "@/lib/admin/status";
 import { useAdminSection } from "@/lib/admin/section-context";
@@ -14,7 +14,8 @@ import {
   useRemoveOrderTag, useReopenOrder, useSetPriority,
   type OrderDetail, type OrderFilter, type OrderListItem, type Priority as ApiPriority,
 } from "@/lib/api/admin/orders";
-import { DocFrame } from "@/components/admin/doc-frame";
+import { DocModal } from "@/components/admin/doc-frame";
+import { printElement } from "@/lib/admin/print";
 import { Pager, SectionIcon, VertTags } from "@/components/admin/shared";
 import { useAdminNav } from "@/components/admin/nav";
 import {
@@ -423,7 +424,7 @@ export function OrdersTab() {
                 <td className="od-c-cust">
                   <div className="od-cust">
                     <Avatar name={o.customer?.name || "গেস্ট"} size={32} />
-                    <span><b>{o.customer?.name || "গেস্ট"}</b><small>{o.customer?.phone}</small></span>
+                    <span><b>{o.customer?.name || "গেস্ট"}</b><small>{localPhone(o.customer?.phone)}</small></span>
                   </div>
                 </td>
                 <td className="od-c-items">
@@ -730,13 +731,11 @@ export function OrdersTab() {
 
       <Modal open={!!pick} onClose={() => setPick(null)} width={680} title="পিক-লিস্ট · Pick list"
         sub={pick ? `${bn(pick.length)}টি অর্ডার · পণ্য অনুযায়ী সাজানো` : undefined}
-        footer={<><button type="button" className="ap-btn ghost" onClick={() => setPick(null)}>বন্ধ</button><button type="button" className="ap-btn primary" onClick={() => window.print()}>{Ico.print}প্রিন্ট</button></>}>
-        {pick ? <PickListView ids={pick} /> : null}
+        footer={<><button type="button" className="ap-btn ghost" onClick={() => setPick(null)}>বন্ধ</button><button type="button" className="ap-btn primary" onClick={() => { const el = document.querySelector<HTMLElement>(".od-picklist-print"); if (el) printElement(el, "Pick list"); }}>{Ico.print}প্রিন্ট</button></>}>
+        {pick ? <div className="od-picklist-print"><PickListView ids={pick} /></div> : null}
       </Modal>
 
-      <Modal open={!!sheet} onClose={() => setSheet(null)} width={760} title={sheet?.title} sub="Document · প্রিন্ট করা যায়">
-        {sheet ? <DocFrame id={sheet.id} height={620} /> : null}
-      </Modal>
+      <DocModal doc={sheet} onClose={() => setSheet(null)} title={sheet?.title} sub="Document · প্রিন্ট করা যায়" />
     </div>
   );
 }
@@ -951,7 +950,7 @@ function OrderPanel({ o, onAdvance, onRegress, onCancel, onReopen, onPay, onPape
         <span className="spacer" />
         <a className="ap-icon-btn" href={`tel:${phone}`} title="কল করুন" aria-label="কল করুন">{Ico.phone}</a>
         <a className="ap-icon-btn od-wa" href={waLink(phone)} target="_blank" rel="noreferrer" title="WhatsApp" aria-label="WhatsApp">{Ico.whatsapp}</a>
-        <button type="button" className="ap-icon-btn" title="ঠিকানা কপি" aria-label="ঠিকানা কপি" onClick={() => copy(`${o.contact.name}\n${phone}\n${o.address.text}`, "ঠিকানা কপি হয়েছে")}>{OI.pin}</button>
+        <button type="button" className="ap-icon-btn" title="ঠিকানা কপি" aria-label="ঠিকানা কপি" onClick={() => copy(`${o.contact.name}\n${localPhone(phone)}\n${o.address.text}`, "ঠিকানা কপি হয়েছে")}>{OI.pin}</button>
         {voidTarget(o.status) ? <button type="button" className="ap-btn danger" onClick={onCancel}>{Ico.close}{o.status === "PENDING" ? "বাতিল" : "ফেরত"}</button> : null}
       </div>
 
@@ -984,7 +983,7 @@ function OrderPanel({ o, onAdvance, onRegress, onCancel, onReopen, onPay, onPape
           <Avatar name={o.contact.name} size={44} />
           <div className="od-custcard-main">
             <b>{o.contact.name}</b>
-            <span><a href={`tel:${phone}`}>{phone}</a>{o.contact.email ? ` · ${o.contact.email}` : ""}</span>
+            <span><a href={`tel:${phone}`}>{localPhone(phone)}</a>{o.contact.email ? ` · ${o.contact.email}` : ""}</span>
             <p>{Ico.store}{o.address.text || "ঠিকানা নেই"}</p>
           </div>
           {o.customer ? <button type="button" className="ap-btn sm" onClick={onCustomer}>প্রোফাইল{Ico.chevR}</button> : null}

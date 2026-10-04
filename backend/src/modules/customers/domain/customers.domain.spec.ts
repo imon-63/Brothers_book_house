@@ -21,6 +21,9 @@ describe('segmentOf (mirrors insights.ts)', () => {
     expect(segmentOf({ ...base, ordersCount: 5, liveOrders: 5, totalSpent: 1000, lastOrderAt: daysAgo(1) }, NOW)).toBe('vip');
     expect(segmentOf({ ...base, ordersCount: 1, liveOrders: 1, totalSpent: 5000, lastOrderAt: daysAgo(1) }, NOW)).toBe('vip');
     expect(segmentOf({ ...base, ordersCount: 1, liveOrders: 1, totalSpent: 4999.99, lastOrderAt: daysAgo(1) }, NOW)).toBe('new');
+    // staff-tagged VIP wins over every computed rule (even risk / dormant)
+    expect(segmentOf({ ...base, ordersCount: 1, liveOrders: 1, totalSpent: 2620, lastOrderAt: daysAgo(3), vipTagged: true }, NOW)).toBe('vip');
+    expect(segmentOf({ ...base, ordersCount: 2, liveOrders: 1, cancelledOrders: 1, totalSpent: 300, lastOrderAt: daysAgo(90), vipTagged: true }, NOW)).toBe('vip');
   });
 
   it('vip beats sleep (rule order)', () => {
@@ -44,6 +47,7 @@ describe('segmentOf (mirrors insights.ts)', () => {
     expect(sql).toContain('c.cancelled_orders * 2 >= c.orders_count');
     expect(sql).toContain('c.live_orders >= 5 OR c.total_spent >= 5000');
     expect(sql).toContain("interval '60 days'");
+    expect(sql).toContain("upper(btrim(t.name)) = 'VIP'");
   });
 
   it('cancel rate in percent with one decimal', () => {

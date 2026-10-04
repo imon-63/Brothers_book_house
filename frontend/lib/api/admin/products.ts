@@ -206,10 +206,10 @@ export function useAdjustStock() {
 }
 
 export function useCreateDeal() {
-  return useAdminMutation<{ id: string; dealPrice: number; endsAt: string; replaceExisting?: boolean }, unknown>({
-    fn: ({ id, dealPrice, endsAt, replaceExisting }) => post(`/admin/products/${id}/deals`, { dealPrice, endsAt, replaceExisting: replaceExisting ?? true }),
+  return useAdminMutation<{ id: string; dealPrice: number; endsAt: string; startsAt?: string; replaceExisting?: boolean }, unknown>({
+    fn: ({ id, dealPrice, endsAt, startsAt, replaceExisting }) => post(`/admin/products/${id}/deals`, { dealPrice, endsAt, ...(startsAt ? { startsAt } : {}), replaceExisting: replaceExisting ?? true }),
     invalidate: fallout,
-    success: "টাইমার বসেছে · সময় শেষে আগের দামে ফিরবে",
+    success: (_r, v) => (v.startsAt ? "ছাড় শিডিউল হয়েছে · সময় হলে নিজে থেকে শুরু হবে" : "টাইমার বসেছে · সময় শেষে আগের দামে ফিরবে"),
   });
 }
 
@@ -252,5 +252,27 @@ export function useRemoveProductImage() {
     fn: ({ id, mediaId }) => del(`/admin/products/${id}/images/${mediaId}`),
     invalidate: fallout,
     success: "ছবি সরানো হয়েছে",
+  });
+}
+
+/* ───────── timed deals (আজকের ছাড়) ───────── */
+
+export type AdminDeal = {
+  id: string;
+  product: { id: string; title: string; sku: string; section: string; regularPrice: number; cover: string | null };
+  dealPrice: number;
+  discountPct: number;
+  label: string | null;
+  startsAt: string;
+  endsAt: string;
+  state: "live" | "scheduled" | "ended" | "cancelled";
+  secondsLeft: number | null;
+};
+
+/** Running (or upcoming) timed deals for one section — what "আজকের ছাড়" shows first. */
+export function useSectionDeals(section: string, state: "active" | "scheduled" = "active") {
+  return useQuery({
+    queryKey: [...adminKeys.products, "deals", section, state],
+    queryFn: () => get<Paged<AdminDeal>>("/admin/deals", { section, state, pageSize: 100 }),
   });
 }

@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
-import { bn } from "@/lib/format";
+import { bn, localPhone } from "@/lib/format";
+import { GBag, GBox, GHeart, GTruck } from "@/components/storefront/glyphs";
+import { Crumbs } from "@/components/storefront/page-head";
 import { logout as apiLogout, useMe } from "@/lib/api/auth";
 import { useCart } from "@/lib/api/cart";
 import { apiErrorText, useAddresses, useMyOrders, useProfile, useSaveProfile, useWishlist } from "@/lib/api/shop";
@@ -90,7 +92,7 @@ export default function ProfilePage() {
             <h1>{user.name}</h1>
             <span className="me-role">অ্যাডমিন</span>
             <div className="me-chips">
-              {user.phone ? <span>{user.phone}</span> : null}
+              {user.phone ? <span>{localPhone(user.phone)}</span> : null}
               {user.email ? <span>{user.email}</span> : null}
             </div>
           </div>
@@ -128,25 +130,32 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="wrap me-page">
-      <p className="crumb">হোম / <b>প্রোফাইল</b></p>
+    <div className="wrap me-page sf-me">
+      <div className="sf-me-crumbs"><Crumbs items={[{ label: "হোম", href: "/" }, { label: "প্রোফাইল" }]} /></div>
       <section className="me-hero">
         <div className="me-mark" aria-hidden>{mark}</div>
         <div className="me-id">
-          <p className="me-kicker">চলো অ্যাকাউন্ট</p>
+          <p className="me-kicker">চলো অ্যাকাউন্ট{profile?.memberSince ? ` · ${new Date(profile.memberSince).toLocaleDateString("bn-BD", { month: "long", year: "numeric" })} থেকে সদস্য` : ""}</p>
           <h1>{user.name}</h1>
           <span className="me-role">ক্রেতা</span>
           <div className="me-chips">
-            {user.phone ? <span>{user.phone}</span> : null}
+            {user.phone ? <span>{localPhone(user.phone)}</span> : null}
             {user.email ? <span>{user.email}</span> : null}
           </div>
         </div>
       </section>
-      <div className="me-stats">
-        <article><b>{bn(mine.length)}</b><span>আমার অর্ডার</span></article>
+      <div className="me-stats sf-me-stats">
+        <article><b>{bn(profile?.stats.ordersCount ?? mine.length)}</b><span>আমার অর্ডার</span></article>
         <article><b>{bn(moving)}</b><span>পথে আছে</span></article>
         <article><b>{bn(cartCount)}</b><span>কার্টে</span></article>
+        <article className="sf-me-spent"><b>৳{bn(profile?.stats.totalSpent ?? 0)}</b><span>মোট কেনাকাটা</span></article>
       </div>
+      <nav className="sf-quick" aria-label="দ্রুত লিংক">
+        <Link href="/orders"><span><GBox size={22} /></span><b>আমার অর্ডার</b><small>ধাপ, রসিদ, পেমেন্ট</small></Link>
+        <Link href="/wait"><span><GHeart size={22} /></span><b>ভবিষ্যৎ অর্ডার</b><small>{bn(wishQ.data?.length ?? 0)}টি রাখা আছে</small></Link>
+        <Link href="/cart"><span><GBag size={22} /></span><b>কার্ট</b><small>{bn(cartCount)}টি আইটেম</small></Link>
+        <Link href="/track"><span><GTruck size={22} /></span><b>অর্ডার খুঁজুন</b><small>ফোন বা অর্ডার আইডি</small></Link>
+      </nav>
       <div className="me-grid">
         <form className="me-card" onSubmit={form.handleSubmit(save)}>
           <h2>তথ্য বদলান</h2>

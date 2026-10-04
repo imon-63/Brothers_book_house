@@ -4,6 +4,10 @@ import { useState } from "react";
 import { DeliveryTrack, orderGlance, toTrackOrder, type TrackOrder } from "@/components/orders/delivery-track";
 import { apiErrorText, placedOrders, trackOrder } from "@/lib/api/shop";
 import { bn } from "@/lib/format";
+import { EmptyState } from "@/components/storefront/empty-state";
+import { GTruck } from "@/components/storefront/glyphs";
+import { PageHero } from "@/components/storefront/page-head";
+import { RowSkeleton } from "@/components/storefront/skeleton";
 
 function when(at: string) {
   return new Date(at).toLocaleString("bn-BD", { day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit" });
@@ -84,15 +88,15 @@ export default function TrackPage() {
   }
 
   return (
-    <div className="wrap track-page">
-      <p className="crumb">হোম / <b>অর্ডার খুঁজুন</b></p>
-      <section className="track-hero">
-        <div className="track-copy">
-          <p className="me-kicker">ডেলিভারি অবস্থা</p>
-          <h1>অর্ডার খুঁজুন</h1>
-          <p>মোবাইল নম্বর অথবা অর্ডার আইডি দিন। স্ট্যাটাস, ধাপ আর ইনভয়েস এখানেই দেখাবে।</p>
-        </div>
-      </section>
+    <div className="wrap track-page sf-track">
+      <PageHero
+        tone="sage"
+        crumbs={[{ label: "হোম", href: "/" }, { label: "অর্ডার খুঁজুন" }]}
+        kicker="ডেলিভারি অবস্থা"
+        icon={<GTruck size={16} />}
+        title="অর্ডার খুঁজুন"
+        sub="মোবাইল নম্বর অথবা অর্ডার আইডি দিন। স্ট্যাটাস, ধাপ আর ইনভয়েস এখানেই দেখাবে।"
+      />
       <div className="track-stage">
         <section className="track-find">
           <label>মোবাইল অথবা অর্ডার আইডি</label>
@@ -116,9 +120,9 @@ export default function TrackPage() {
         </aside>
       </div>
       {tried && needle.trim() && !hit.length && miss ? (
-        <p className="track-miss">{miss}</p>
+        <div className="sf-track-miss" role="alert"><EmptyState art="search" title="অর্ডার পাওয়া যায়নি" text={miss} /></div>
       ) : null}
-      {hit.length ? <TrackList key={needle} orders={hit} /> : null}
+      {busy ? <RowSkeleton n={2} /> : hit.length ? <TrackList key={needle} orders={hit} /> : null}
     </div>
   );
 }

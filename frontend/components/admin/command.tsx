@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { bn } from "@/lib/format";
+import { bn, localPhone } from "@/lib/format";
 import { statusLabel, statusTone } from "@/lib/admin/status";
 import { money } from "@/lib/api/admin/core";
 import { useAdminSearch } from "@/lib/api/admin/search";
@@ -13,7 +13,7 @@ type Item = { id: string; group: string; title: ReactNode; sub?: ReactNode; icon
 
 const TAB_ICON: Record<AdminTab, ReactNode> = {
   dashboard: Ico.dashboard, orders: Ico.orders, customers: Ico.customers, chat: Ico.chat, products: Ico.products,
-  packs: Ico.packs, cats: Ico.cats, finance: Ico.finance, activity: Ico.activity, settings: Ico.settings,
+  packs: Ico.packs, cats: Ico.cats, home: Ico.store, finance: Ico.finance, activity: Ico.activity, settings: Ico.settings,
 };
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -49,13 +49,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       const lines = o.items.map((i) => `${i.title} × ${bn(i.quantity)}`).join(", ");
       return {
         id: `o-${o.id}`, group: "অর্ডার · Orders", title: <>{o.orderNo} <Badge tone={statusTone(o.status)} dot>{statusLabel(o.status)}</Badge></>,
-        sub: `${o.customer?.name ?? "গেস্ট"} · ${o.customer?.phone ?? ""} · ${lines}`, icon: Ico.orders, right: tk(money(o.grandTotal)),
-        hay: `${hayQ} ${o.orderNo} ${o.customer?.name ?? ""} ${o.customer?.phone ?? ""} ${lines}`, run: act("orders", o.orderNo),
+        sub: `${o.customer?.name ?? "গেস্ট"} · ${localPhone(o.customer?.phone)} · ${lines}`, icon: Ico.orders, right: tk(money(o.grandTotal)),
+        hay: `${hayQ} ${o.orderNo} ${o.customer?.name ?? ""} ${o.customer?.phone ?? ""} ${localPhone(o.customer?.phone)} ${lines}`, run: act("orders", o.orderNo),
       };
     });
     const cus: Item[] = customers.map((c) => ({
-      id: `c-${c.id}`, group: "কাস্টমার · Customers", title: c.name, sub: `${c.phone || c.email || ""} · ${bn(c.ordersCount)}টি অর্ডার`,
-      icon: <Avatar name={c.name} size={26} />, right: tk(money(c.totalSpent)), hay: `${hayQ} ${c.name} ${c.phone ?? ""} ${c.email ?? ""}`, run: act("customers", c.id),
+      id: `c-${c.id}`, group: "কাস্টমার · Customers", title: c.name, sub: `${localPhone(c.phone) || c.email || ""} · ${bn(c.ordersCount)}টি অর্ডার`,
+      icon: <Avatar name={c.name} size={26} />, right: tk(money(c.totalSpent)), hay: `${hayQ} ${c.name} ${c.phone ?? ""} ${localPhone(c.phone)} ${c.email ?? ""}`, run: act("customers", c.id),
     }));
     const pro: Item[] = products.map((p) => ({
       id: `p-${p.id}`, group: "পণ্য · Products", title: p.title, sub: `${p.authorLine || p.unit || ""} · ${p.category?.name ?? ""} · স্টক ${bn(p.stock?.onHand ?? 0)}`,
