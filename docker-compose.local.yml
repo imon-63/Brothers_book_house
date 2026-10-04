@@ -122,7 +122,7 @@ services:
 
   # ───────── observability: OTel → Tempo (traces) + Prometheus (metrics) → Grafana ─────────
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.120.0
+    image: otel/opentelemetry-collector-contrib:0.161.0
     restart: unless-stopped
     command: ["--config=/etc/otelcol/config.yaml"]
     environment: { DEPLOY_ENV: local, TRACE_SAMPLE_PCT: 100 }
