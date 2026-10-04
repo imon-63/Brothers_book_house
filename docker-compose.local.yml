@@ -133,7 +133,7 @@ services:
     depends_on: { tempo: { condition: service_started } }
 
   tempo:
-    image: grafana/tempo:2.7.2
+    image: grafana/tempo:3.1.0
     restart: unless-stopped
     command: ["-config.file=/etc/tempo/tempo.yaml", "-config.expand-env=true"]
     environment: { TEMPO_RETENTION: 48h }
