@@ -11,6 +11,7 @@ import { generateSku } from '../../domain/sku';
 import { toAdminProductDetail, toAdminProductRow } from '../../mappers/product.mapper';
 import { isUniqueViolation } from '../../shared/db-errors';
 import { adminProductDetailInclude, adminProductInclude } from '../../shared/product-includes';
+import { ProductCardLoader } from '../../shared/product-card.loader';
 import { ProductListRepository } from '../../shared/product-list.repository';
 import { SlugService } from '../../shared/slug.service';
 import type { AdminProductQueryDto } from '../dto/product-query.dto';
@@ -29,6 +30,7 @@ export class ProductAdminService {
     private readonly guards: ProductGuards,
     private readonly stock: StockWriter,
     private readonly audit: AuditService,
+    private readonly cards: ProductCardLoader,
   ) {}
 
   // ─── reads ───
@@ -55,7 +57,9 @@ export class ProductAdminService {
       now,
     );
     const rows = await this.rows(ids, now);
-    return toPage(rows.map((r) => toAdminProductRow(r, now, q.lowStock)), total, q);
+    // admin sees every scheduled deal (not just the storefront's 7-day window)
+    const next = await this.cards.nextDeals(ids, now, 3650);
+    return toPage(rows.map((r) => ({ ...toAdminProductRow(r, now, q.lowStock), nextDeal: next.get(r.id) ?? null })), total, q);
   }
 
   async rows(ids: string[], now = new Date()) {

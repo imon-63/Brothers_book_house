@@ -10,7 +10,7 @@
   --tone: var(--ap-wine); --tone2: var(--ap-wine2); --tint: var(--ap-wine-tint);
   position: relative; overflow: hidden; display: grid; gap: 12px; padding: 14px 14px 16px; border-radius: var(--ap-r);
   background: var(--ap-surface); border: 1.5px solid var(--ap-line); box-shadow: var(--ap-shadow); cursor: pointer; outline: 0;
-  transition: border-color .25s, box-shadow .25s, transform .25s var(--ap-ease), filter .3s; animation: apIn .45s var(--ap-ease) both;
+  transition: border-color .25s, box-shadow .25s, transform .25s var(--ap-ease), filter .3s; animation: apIn .45s var(--ap-ease) backwards;
 }
 .vz-vert.v-food, .vz-panel.v-food { --tone: #8A6230; --tone2: #5E421F; --tint: var(--ap-gold-tint); }
 .vz-vert.v-gadget, .vz-panel.v-gadget { --tone: var(--ap-sage); --tone2: #2A4036; --tint: var(--ap-sage-tint); }
@@ -41,7 +41,7 @@
 .vz-note b { color: var(--ap-wine2); }
 
 /* ── detail panel ── */
-.vz-panel { min-width: 0; overflow: hidden; border-radius: var(--ap-r); background: var(--ap-surface); border: 1px solid var(--ap-line); box-shadow: var(--ap-shadow); animation: apIn .35s var(--ap-ease) both; }
+.vz-panel { min-width: 0; overflow: hidden; border-radius: var(--ap-r); background: var(--ap-surface); border: 1px solid var(--ap-line); box-shadow: var(--ap-shadow); animation: apIn .35s var(--ap-ease) backwards; }
 .vz-panel-head {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 20px;
   background: radial-gradient(420px 140px at 100% 0%, color-mix(in srgb, var(--ap-gold) 18%, transparent), transparent 70%), linear-gradient(180deg, var(--tint), var(--ap-surface));
@@ -72,7 +72,7 @@
 
 /* ── category rows ── */
 .vz-list { list-style: none; margin: 0; padding: 4px 12px 16px; display: grid; gap: 6px; }
-.vz-cat { border-radius: 14px; border: 1px solid var(--ap-line2); background: var(--ap-surface); transition: border-color .2s, box-shadow .2s, background .2s; animation: apIn .35s var(--ap-ease) both; }
+.vz-cat { border-radius: 14px; border: 1px solid var(--ap-line2); background: var(--ap-surface); transition: border-color .2s, box-shadow .2s, background .2s; animation: apIn .35s var(--ap-ease) backwards; }
 .vz-cat:hover { border-color: var(--ap-line); box-shadow: var(--ap-shadow); }
 .vz-cat.open { border-color: var(--ap-line); box-shadow: var(--ap-shadow); }
 .vz-cat.off { background: var(--ap-surface2); }

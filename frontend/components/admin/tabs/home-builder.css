@@ -49,7 +49,7 @@
 .hb-phone { position: relative; width: 210px; padding: 10px; border-radius: 30px; background: #1d1214; box-shadow: 0 20px 40px rgba(40,14,18,.25), inset 0 0 0 2px #3a2a2c; }
 .hb-notch { position: absolute; top: 14px; left: 50%; width: 56px; height: 6px; margin-left: -28px; border-radius: 6px; background: #3a2a2c; z-index: 2; }
 .hb-screen { height: 400px; overflow: hidden; border-radius: 22px; background: #F6F0E4; display: flex; flex-direction: column; gap: 5px; padding: 26px 7px 7px; }
-.pv { flex: 0 0 auto; position: relative; border-radius: 8px; padding: 6px 7px 7px; text-align: left; background: #fff; border: 1px solid #EADFCD; animation: apIn .35s var(--ap-ease) both; }
+.pv { flex: 0 0 auto; position: relative; border-radius: 8px; padding: 6px 7px 7px; text-align: left; background: #fff; border: 1px solid #EADFCD; animation: apIn .35s var(--ap-ease) backwards; }
 .pv span { display: block; font-size: 9.5px; font-weight: 800; color: var(--ap-wine2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
 .pv i { display: inline-block; width: calc((100% - 8px) / 3); height: 22px; border-radius: 4px; background: #EFE5D3; }
 .pv i + i { margin-left: 4px; }

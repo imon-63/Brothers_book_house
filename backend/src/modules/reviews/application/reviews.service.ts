@@ -59,20 +59,26 @@ export class ReviewsService {
     const d = decideReview(ctx);
     if (!d.ok) throw d.code === 'review.blocked' ? new BusinessRuleError(d.code, d.message) : new ConflictError(d.code, d.message);
     try {
-      const r = await this.prisma.productReview.create({
-        data: {
-          productId,
-          customerId: ctx.customerId,
-          orderId: d.orderId,
-          orderItemId: d.orderItemId,
-          displayName: displayNameFor(ctx.name, dto.displayName),
-          rating: dto.rating,
-          title: dto.title?.trim() || null,
-          body: dto.body?.trim() || null,
-        },
-        include: reviewInclude,
+      // published right away (logged-in customers only); staff can still reject it later
+      const r = await this.prisma.tx(async (tx) => {
+        const row = await tx.productReview.create({
+          data: {
+            status: 'APPROVED',
+            productId,
+            customerId: ctx.customerId,
+            orderId: d.orderId,
+            orderItemId: d.orderItemId,
+            displayName: displayNameFor(ctx.name, dto.displayName),
+            rating: dto.rating,
+            title: dto.title?.trim() || null,
+            body: dto.body?.trim() || null,
+          },
+          include: reviewInclude,
+        });
+        await this.recomputeRating(tx, productId);
+        return row;
       });
-      return { ...mapPublicReview(r), status: r.status, message: 'ধন্যবাদ! যাচাইয়ের পর রিভিউটি দেখা যাবে' };
+      return { ...mapPublicReview(r), status: r.status, message: 'ধন্যবাদ! আপনার রিভিউ যোগ হয়েছে' };
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new ConflictError('review.already_reviewed', 'এই কেনার জন্য আপনি আগেই রিভিউ দিয়েছেন');

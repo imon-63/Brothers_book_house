@@ -52,7 +52,7 @@
 .ac-toolbar {
   display: grid; gap: 10px; margin-bottom: 14px; padding: 12px;
   background: var(--ap-surface); border: 1px solid var(--ap-line); border-radius: var(--ap-r); box-shadow: var(--ap-shadow);
-  animation: apIn .45s var(--ap-ease) both;
+  animation: apIn .45s var(--ap-ease) backwards;
 }
 .ac-toolbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ac-search { flex: 1 1 240px; min-width: 0; display: flex; }

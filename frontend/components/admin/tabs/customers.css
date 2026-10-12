@@ -87,7 +87,7 @@
 .cu-card {
   position: relative; display: grid; gap: 12px; padding: 16px; border-radius: var(--ap-r); cursor: pointer; min-width: 0;
   background: var(--ap-surface); border: 1px solid var(--ap-line); box-shadow: var(--ap-shadow);
-  transition: transform .25s var(--ap-ease), box-shadow .25s var(--ap-ease), border-color .25s; animation: apIn .45s var(--ap-ease) both; outline: 0;
+  transition: transform .25s var(--ap-ease), box-shadow .25s var(--ap-ease), border-color .25s; animation: apIn .45s var(--ap-ease) backwards; outline: 0;
 }
 .cu-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; border-radius: var(--ap-r) var(--ap-r) 0 0; background: var(--cu-accent, var(--ap-line)); opacity: .9; }
 .cu-card.seg-vip { --cu-accent: linear-gradient(90deg, var(--ap-gold-soft), var(--ap-gold)); }
@@ -179,7 +179,7 @@
 .cu-drawer .ap-card-head { margin-bottom: 12px; }
 .cu-drawer .ap-card.flush > .ap-card-head { padding: 14px 16px 10px; }
 
-.cu-alert { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--ap-red-tint); border: 1px solid #F0C9C3; color: var(--ap-red); animation: apIn .35s var(--ap-ease) both; }
+.cu-alert { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--ap-red-tint); border: 1px solid #F0C9C3; color: var(--ap-red); animation: apIn .35s var(--ap-ease) backwards; }
 .cu-alert > svg { width: 20px; height: 20px; flex: 0 0 auto; }
 .cu-alert > div { flex: 1; min-width: 0; }
 .cu-alert b { font-size: 13.5px; }
@@ -203,7 +203,7 @@ button.cu-act.off { pointer-events: auto; cursor: not-allowed; }
 .cu-kv-copy { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; max-width: 100%; font-variant-numeric: tabular-nums; }
 
 .cu-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.cu-tile { display: grid; align-content: start; gap: 3px; padding: 12px 13px; border-radius: 14px; background: var(--ap-surface); border: 1px solid var(--ap-line); min-width: 0; animation: apIn .4s var(--ap-ease) both; }
+.cu-tile { display: grid; align-content: start; gap: 3px; padding: 12px 13px; border-radius: 14px; background: var(--ap-surface); border: 1px solid var(--ap-line); min-width: 0; animation: apIn .4s var(--ap-ease) backwards; }
 .cu-tile:nth-child(2) { animation-delay: 30ms; } .cu-tile:nth-child(3) { animation-delay: 60ms; }
 .cu-tile:nth-child(4) { animation-delay: 90ms; } .cu-tile:nth-child(5) { animation-delay: 120ms; } .cu-tile:nth-child(6) { animation-delay: 150ms; }
 .cu-tile-l { display: grid; font-size: 11.5px; font-weight: 800; color: var(--ap-soft); line-height: 1.25; }

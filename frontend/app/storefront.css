@@ -1062,3 +1062,92 @@ header.site.sf-head .vbar .vtab.on::after {
 .pd-points li > span svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 640px) { .pd-points li { font-size: 14px; } }
 @media (prefers-reduced-motion: reduce) { .pd-points li { animation: none; } }
+
+/* ═════════ Login / logout / order-placing gates — floating card, page stays visible ═════════ */
+.land-gate.land-gate, .bye-gate.bye-gate, .place-gate.place-gate {
+  background: radial-gradient(600px 400px at 50% 50%, rgba(122,36,48,.22), transparent 70%), rgba(28,12,16,.3);
+  -webkit-backdrop-filter: blur(9px) saturate(1.15); backdrop-filter: blur(9px) saturate(1.15);
+  animation: gateVeilIn .35s ease both;
+  overflow: hidden;
+}
+.land-gate.land-gate.bye, .place-gate.place-gate.bye, .bye-gate.bye-gate.bye { animation: gateVeilOut .45s ease .12s forwards; }
+.land-gate.admin.admin { background: radial-gradient(700px 460px at 50% 50%, rgba(196,161,90,.18), transparent 70%), rgba(20,8,10,.38); }
+@keyframes gateVeilIn { from { opacity: 0; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); } }
+@keyframes gateVeilOut { to { opacity: 0; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); } }
+
+/* the card */
+.land-gate .land-stage, .place-gate .land-stage, .bye-gate .bye-stage {
+  position: relative; z-index: 1; isolation: isolate; overflow: hidden;
+  width: min(360px, calc(100vw - 32px)); padding: 30px 26px 24px; border-radius: 28px; text-align: center;
+  background:
+    radial-gradient(260px 150px at 50% 0%, rgba(232,213,163,.22), transparent 70%),
+    linear-gradient(160deg, rgba(110,32,43,.97) 0%, rgba(74,20,28,.97) 55%, rgba(48,20,16,.97) 100%);
+  box-shadow: 0 40px 90px rgba(20,6,10,.5), 0 0 0 1px rgba(232,213,163,.18), inset 0 1px 0 rgba(255,255,255,.12);
+  animation: gateCardIn .62s cubic-bezier(.2,1.25,.35,1) both;
+}
+/* spinning gold rim */
+.land-gate .land-stage::before, .place-gate .land-stage::before, .bye-gate .bye-stage::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; padding: 1.5px;
+  background: conic-gradient(from var(--gate-a, 0deg), transparent 0 55%, rgba(232,213,163,.95) 70%, #fff 75%, rgba(196,161,90,.9) 80%, transparent 95%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: gateRim 2.4s linear infinite;
+}
+/* one light sweep across the card */
+.land-gate .land-stage::after, .place-gate .land-stage::after, .bye-gate .bye-stage::after {
+  content: ""; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 45%; z-index: -1; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255,240,210,.16), transparent); transform: skewX(-18deg);
+  animation: gateSweep 1.6s .35s ease-out both;
+}
+.land-gate.bye .land-stage, .place-gate.bye .land-stage, .bye-gate.bye .bye-stage { animation: gateCardOut .45s cubic-bezier(.4,0,.6,1) forwards; }
+@property --gate-a { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes gateRim { to { --gate-a: 360deg; } }
+@keyframes gateSweep { to { left: 130%; } }
+@keyframes gateCardIn { from { opacity: 0; transform: translateY(28px) scale(.9); filter: blur(6px); } }
+@keyframes gateCardOut { to { opacity: 0; transform: translateY(-18px) scale(.94); filter: blur(4px); } }
+
+/* contents, sized for a card */
+.land-gate .land-mark, .place-gate .land-mark { width: 68px; height: 68px; }
+.land-gate .land-mark img, .place-gate .land-mark img { width: 68px; height: 68px; border-radius: 18px; }
+.land-gate .land-orbit, .place-gate .land-orbit { inset: -13px; }
+.land-gate .land-orbit.two { inset: -25px; }
+.land-gate .land-crown { top: -12px; right: -12px; width: 30px; height: 30px; box-shadow: 0 6px 18px rgba(0,0,0,.3), 0 0 0 3px #5a1a23; }
+.land-gate .land-crown svg { width: 17px; height: 17px; }
+.land-gate .land-copy small { margin-top: 22px; font-size: 11px; }
+.land-gate .land-copy h2 { font-size: 26px; }
+.land-gate .land-copy p { font-size: 14px; margin-top: 2px; }
+.land-gate .land-bar, .place-gate .place-copy .land-bar { width: 100%; max-width: 220px; height: 4px; margin-top: 18px; }
+.place-gate .place-copy small { margin-top: 22px; }
+.place-gate .place-copy h2 { font-size: 24px; }
+.place-gate .place-copy p { font-size: 13.5px; }
+.place-gate.fail .land-stage { background: radial-gradient(260px 150px at 50% 0%, rgba(255,180,160,.18), transparent 70%), linear-gradient(160deg, rgba(110,32,43,.97), rgba(60,18,22,.97)); }
+.bye-gate .bye-mark, .bye-gate .bye-mark img { width: 64px; height: 64px; }
+.bye-gate .bye-mark img { border-radius: 18px; }
+.bye-gate .bye-wave { font-size: 28px; right: -18px; }
+.bye-gate .bye-stage small { margin-top: 20px; font-size: 11px; }
+.bye-gate .bye-stage h2 { font-size: 24px; }
+.bye-gate .bye-stage p { font-size: 14px; }
+.bye-gate .bye-dots { margin-top: 14px; }
+.bye-gate.bye-gate::before { top: 50%; width: 300px; height: 300px; margin: -150px 0 0 -150px; }
+
+/* rays + sparks now burst from the card */
+.land-gate .land-rays { top: 50%; width: 900px; height: 900px; margin: -450px 0 0 -450px; opacity: .7; }
+.land-gate .land-sparks i { top: 50%; }
+.land-gate .land-sparks i { animation-name: gateSpark; }
+@keyframes gateSpark {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(.4); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-230px) scale(1); }
+}
+.land-gate.admin .land-stage {
+  background:
+    radial-gradient(280px 160px at 50% 0%, rgba(232,213,163,.3), transparent 70%),
+    radial-gradient(260px 200px at 100% 100%, rgba(61,90,76,.45), transparent 70%),
+    linear-gradient(160deg, rgba(74,16,24,.98), rgba(40,10,14,.98));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .land-gate .land-stage, .place-gate .land-stage, .bye-gate .bye-stage,
+  .land-gate .land-stage::before, .place-gate .land-stage::before, .bye-gate .bye-stage::before,
+  .land-gate .land-stage::after, .place-gate .land-stage::after, .bye-gate .bye-stage::after { animation: none; }
+}

@@ -31,6 +31,8 @@ export type AdminProductRow = {
   costPrice: number | null;
   marginPct: number | null;
   deal: { id: string; dealPrice: number; startsAt: string; endsAt: string; label: string | null } | null;
+  /** next scheduled (not started) deal — list rows only */
+  nextDeal?: { dealPrice: number; startsAt: string; endsAt: string } | null;
   stock: { onHand: number; reserved: number; available: number; threshold: number; initialCopies: number; status: "in" | "low" | "out"; tracked: boolean };
   authorLine: string | null;
   categoryHidden: boolean;

@@ -47,7 +47,7 @@ body.ap-lock { overflow: hidden; }
 .ap-head-acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* ───────── card ───────── */
-.ap-card { background: var(--ap-surface); border: 1px solid var(--ap-line); border-radius: var(--ap-r); box-shadow: var(--ap-shadow); padding: 18px 20px; min-width: 0; animation: apIn .45s var(--ap-ease) both; }
+.ap-card { background: var(--ap-surface); border: 1px solid var(--ap-line); border-radius: var(--ap-r); box-shadow: var(--ap-shadow); padding: 18px 20px; min-width: 0; animation: apIn .45s var(--ap-ease) backwards; }
 .ap-card.flush { padding: 0; overflow: hidden; }
 .ap-card.flush > .ap-card-head { padding: 16px 20px 12px; margin: 0; border-bottom: 1px solid var(--ap-line2); }
 .ap-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
@@ -62,7 +62,7 @@ body.ap-lock { overflow: hidden; }
   position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 4px; text-align: left;
   padding: 16px 18px 14px; border-radius: var(--ap-r); background: var(--ap-surface); border: 1px solid var(--ap-line);
   box-shadow: var(--ap-shadow); color: var(--ap-text); font: inherit; min-width: 0;
-  transition: transform .25s var(--ap-ease), box-shadow .25s var(--ap-ease), border-color .25s; animation: apIn .45s var(--ap-ease) both;
+  transition: transform .25s var(--ap-ease), box-shadow .25s var(--ap-ease), border-color .25s; animation: apIn .45s var(--ap-ease) backwards;
 }
 .ap-stat.click { cursor: pointer; }
 .ap-stat.click:hover { transform: translateY(-2px); box-shadow: var(--ap-shadow-lg); border-color: var(--ap-gold-soft); }
@@ -330,7 +330,7 @@ body.ap-lock { overflow: hidden; }
 .de-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 2px; font-size: 12px; font-weight: 800; color: var(--ap-soft); }
 .de-head .de-tip { font-size: 10.5px; font-weight: 600; color: var(--ap-muted); }
 .de-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.de-row { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 8px; border-radius: 11px; background: #fff; border: 1px solid var(--ap-line); transition: border-color .2s, box-shadow .2s; animation: apIn .25s var(--ap-ease) both; }
+.de-row { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 8px; border-radius: 11px; background: #fff; border: 1px solid var(--ap-line); transition: border-color .2s, box-shadow .2s; animation: apIn .25s var(--ap-ease) backwards; }
 .de-row:focus-within { border-color: var(--ap-wine); box-shadow: var(--ap-ring); }
 .de-dot { width: 20px; height: 20px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 6px; background: #E6F2EA; color: var(--ap-green); }
 .de-dot svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }

@@ -145,7 +145,24 @@ function PayBadge({ o }: { o: Orderish }) {
 
 function PrioFlag({ p }: { p: Priority }) {
   if (p === "normal") return null;
-  return <span className={`od-flag ${p}`} title={`${PRIORITY[p].bn} · ${PRIORITY[p].en}`}>{OI.flag}</span>;
+  return <span className={`od-flag ${p}`} title={`Priority · ${PRIORITY[p].en}`}>{OI.flag}</span>;
+}
+
+/** Order tag in its own colour (tags.color). */
+function OrderTag({ t }: { t: { name: string; color: string | null } }) {
+  return <span className="od-tag" style={{ ["--tc" as string]: t.color || "#8A6230" }}><i aria-hidden="true" />{t.name}</span>;
+}
+
+/** Priority + tags under the order number. */
+function OrderBadges({ p, tags, max = 2 }: { p: Priority; tags: { id: string; name: string; color: string | null }[]; max?: number }) {
+  if (p === "normal" && !tags.length) return null;
+  return (
+    <div className="od-tags">
+      {p !== "normal" ? <span className={`od-prio-pill ${p}`}>{OI.flag}{PRIORITY[p].en}</span> : null}
+      {tags.slice(0, max).map((t) => <OrderTag key={t.id} t={t} />)}
+      {tags.length > max ? <span className="od-tag more" title={tags.slice(max).map((t) => t.name).join(", ")}>+{bn(tags.length - max)}</span> : null}
+    </div>
+  );
 }
 
 /* ═══════════════════════════ tab ═══════════════════════════ */
@@ -406,20 +423,19 @@ export function OrdersTab() {
             const at = ms(o.placedAt);
             const late = o.status === "PENDING" && Date.now() - at > 6 * 3_600_000;
             const p = toUi(o.priority);
-            const tags = o.tags.map((t) => t.name);
             return (
-              <tr key={o.id} className={`click od-row${sel.has(o.orderNo) ? " sel" : ""}${o.status === "PENDING" ? " hold" : ""}${open === o.orderNo ? " cur" : ""}`}
+              <tr key={o.id} className={`click od-row${sel.has(o.orderNo) ? " sel" : ""}${o.status === "PENDING" ? " hold" : ""}${o.status === "DELIVERED" ? " done" : ""}${o.status === "CANCELLED" || o.status === "RETURNED" ? " dead" : ""}${open === o.orderNo ? " cur" : ""}`}
                 onClick={() => setOpen(o.orderNo)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") setOpen(o.orderNo); }}>
                 <td className="od-c-chk" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" className="ap-check" aria-label={`${o.orderNo} বাছুন`} checked={sel.has(o.orderNo)} onChange={() => sel.toggle(o.orderNo)} />
                 </td>
                 <td className="od-c-id">
                   <div className="od-id">
-                    <PrioFlag p={p} />
+                    {o.status === "DELIVERED" ? <span className="od-done-tick" title="ডেলিভারি সম্পন্ন · Delivered">{Ico.check}</span> : null}
                     <b>{o.orderNo}</b>
                     <span className="od-copy"><CopyBtn text={o.orderNo} onCopied={() => toast("আইডি কপি হয়েছে")} /></span>
                   </div>
-                  {tags.length ? <div className="od-tags">{tags.slice(0, 2).map((t) => <span key={t} className="od-tag">{t}</span>)}{tags.length > 2 ? <span className="od-tag more">+{bn(tags.length - 2)}</span> : null}</div> : null}
+                  <OrderBadges p={p} tags={o.tags} />
                 </td>
                 <td className="od-c-cust">
                   <div className="od-cust">
@@ -499,7 +515,7 @@ export function OrdersTab() {
                     </div>
                     <div className="od-card-foot">
                       <PayBadge o={o} />
-                      {o.tags.slice(0, 2).map((t) => <span key={t.id} className="od-tag">{t.name}</span>)}
+                      {o.tags.slice(0, 2).map((t) => <OrderTag key={t.id} t={t} />)}
                     </div>
                     <div className="od-card-acts" onClick={(e) => e.stopPropagation()}>
                       {o.canRegress ? <button type="button" className="ap-icon-btn sm" title="আগের ধাপ" aria-label="আগের ধাপ" onClick={() => regress(o)}>{OI.back}</button> : null}
@@ -571,6 +587,33 @@ export function OrdersTab() {
       <div className="od-toolbar">
         <div className="od-toolbar-top">
           <SearchInput value={q} onChange={setQ} placeholder="আইডি, নাম, ফোন, পণ্য বা ট্র্যাকিং · Search" />
+          <span className="od-prio-filter">
+            <Menu align="left" trigger={() => (
+              <button type="button" className={`ap-chip${prio !== "all" || tag !== "all" ? " on" : ""}`}>
+                {Ico.tag}{prio === "all" && tag === "all" ? "Priority / Tag" : [prio === "flagged" ? "High + Urgent" : prio === "urgent" ? "Urgent" : "", tag !== "all" ? tag : ""].filter(Boolean).join(" · ")}{Ico.chevD}
+              </button>
+            )}>
+              {(close) => (
+                <>
+                  <div className="ap-menu-label">প্রায়োরিটি · Priority</div>
+                  {([["all", "All orders"], ["flagged", "High + Urgent"], ["urgent", "Urgent only"]] as const).map(([id, label]) => (
+                    <button key={id} type="button" className="ap-menu-item" onClick={() => { setPrio(id); close(); }}>
+                      {prio === id ? Ico.check : <i className="od-menu-gap" />}{label}
+                    </button>
+                  ))}
+                  <div className="ap-menu-sep" />
+                  <div className="ap-menu-label">ট্যাগ · Tag</div>
+                  <button type="button" className="ap-menu-item" onClick={() => { setTag("all"); close(); }}>{tag === "all" ? Ico.check : <i className="od-menu-gap" />}All tags</button>
+                  {orderTags.map((t) => (
+                    <button key={t.id} type="button" className="ap-menu-item" onClick={() => { setTag(t.name); close(); }}>
+                      {tag === t.name ? Ico.check : <i className="od-menu-gap" />}{t.name}
+                      <small>{bn(t.orders)}</small>
+                    </button>
+                  ))}
+                </>
+              )}
+            </Menu>
+          </span>
           <span className="spacer" />
           <span className="od-count">{bn(total)}টি অর্ডার</span>
           {activeFilters ? <button type="button" className="ap-btn sm ghost" onClick={clearFilters}>{Ico.close}ফিল্টার মুছুন <em className="od-btn-n">{bn(activeFilters)}</em></button> : null}
@@ -610,33 +653,6 @@ export function OrdersTab() {
                 <SectionIcon code={v.code} section={v} />{v.name}
               </button>
             ))}
-          </div>
-          <div className="od-fgroup">
-            <Menu align="left" trigger={() => (
-              <button type="button" className={`ap-chip${prio !== "all" || tag !== "all" ? " on" : ""}`}>
-                {Ico.tag}{prio === "all" && tag === "all" ? "প্রায়োরিটি / ট্যাগ" : [prio === "flagged" ? "প্রায়োরিটি" : prio === "urgent" ? "জরুরি" : "", tag !== "all" ? tag : ""].filter(Boolean).join(" · ")}{Ico.chevD}
-              </button>
-            )}>
-              {(close) => (
-                <>
-                  <div className="ap-menu-label">প্রায়োরিটি · Priority</div>
-                  {([["all", "সব অর্ডার"], ["flagged", "উঁচু + জরুরি"], ["urgent", "শুধু জরুরি"]] as const).map(([id, label]) => (
-                    <button key={id} type="button" className="ap-menu-item" onClick={() => { setPrio(id); close(); }}>
-                      {prio === id ? Ico.check : <i className="od-menu-gap" />}{label}
-                    </button>
-                  ))}
-                  <div className="ap-menu-sep" />
-                  <div className="ap-menu-label">ট্যাগ · Tag</div>
-                  <button type="button" className="ap-menu-item" onClick={() => { setTag("all"); close(); }}>{tag === "all" ? Ico.check : <i className="od-menu-gap" />}সব ট্যাগ</button>
-                  {orderTags.map((t) => (
-                    <button key={t.id} type="button" className="ap-menu-item" onClick={() => { setTag(t.name); close(); }}>
-                      {tag === t.name ? Ico.check : <i className="od-menu-gap" />}{t.name}
-                      <small>{bn(t.orders)}</small>
-                    </button>
-                  ))}
-                </>
-              )}
-            </Menu>
           </div>
         </div>
       </div>
@@ -824,7 +840,7 @@ function DrawerHead({ o, onPriority, onCopied }: { o: OrderDetail; onPriority: (
       <div className="od-prio" role="radiogroup" aria-label="প্রায়োরিটি">
         {(Object.keys(PRIORITY) as Priority[]).map((p) => (
           <button key={p} type="button" role="radio" aria-checked={cur === p} className={`p-${p}${cur === p ? " on" : ""}`} onClick={() => onPriority(p)}>
-            {p !== "normal" ? OI.flag : null}{PRIORITY[p].bn}
+            {p !== "normal" ? OI.flag : null}{PRIORITY[p].en}
           </button>
         ))}
       </div>
@@ -1074,7 +1090,8 @@ function OrderPanel({ o, onAdvance, onRegress, onCancel, onReopen, onPay, onPape
         <div className="od-tagpick">
           {[...new Set([...orderTags.map((t) => t.name), ...o.tags.map((t) => t.name)])].map((t) => {
             const on = o.tags.some((x) => x.name === t);
-            return <button key={t} type="button" className={`ap-chip${on ? " on" : ""}`} aria-pressed={on} onClick={() => toggleTag(t)}>{on ? Ico.check : Ico.plus}{t}</button>;
+            const color = orderTags.find((x) => x.name === t)?.color || o.tags.find((x) => x.name === t)?.color || "#8A6230";
+            return <button key={t} type="button" className={`od-tag-chip${on ? " on" : ""}`} style={{ ["--tc" as string]: color }} aria-pressed={on} onClick={() => toggleTag(t)}>{on ? Ico.check : Ico.plus}{t}</button>;
           })}
         </div>
       </section>

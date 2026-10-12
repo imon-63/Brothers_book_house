@@ -498,12 +498,12 @@ async function seedPromotionsAndContent(content: ContentJson, sectionIds: Map<Se
 
     const tags: { scope: TagScope; name: string; color: string }[] = [
       ...[
-        ['উপহার', '#B86A2A'],
-        ['জরুরি', '#B42318'],
-        ['আবার অর্ডার', '#245A6B'],
-        ['বাল্ক', '#4A2744'],
-        ['কর্পোরেট', '#2C3A5A'],
-        ['যাচাই দরকার', '#C4A15A'],
+        ['Gift', '#B86A2A'],
+        ['Urgent', '#B42318'],
+        ['Repeat order', '#245A6B'],
+        ['Bulk', '#4A2744'],
+        ['Corporate', '#2C3A5A'],
+        ['Needs check', '#C4A15A'],
       ].map(([name, color]) => ({ scope: 'ORDER' as const, name, color })),
       ...[
         ['VIP', '#7A2430'],

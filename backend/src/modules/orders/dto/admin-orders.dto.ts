@@ -193,7 +193,7 @@ export class PriorityDto {
 }
 
 export class AddTagDto {
-  @ApiProperty({ example: 'উপহার' })
+  @ApiProperty({ example: 'Gift' })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsNotEmpty()

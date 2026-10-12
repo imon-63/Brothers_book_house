@@ -23,11 +23,11 @@ export class ProductCardLoader {
     return this.withNextDeal((await this.rows(ids, now)).map((r) => toProductCard(r, now)), now);
   }
 
-  /** The soonest scheduled (not yet started) deal per product within UPCOMING_DAYS. */
-  async nextDeals(productIds: string[], now = new Date()): Promise<Map<string, NextDeal>> {
+  /** The soonest scheduled (not yet started) deal per product within `withinDays` (storefront: UPCOMING_DAYS). */
+  async nextDeals(productIds: string[], now = new Date(), withinDays = UPCOMING_DAYS): Promise<Map<string, NextDeal>> {
     const out = new Map<string, NextDeal>();
     if (!productIds.length) return out;
-    const until = new Date(now.getTime() + UPCOMING_DAYS * 86_400_000);
+    const until = new Date(now.getTime() + withinDays * 86_400_000);
     const deals = await this.prisma.productDeal.findMany({
       where: { productId: { in: productIds }, cancelledAt: null, startsAt: { gt: now, lte: until } },
       orderBy: { startsAt: 'asc' },

@@ -19,6 +19,7 @@ import { setAuth, setMiniCart, setSection, showToast } from "@/store/slices/ui-s
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 type Review = { id: string; displayName: string | null; rating: number; title: string | null; body: string | null; verified: boolean; createdAt: string };
+const REVIEW_DRAFT = "cholo_review_draft";
 type ReviewPage = { summary: { average: number; count: number }; items: Review[] };
 const AV = ["#7A2430", "#3D5A4C", "#8A6230", "#1a3a6b", "#5C1B24", "#245A6B"];
 const avatarColor = (i: number) => AV[i % AV.length];
@@ -57,6 +58,19 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     queryFn: () => get<ReviewPage>(`/products/${product!.id}/reviews`, { pageSize: 30 }),
   });
   const reviews = reviewsQ.data?.items ?? [];
+  /* a review written before logging in: restore it, and post it once the user is in */
+  useEffect(() => {
+    if (!product) return;
+    let draft: { pid: string; name: string; text: string; stars: number } | null = null;
+    try { draft = JSON.parse(sessionStorage.getItem(REVIEW_DRAFT) || "null"); } catch { draft = null; }
+    if (!draft || draft.pid !== product.id) return;
+    reviewForm.reset({ name: draft.name, text: draft.text, stars: draft.stars });
+    if (!me) return;
+    try { sessionStorage.removeItem(REVIEW_DRAFT); } catch { /* ignore */ }
+    void submitReview({ name: draft.name || me.name, text: draft.text, stars: draft.stars });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id, me?.id]);
+
   const summary = reviewsQ.data?.summary ?? { average: product?.rating.average ?? 0, count: product?.rating.count ?? 0 };
 
   if (!product) return <div className="wrap"><p className="crumb">{q.isLoading ? "লোড হচ্ছে…" : "পণ্য পাওয়া যায়নি"}</p></div>;
@@ -87,13 +101,19 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       dispatch(showToast("রেটিং, নাম আর রিভিউ দিন"));
       return;
     }
-    if (!me) { dispatch(setAuth(true)); dispatch(showToast("রিভিউ দিতে লগইন করুন")); return; }
+    if (!me) {
+      /* keep what they wrote — it is posted automatically right after login */
+      try { sessionStorage.setItem(REVIEW_DRAFT, JSON.stringify({ pid: product!.id, ...values })); } catch { /* ignore */ }
+      dispatch(setAuth(true));
+      dispatch(showToast("লগইন করলেই রিভিউটি জমা হবে"));
+      return;
+    }
     setBusy(true);
     try {
       await post(`/products/${product!.id}/reviews`, { rating: values.stars, body: values.text.trim(), displayName: values.name.trim() });
       reviewForm.setValue("text", "");
       reviewForm.setValue("stars", 0);
-      dispatch(showToast("রিভিউ জমা হয়েছে · যাচাইয়ের পর দেখাবে"));
+      dispatch(showToast("ধন্যবাদ! আপনার রিভিউ যোগ হয়েছে"));
       void qc.invalidateQueries({ queryKey: ["reviews", product!.id] });
     } catch (e) {
       dispatch(showToast(apiErrorText(e)));

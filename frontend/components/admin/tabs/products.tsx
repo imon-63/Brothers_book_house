@@ -1,7 +1,7 @@
 "use client";
 
 import "./products.css";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { BnDateField } from "@/components/ui/bangla-calendar";
@@ -21,7 +21,7 @@ import { COLORS, readFile, Pager } from "@/components/admin/shared";
 import { useAdminNav } from "@/components/admin/nav";
 import { DescEditor } from "@/components/admin/desc-editor";
 import {
-  Badge, Columns, Drawer, Empty, Ico, Modal, PageHead, SearchInput, Segmented, Stat, StatusPill, Toggle,
+  Badge, Columns, Drawer, Empty, Ico, Menu, Modal, PageHead, SearchInput, Segmented, Stat, StatusPill, Toggle,
   dateOnly, downloadCsv, num, tk, useSelection,
 } from "@/components/admin/ui";
 
@@ -38,6 +38,8 @@ export type ShopProduct = {
   id: string; title: string; author: string; price: number; old: number; cost: number; sold: number; color: string;
   cat: string; catId: string; sub?: string; subId?: string; desc: string; vertical: string; stock: number; copies: number;
   freeShip: boolean; image?: string; deal?: { id: string; price: number; until: string; from?: string }; version: number; hidden: boolean;
+  /** scheduled, not started yet */
+  soon?: { price: number; from: string; until: string };
 };
 export function toLocalDt(iso: string) {
   const d = new Date(iso);
@@ -51,6 +53,7 @@ export function toShop(r: AdminProductRow): ShopProduct {
     subId: r.subcategory?.id ?? undefined, desc: "", vertical: r.section.code, stock: r.stock.onHand, copies: Math.max(r.stock.initialCopies, r.stock.onHand),
     freeShip: r.freeShipping, image: r.cover.url ?? undefined, deal: r.deal ? { id: r.deal.id, price: r.deal.dealPrice, until: toLocalDt(r.deal.endsAt), from: toLocalDt(r.deal.startsAt) } : undefined,
     version: r.version, hidden: r.categoryHidden,
+    soon: r.nextDeal ? { price: r.nextDeal.dealPrice, from: r.nextDeal.startsAt, until: r.nextDeal.endsAt } : undefined,
   };
 }
 function offerOf(p: Pick<ShopProduct, "price" | "old" | "deal">, now = Date.now()) {
@@ -113,6 +116,7 @@ function NumCell({ value, onCommit, className = "pr-in", placeholder, min = 0, m
   const commit = () => { const n = n0(v); if (n !== n0(value)) onCommit(n); };
   return (
     <input className={className} type="number" min={min} max={max} value={v} placeholder={placeholder} aria-label={label} title={title}
+      style={{ ["--len" as string]: Math.max(2, (v || placeholder || "").length) }}
       onChange={(e) => setV(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setV(value ? String(value) : ""); }} />
   );
 }
@@ -130,13 +134,84 @@ function StockBar({ p, low }: { p: ShopProduct; low: number }) {
   return <span className={`pr-level ${tone}`} title={`${bn(p.stock)} / ${bn(cap)}`}><i style={{ width: `${pct}%` }} /></span>;
 }
 
+function leftText(ms: number) {
+  const m = Math.max(0, Math.round(ms / 60000));
+  const d = Math.floor(m / 1440);
+  const h = Math.floor((m % 1440) / 60);
+  return d ? `${bn(d)} দিন ${bn(h)} ঘণ্টা` : h ? `${bn(h)} ঘণ্টা ${bn(m % 60)} মিনিট` : `${bn(m % 60)} মিনিট`;
+}
+
+/** Timer button: spins while a deal runs, pulses when one is scheduled; hover shows the details. */
+function DealTimer({ p, onOpen }: { p: ShopProduct; onOpen: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  const [tip, setTip] = useState<{ top: number; right: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const show = () => {
+    setNow(Date.now());
+    const r = btn.current?.getBoundingClientRect();
+    if (r) setTip({ top: Math.min(Math.max(12, r.top + r.height / 2), window.innerHeight - 12), right: window.innerWidth - r.left + 10 });
+  };
+  const live = offerOf(p, now).on;
+  const soon = !live && p.soon && Date.parse(p.soon.from) > now ? p.soon : null;
+  const state = live ? "live" : soon ? "soon" : "none";
+  const off = (price: number) => (p.price > 0 ? Math.round((1 - price / p.price) * 100) : 0);
+  return (
+    <span className={`pr-dt ${state}`} onMouseEnter={show} onMouseLeave={() => setTip(null)} onFocus={show} onBlur={() => setTip(null)}>
+      <button ref={btn} type="button" className="pr-dt-btn" onClick={onOpen} aria-label={live ? "ছাড় চলছে · বদলান" : soon ? "ছাড় আসছে · বদলান" : "সময়ের ছাড় দিন"}>
+        <span className="pr-dt-ring" aria-hidden="true" />
+        {Ico.clock}
+      </button>
+      {tip ? <span className="pr-dt-tip" role="tooltip" style={{ top: tip.top, right: tip.right }}>
+        {live && p.deal ? (
+          <>
+            <b className="t-live"><i />ছাড় চলছে</b>
+            <span className="t-price">৳{bn(p.deal.price)} <s>৳{bn(p.price)}</s> <em>{bn(off(p.deal.price))}% কম</em></span>
+            <span className="t-row"><small>শেষ হবে</small>{fmtShipDt(p.deal.until)}</span>
+            <span className="t-row"><small>বাকি</small><strong>{leftText(Date.parse(p.deal.until) - now)}</strong></span>
+          </>
+        ) : soon ? (
+          <>
+            <b className="t-soon"><i />ছাড় আসছে</b>
+            <span className="t-price">৳{bn(soon.price)} <s>৳{bn(p.price)}</s> <em>{bn(off(soon.price))}% কম</em></span>
+            <span className="t-row"><small>শুরু</small>{fmtShipDt(toLocalDt(soon.from))}</span>
+            <span className="t-row"><small>শেষ</small>{fmtShipDt(toLocalDt(soon.until))}</span>
+            <span className="t-row"><small>শুরু হতে</small><strong>{leftText(Date.parse(soon.from) - now)}</strong></span>
+          </>
+        ) : (
+          <>
+            <b>কোনো টাইমার নেই</b>
+            <span className="t-row">ক্লিক করে সময়ের ছাড় দিন</span>
+          </>
+        )}
+      </span> : null}
+    </span>
+  );
+}
+
+/** Stock: big "left", copies, state chip and a level bar. */
+function StockCell({ p, low, onSet }: { p: ShopProduct; low: number; onSet: (v: number) => void }) {
+  const cap = Math.max(n0(p.copies), n0(p.stock), 1);
+  const pct = Math.max(0, Math.min(100, (n0(p.stock) / cap) * 100));
+  const tone = p.stock <= 0 ? "out" : p.stock <= low ? "low" : "ok";
+  return (
+    <div className={`pr-stk ${tone}`}>
+      <div className="pr-stk-top">
+        <NumCell value={p.stock} label="বাকি" title="বাকি · In stock (বদলাতে লিখুন)" placeholder="০" onCommit={onSet} />
+        <span className="pr-stk-of">/ {bn(cap)}</span>
+        <em>{tone === "out" ? "শেষ" : tone === "low" ? "কম" : "আছে"}</em>
+      </div>
+      <span className="pr-stk-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
+    </div>
+  );
+}
+
 function MarginPill({ m }: { m: number | null }) {
   return <span className={`pr-margin ${marginTone(m)}`}>{m == null ? "—" : `${bn(m)}%`}</span>;
 }
 
 /** Row menu with fixed positioning so it never gets clipped by the scrolling table. */
 function RowMenu({ children, label = "আরও" }: { children: (close: () => void) => ReactNode; label?: string }) {
-  const [pos, setPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; right: number; placed?: boolean } | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -161,9 +236,17 @@ function RowMenu({ children, label = "আরও" }: { children: (close: () => vo
   function toggle() {
     if (pos || !btn.current) { setPos(null); return; }
     const r = btn.current.getBoundingClientRect();
-    const up = r.bottom + 300 > window.innerHeight && r.top > 300;
-    setPos(up ? { bottom: window.innerHeight - r.top + 6, right: Math.max(8, window.innerWidth - r.right) } : { top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
+    setPos({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
   }
+  /* measured, not guessed: flip above the button, or clamp, so the whole menu is always on screen */
+  useLayoutEffect(() => {
+    if (!pos || pos.placed || pos.top == null || !pop.current || !btn.current) return;
+    const h = pop.current.offsetHeight;
+    const r = btn.current.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const top = r.bottom + 6 + h <= vh - 8 ? pos.top : r.top - 6 - h >= 8 ? r.top - 6 - h : Math.max(8, vh - 8 - h);
+    setPos({ top, right: pos.right, placed: true });
+  }, [pos]);
   return (
     <>
       <button ref={btn} type="button" className={`ap-icon-btn sm pr-more${pos ? " on" : ""}`} aria-label={label} aria-haspopup="menu" aria-expanded={!!pos} onClick={toggle}>{dots}</button>
@@ -539,18 +622,31 @@ export function ProductsTab() {
               {desc ? Ico.down : Ico.up}
             </button>
           </div>
-          <div className="pr-thresh" title="এই সংখ্যা বা তার কম হলে কম স্টক ধরা হবে">
-            <span className="pr-lab">কম স্টক সীমা <small>Threshold</small></span>
-            <button type="button" aria-label="কমান" onClick={() => savePrefs.mutate({ lowStock: Math.max(0, low - 1) })}>−</button>
-            <b>≤ {bn(low)}</b>
-            <button type="button" aria-label="বাড়ান" onClick={() => savePrefs.mutate({ lowStock: Math.min(999, low + 1) })}>+</button>
-          </div>
-          <div className="pr-size">
-            <span className="pr-lab">প্রতি পৃষ্ঠায়</span>
-            <select value={size} onChange={(e) => setSize(n0(e.target.value) || 25)} aria-label="প্রতি পৃষ্ঠায়">
-              {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{bn(n)}</option>)}
-            </select>
-          </div>
+          <Menu align="right" trigger={() => (
+            <button type="button" className="pr-tune" title="কম স্টক সীমা · প্রতি পৃষ্ঠায়" aria-label="তালিকার সেটিং">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
+              <span>≤ {bn(low)} · {bn(size)}</span>
+            </button>
+          )}>
+            {() => (
+              <div className="pr-tune-pop">
+                <div className="pr-thresh" title="এই সংখ্যা বা তার কম হলে কম স্টক ধরা হবে">
+                  <span className="pr-lab">কম স্টক সীমা <small>Threshold</small></span>
+                  <span className="pr-step">
+                    <button type="button" aria-label="কমান" onClick={() => savePrefs.mutate({ lowStock: Math.max(0, low - 1) })}>−</button>
+                    <b>≤ {bn(low)}</b>
+                    <button type="button" aria-label="বাড়ান" onClick={() => savePrefs.mutate({ lowStock: Math.min(999, low + 1) })}>+</button>
+                  </span>
+                </div>
+                <div className="pr-size">
+                  <span className="pr-lab">প্রতি পৃষ্ঠায় <small>Per page</small></span>
+                  <span className="pr-sizes">
+                    {[10, 25, 50, 100].map((n) => <button key={n} type="button" className={size === n ? "on" : ""} onClick={() => setSize(n)}>{bn(n)}</button>)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </Menu>
         </div>
         <div className="pr-chips" role="group" aria-label="দ্রুত ফিল্টার">
           {QUICK.map((f) => (
@@ -617,15 +713,11 @@ export function ProductsTab() {
                   <th className="pr-c-check"><input type="checkbox" className="ap-check" aria-label="এই পৃষ্ঠার সব বাছুন" checked={allOnPage} onChange={(e) => sel.setAll(pageIds, e.target.checked)} /></th>
                   <th>পণ্য</th>
                   <th>ক্যাটাগরি</th>
-                  <th className="num">কেনা</th>
-                  <th className="num">পুরনো</th>
-                  <th className="num">দাম</th>
-                  <th className="num">ছাড়</th>
-                  <th>মার্জিন</th>
+                  <th className="num">দাম · ছাড়</th>
+                  <th className="num">কেনা · লাভ</th>
                   <th>স্টক</th>
                   <th className="num">বিক্রি</th>
-                  <th>টাইমার</th>
-                  <th />
+                  <th className="pr-c-acts" aria-label="অ্যাকশন" />
                 </tr>
               </thead>
               <tbody>
@@ -661,39 +753,36 @@ export function ProductsTab() {
                         </select>
                         {b.sub ? <small className="pr-sub">{b.sub}</small> : null}
                       </td>
-                      <td className="num" data-label="কেনা">
-                        <span className={`pr-money${b.cost ? "" : " miss"}`}><i>৳</i><NumCell value={b.cost} placeholder="—" onCommit={(v) => patch(b, { costPrice: v || null })} /></span>
-                      </td>
-                      <td className="num" data-label="পুরনো">
-                        <span className="pr-money"><i>৳</i><NumCell value={b.old} placeholder="—" onCommit={(v) => patch(b, { compareAtPrice: v || null })} /></span>
-                      </td>
-                      <td className="num" data-label="দাম">
-                        <span className="pr-money hot"><i>৳</i><NumCell value={b.price} onCommit={(v) => { if (v > 0) patch(b, { price: v }); }} /></span>
-                        {offer.on ? <small className="pr-deal-price">এখন {tk(offer.price)}</small> : null}
-                      </td>
-                      <td className="num" data-label="ছাড় %">
-                        <span className="pr-money pct"><NumCell value={off} max={95} placeholder="—" onCommit={(v) => patch(b, { compareAtPrice: oldFromDiscount(b.price, v) || null })} /><i>%</i></span>
-                      </td>
-                      <td data-label="মার্জিন"><MarginPill m={m} /></td>
-                      <td data-label="স্টক">
-                        <div className="pr-stock">
-                          <div className="pr-stock-in">
-                            <NumCell value={b.stock} label="বাকি" title="বাকি · In stock" placeholder="০" onCommit={(v) => setStock(b, v, "টেবিল থেকে স্টক গণনা", "স্টক আপডেট হয়েছে")} />
-                            <span>/</span>
-                            <input className="pr-in ghost" type="number" readOnly aria-label="আসল কপি" title="আসল কপি · Copies (স্টক লেজার থেকে)" value={b.copies ?? b.stock} />
+                      <td className="num" data-label="দাম · ছাড়">
+                        <div className="pr-pc">
+                          <div className="pr-pc-main">
+                            <span className="pr-money hot"><i>৳</i><NumCell value={b.price} onCommit={(v) => { if (v > 0) patch(b, { price: v }); }} /></span>
+                            <span className={`pr-pct${off ? " on" : ""}`} title="ছাড় % · বদলাতে লিখুন"><NumCell value={off} max={95} placeholder="০" onCommit={(v) => patch(b, { compareAtPrice: oldFromDiscount(b.price, v) || null })} /><i>%</i></span>
                           </div>
-                          <StockBar p={b} low={low} />
+                          <div className="pr-pc-sub">
+                            {offer.on ? <span className="pr-pc-now">{Ico.clock}এখন {tk(offer.price)}</span> : null}
+                            <span className="pr-money was" title="আগের দাম (কাটা দাম)"><small>আগে</small><i>৳</i><NumCell value={b.old} placeholder="—" onCommit={(v) => patch(b, { compareAtPrice: v || null })} /></span>
+                          </div>
                         </div>
                       </td>
-                      <td className="num" data-label="বিক্রি"><b className="pr-sold">{num(soldOf(b))}</b></td>
-                      <td data-label="টাইমার">
-                        <button type="button" className={`pr-timer${offer.on ? " on" : b.deal?.until ? " ended" : ""}`} onClick={() => setDealId(b.id)}>
-                          {Ico.clock}{offer.on ? "চলছে" : b.deal?.until ? "শেষ" : "টাইমার"}
-                        </button>
-                        {offer.on && b.deal ? <small className="pr-until">{fmtShipDt(b.deal.until)} পর্যন্ত</small> : null}
+                      <td className="num" data-label="কেনা · লাভ">
+                        <div className="pr-pc">
+                          <div className="pr-pc-main">
+                            <span className={`pr-money${b.cost ? "" : " miss"}`} title="কেনা দাম"><i>৳</i><NumCell value={b.cost} placeholder="—" onCommit={(v) => patch(b, { costPrice: v || null })} /></span>
+                            <MarginPill m={m} />
+                          </div>
+                          <div className="pr-pc-sub">
+                            <span className={`pr-profit ${marginTone(m)}`}>{m == null ? "কেনা দাম দিন" : `লাভ ${tk(offer.price - n0(b.cost))}/কপি`}</span>
+                          </div>
+                        </div>
                       </td>
+                      <td data-label="স্টক">
+                        <StockCell p={b} low={low} onSet={(v) => setStock(b, v, "টেবিল থেকে স্টক গণনা", "স্টক আপডেট হয়েছে")} />
+                      </td>
+                      <td className="num" data-label="বিক্রি"><b className="pr-sold">{num(soldOf(b))}</b></td>
                       <td className="pr-c-acts">
                         <div className="pr-acts">
+                          <DealTimer p={b} onOpen={() => setDealId(b.id)} />
                           <button type="button" className={`pr-inout${b.stock > 0 ? " in" : ""}`} onClick={() => toggleStock(b)} title="স্টকে / আউট">{b.stock > 0 ? "স্টকে" : "আউট"}</button>
                           <RowMenu>
                             {(close) => (
