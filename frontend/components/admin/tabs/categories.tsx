@@ -5,9 +5,12 @@ import { bn } from "@/lib/format";
 import { useAdminSection } from "@/lib/admin/section-context";
 import { useToast } from "@/lib/api/admin/core";
 import { useCategoryTree, useCreateCategory, useDeleteCategory, useUpdateCategory } from "@/lib/api/admin/sections";
+import { useConfirm } from "@/components/admin/confirm";
+import { Ico } from "@/components/admin/ui";
 
 export function CategoriesTab() {
   const toast = useToast();
+  const confirm = useConfirm();
   const { section } = useAdminSection();
   const treeQ = useCategoryTree(section?.id);
   const createM = useCreateCategory();
@@ -53,12 +56,26 @@ export function CategoriesTab() {
                 <span className="cat-card-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h10M4 18h16" /></svg></span>
                 <div><b className="nm">{c.name}</b><small>{bn(c.subs.length)}টি সাব · {bn(c.count)}টি{off ? " · ইউজার দেখছে না" : ""}</small></div>
                 <div className="acts">
-                  <button type="button" className={`btn btn-sm ${off ? "btn-primary" : "btn-ghost"}`} onClick={() => {
+                  <button type="button" className={`btn btn-sm ${off ? "btn-primary" : "btn-ghost"}`} onClick={async () => {
+                    if (!off && !(await confirm({
+                      tone: "warn", icon: Ico.eye,
+                      title: `«${c.name}» ক্যাটাগরি লুকাবেন?`,
+                      body: "ক্রেতারা এই ক্যাটাগরি ও এর সব পণ্য আর দেখতে পাবেন না। পরে «দেখান» দিয়ে ফেরানো যাবে।",
+                      details: [{ label: "লুকাবে", value: `${bn(c.count)}টি পণ্য · ${bn(c.subs.length)}টি সাব` }, { label: "দোকানে", from: "দেখা যাচ্ছে", to: "লুকানো" }],
+                      confirmText: "হ্যাঁ, লুকান",
+                    }))) return;
                     updateM.mutate({ id: c.id, body: { isVisible: off }, toast: off ? "ক্যাটাগরি আবার দেখা যাচ্ছে" : "সব ক্রেতার কাছ থেকে লুকানো" });
                   }}>{off ? "দেখান" : "লুকান"}</button>
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
                     if (c.count) { toast("আগে পণ্য অন্য ক্যাটাগরিতে সরান"); return; }
-                    deleteM.mutate({ id: c.id });
+                    void confirm({
+                      tone: "danger",
+                      title: `«${c.name}» ক্যাটাগরি মুছবেন?`,
+                      body: c.subs.length ? "ক্যাটাগরির সাথে এর সব সাব-ক্যাটাগরিও মুছে যাবে।" : "ক্যাটাগরিটি তালিকা ও দোকান থেকে সরে যাবে।",
+                      details: [{ label: "পণ্য", value: `${bn(c.count)}টি` }, { label: "সাব-ক্যাটাগরি", value: c.subs.length ? c.subs.map((x) => x.name).join(", ") : "নেই" }],
+                      requireText: c.subs.length ? c.name : undefined,
+                      confirmText: "হ্যাঁ, মুছুন", confirmIcon: Ico.trash,
+                    }).then((ok) => { if (ok) deleteM.mutate({ id: c.id }); });
                   }}>মুছুন</button>
                 </div>
               </div>
@@ -69,7 +86,13 @@ export function CategoriesTab() {
                   <span>{bn(x.count)}টি</span>
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
                     if (x.count) { toast("আগে পণ্য অন্য সাবে সরান"); return; }
-                    deleteM.mutate({ id: x.id, toast: "সাব-ক্যাটাগরি মুছেছে" });
+                    void confirm({
+                      tone: "danger",
+                      title: `«${x.name}» সাব-ক্যাটাগরি মুছবেন?`,
+                      body: <>«{c.name}» থেকে এই সাব-ক্যাটাগরি সরে যাবে।</>,
+                      details: [{ label: "পণ্য", value: `${bn(x.count)}টি` }],
+                      confirmText: "হ্যাঁ, মুছুন", confirmIcon: Ico.trash,
+                    }).then((ok) => { if (ok) deleteM.mutate({ id: x.id, toast: "সাব-ক্যাটাগরি মুছেছে" }); });
                   }}>মুছুন</button>
                 </div>
               )) : <p className="cat-empty-subs">এখনো সাব-ক্যাটাগরি নেই</p>}

@@ -12,8 +12,9 @@ import {
   tagNames, type CustomerDetail, type CustomerFilter, type CustomerRow,
 } from "@/lib/api/admin/customers";
 import { useAdminNav } from "@/components/admin/nav";
+import { useConfirm, useConfirmInput } from "@/components/admin/confirm";
 import {
-  AreaChart, Avatar, Badge, Card, CopyBtn, Donut, Drawer, Empty, Ico, Kbd, Menu, Modal, PageHead, SearchInput,
+  AreaChart, Avatar, Badge, Card, CopyBtn, Donut, Drawer, Empty, Ico, Kbd, Menu, PageHead, SearchInput,
   Segmented, Spark, Stat, StatusPill, Toggle, ago, dateOnly, downloadCsv, num, tk, when, useSelection, type Tone,
 } from "@/components/admin/ui";
 
@@ -159,6 +160,7 @@ export function CustomersTab() {
   const kpiQ = useCustomerKpis();
   const tagsQ = useCustomerTags();
   const bulkTagM = useBulkCustomerTag();
+  const confirm = useConfirm();
   const allTags = useMemo(() => (tagsQ.data?.tags ?? []).map((t) => t.name), [tagsQ.data]);
 
   const list = useMemo(() => (listQ.data?.items ?? []).map(toCustomer), [listQ.data]);
@@ -242,9 +244,16 @@ export function CustomersTab() {
     if (!ids.length) { toast(`সবার আগেই "${t}" ট্যাগ আছে`); return; }
     bulkTagM.mutate({ customerIds: ids, tag: t, action: "add", toast: `${bn(ids.length)} জনকে "${t}" ট্যাগ দেওয়া হয়েছে` });
   };
-  const bulkUntag = (t: string) => {
+  const bulkUntag = async (t: string) => {
     const ids = selectedRows.filter((c) => c.tags.includes(t)).map((c) => c.key);
     if (!ids.length) { toast("কারও এই ট্যাগ ছিল না"); return; }
+    if (!(await confirm({
+      tone: "warn", icon: Ico.tag,
+      title: `${bn(ids.length)} জনের "${t}" ট্যাগ সরাবেন?`,
+      body: "এই ট্যাগ দিয়ে করা ফিল্টার ও সেগমেন্ট থেকে তারা বাদ পড়বেন।",
+      details: [{ label: "কাস্টমার", value: `${bn(ids.length)} জন` }, { label: "ট্যাগ", from: t, to: "সরানো" }],
+      confirmText: "হ্যাঁ, সরান",
+    }))) return;
     bulkTagM.mutate({ customerIds: ids, tag: t, action: "remove", toast: `${bn(ids.length)} জনের "${t}" ট্যাগ সরানো হয়েছে` });
   };
 
@@ -387,7 +396,7 @@ export function CustomersTab() {
                   const on = selection.has(c.key);
                   const sp = c.spark;
                   return (
-                    <tr key={c.key} className={`click cu-row${on ? " sel" : ""}${m.blocked ? " cu-blocked" : ""}`} style={{ animationDelay: `${Math.min(i, 14) * 22}ms` }}
+                    <tr key={c.key} className={`click cu-row seg-${c.segment}${on ? " sel" : ""}${m.blocked ? " cu-blocked" : ""}`} style={{ animationDelay: `${Math.min(i, 14) * 22}ms` }}
                       onClick={() => setOpenKey(c.key)}>
                       <td className="cu-c-check" onClick={(e) => e.stopPropagation()}>
                         <input type="checkbox" className="ap-check" aria-label={`${c.name} নির্বাচন`} checked={on} onChange={() => selection.toggle(c.key)} />
@@ -469,7 +478,7 @@ export function CustomersTab() {
                 <div className="ap-menu-sep" />
                 <div className="ap-menu-label">ট্যাগ সরান · Remove</div>
                 {allTags.filter((t) => selectedRows.some((c) => metaOf(c).tags.includes(t))).map((t) => (
-                  <button key={t} type="button" className="ap-menu-item danger" onClick={() => { bulkUntag(t); done(); }}>{Ico.close}{t}</button>
+                  <button key={t} type="button" className="ap-menu-item danger" onClick={() => { done(); void bulkUntag(t); }}>{Ico.close}{t}</button>
                 ))}
               </>
             )}
@@ -700,8 +709,7 @@ function CustomerDrawerBody({ d, pos, count, onStep, onClose, onGo }: {
   const setTagsM = useSetCustomerTags();
   const tagColor = useTagColor();
   const blockM = useBlockCustomer();
-  const [confirmBlock, setConfirmBlock] = useState(false);
-  const [blockReason, setBlockReason] = useState("");
+  const ask = useConfirmInput();
   const st = d.stats;
   const c: Customer = {
     key: d.id, name: d.name || "গেস্ট", phone: d.phone ?? "", email: d.email ?? "", registered: d.registered, live: st.liveOrders, cancelled: st.cancelledOrders,
@@ -738,19 +746,34 @@ function CustomerDrawerBody({ d, pos, count, onStep, onClose, onGo }: {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (confirmBlock) return;
+      if (document.querySelector(".ap-cf-wrap")) return; // a confirm sheet is open
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
       if (e.key === "ArrowRight") { e.preventDefault(); onStep(1); }
       if (e.key === "ArrowLeft") { e.preventDefault(); onStep(-1); }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [onStep, confirmBlock]);
+  }, [onStep]);
 
-  const closeDrawer = useCallback(() => { if (!confirmBlock) onClose(); }, [confirmBlock, onClose]);
+  const closeDrawer = useCallback(() => onClose(), [onClose]);
 
   const setBlocked = (blocked: boolean, reason?: string) => {
     blockM.mutate({ id: c.key, name: c.name, blocked, reason });
+  };
+  const askBlock = async () => {
+    const reason = await ask({
+      tone: "danger", icon: Ico.lock,
+      title: `${c.name} — ব্লক করবেন?`,
+      body: <>এই কাস্টমারকে <b>ঝুঁকিপূর্ণ</b> হিসেবে চিহ্নিত করা হবে। অর্ডার তালিকায় লাল সতর্কতা থাকবে, এই নম্বর থেকে নতুন অর্ডার নেওয়া বন্ধ থাকবে। যেকোনো সময় আনব্লক করা যাবে।</>,
+      details: [
+        { label: "মোট অর্ডার", value: `${bn(c.total)} · বাতিল ${bn(c.cancelled)} (${bn(cancelRate)}%)`, bad: cancelRate >= 30 },
+        { label: "আজীবন খরচ", value: tk(c.spent) },
+      ],
+      detailsTitle: "কাস্টমারের হিসাব",
+      input: { label: "কারণ · Reason", placeholder: "যেমন: বারবার অর্ডার নিয়ে ফেরত দিচ্ছেন", minLength: 3 },
+      confirmText: "হ্যাঁ, ব্লক করুন",
+    });
+    if (reason) setBlocked(true, reason);
   };
   const toggleTag = (t: string) => {
     setTagsM.mutate({ id: c.key, tags: c.tags.includes(t) ? c.tags.filter((x) => x !== t) : [...c.tags, t] });
@@ -946,7 +969,7 @@ function CustomerDrawerBody({ d, pos, count, onStep, onClose, onGo }: {
         </Card>
 
         <Card className={`cu-block${meta.blocked ? " on" : ""}`}>
-          <Toggle checked={meta.blocked} onChange={(v) => (v ? setConfirmBlock(true) : setBlocked(false))}
+          <Toggle checked={meta.blocked} onChange={(v) => (v ? void askBlock() : setBlocked(false))}
             label="কাস্টমার ব্লক করুন" sub="Block · সন্দেহজনক বা বারবার অর্ডার বাতিল করলে" />
           <p className="cu-block-note">
             {Ico.alert}
@@ -955,24 +978,6 @@ function CustomerDrawerBody({ d, pos, count, onStep, onClose, onGo }: {
         </Card>
       </div>
 
-      <Modal open={confirmBlock} onClose={() => setConfirmBlock(false)} title={`${c.name} — ব্লক করবেন?`} sub="Block customer" width={440}
-        footer={
-          <>
-            <button type="button" className="ap-btn" onClick={() => setConfirmBlock(false)}>না, থাক</button>
-            <button type="button" className="ap-btn primary" disabled={blockReason.trim().length < 3} onClick={() => { setBlocked(true, blockReason.trim()); setConfirmBlock(false); setBlockReason(""); }}>হ্যাঁ, ব্লক করুন</button>
-          </>
-        }>
-        <div className="cu-confirm">
-          <p>এই কাস্টমারকে <b>ঝুঁকিপূর্ণ</b> হিসেবে চিহ্নিত করা হবে। অর্ডার তালিকায় লাল সতর্কতা থাকবে এবং ফিল্টারে &quot;ব্লক করা&quot; দলে দেখা যাবে।</p>
-          <ul>
-            <li>মোট অর্ডার <b>{bn(c.total)}</b> · বাতিল <b>{bn(c.cancelled)}</b> ({bn(cancelRate)}%)</li>
-            <li>আজীবন খরচ <b>{tk(c.spent)}</b></li>
-          </ul>
-          <label htmlFor="cu-block-reason">কারণ · Reason</label>
-          <input id="cu-block-reason" value={blockReason} placeholder="যেমন: বারবার অর্ডার নিয়ে ফেরত দিচ্ছেন" onChange={(e) => setBlockReason(e.target.value)} />
-          <p className="muted">যেকোনো সময় আনব্লক করা যাবে। কাজটি অ্যাক্টিভিটি লগে থাকবে।</p>
-        </div>
-      </Modal>
     </Drawer>
   );
 }

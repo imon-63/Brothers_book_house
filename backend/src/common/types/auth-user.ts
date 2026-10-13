@@ -7,6 +7,8 @@ export type AuthUser = {
   name: string;
   customerId: string | null;
   sessionId: string;
+  /** logged in with a temporary password — only auth routes until it is changed */
+  mustChangePassword?: boolean;
 };
 
 export const STAFF_ROLES: UserRole[] = ['OWNER', 'ADMIN', 'MANAGER', 'SUPPORT', 'ACCOUNTANT', 'WAREHOUSE'];

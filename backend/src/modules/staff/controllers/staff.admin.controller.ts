@@ -1,13 +1,25 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { UserRole } from '@prisma/client';
-import { IsBoolean, IsEmail, IsIn, IsObject, IsString, Length } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
 import { CurrentUser, Roles, Staff } from '@/common/decorators/auth.decorators';
 import type { AuthUser } from '@/common/types/auth-user';
 import { StaffService } from '../application/staff.service';
 
 const ROLES: UserRole[] = ['OWNER', 'ADMIN', 'MANAGER', 'SUPPORT', 'ACCOUNTANT', 'WAREHOUSE'];
 
+class UsersQueryDto {
+  @IsOptional() @IsIn(['OWNER', 'ADMIN', 'MANAGER', 'SUPPORT', 'ACCOUNTANT', 'WAREHOUSE', 'CUSTOMER']) role?: UserRole;
+  @IsOptional() @IsIn(['ACTIVE', 'BLOCKED']) status?: 'ACTIVE' | 'BLOCKED';
+  @IsOptional() @IsString() @MaxLength(80) q?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
+}
+class AccessDto {
+  @IsBoolean() blocked!: boolean;
+  @IsOptional() @IsString() @MaxLength(200) reason?: string;
+}
 class CreateStaffDto {
   @IsString() @Length(2, 120) name: string;
   @IsEmail() email: string;
@@ -28,6 +40,16 @@ class PrefsDto {
 @Controller({ path: 'admin', version: '1' })
 export class StaffAdminController {
   constructor(private readonly staff: StaffService) {}
+
+  @Roles('ADMIN') @Get('users')
+  users(@Query() q: UsersQueryDto) {
+    return this.staff.users(q);
+  }
+
+  @Roles('ADMIN') @Patch('users/:id/access')
+  access(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AccessDto, @CurrentUser() user: AuthUser) {
+    return this.staff.setAccess(id, dto.blocked, dto.reason, user);
+  }
 
   @Roles('ADMIN') @Get('staff')
   list() {

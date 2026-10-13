@@ -169,6 +169,13 @@ export async function api<T = unknown>(path: string, opts: RequestOptions = {}):
     const fresh = await refreshSession();
     if (fresh) res = await send(fresh);
   }
+  /* rate-limited: wait what the server asks (≤5 s) and retry once — only when repeating is safe */
+  const method = opts.method ?? (opts.body !== undefined ? "POST" : "GET");
+  if (res.status === 429 && (method === "GET" || opts.idempotencyKey)) {
+    const after = Number(res.headers.get("retry-after-burst") || res.headers.get("retry-after") || 1);
+    await new Promise((r) => setTimeout(r, Math.min(5, Math.max(0.5, Number.isFinite(after) ? after : 1)) * 1000));
+    res = await send(getAccessToken());
+  }
   if (!res.ok) throw await toError(res);
   if (opts.raw) return res as unknown as T;
   if (res.status === 204) return undefined as T;

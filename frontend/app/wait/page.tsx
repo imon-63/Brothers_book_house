@@ -16,12 +16,12 @@ export default function WaitPage() {
   const { user, toggle } = useWait();
   const addToCart = useAddToCart();
   const listQ = useWishlist();
-  const crumbs = [{ label: "হোম", href: "/" }, { label: "ভবিষ্যৎ অর্ডার" }];
+  const crumbs = [{ label: "হোম", href: "/" }, { label: "উইশলিস্ট" }];
 
   if (!user) {
     return (
       <div className="wrap sf-wait" style={{ paddingBottom: 48 }}>
-        <PageHero tone="sage" crumbs={crumbs} kicker="সেভ করা তালিকা" icon={<GHeart size={16} />} title="ভবিষ্যৎ অর্ডার" sub="স্টক আউট পণ্য রেখে দিন — ফিরলেই কার্টে তুলুন।" />
+        <PageHero tone="sage" crumbs={crumbs} kicker="পছন্দের তালিকা" icon={<GHeart size={16} />} title="আমার উইশলিস্ট" sub="পছন্দের পণ্য রেখে দিন — সময় হলে এক চাপে কার্টে তুলুন।" />
         <EmptyState art="heart" title="লগইন করলে তালিকা দেখতে পারবেন" text="আপনার রাখা পণ্যগুলো সব ডিভাইসে একসাথে থাকবে।">
           <button className="btn btn-primary" type="button" onClick={() => dispatch(setAuth(true))}>লগইন</button>
         </EmptyState>
@@ -50,9 +50,9 @@ export default function WaitPage() {
       <PageHero
         tone="sage"
         crumbs={crumbs}
-        kicker="সেভ করা তালিকা"
+        kicker="পছন্দের তালিকা"
         icon={<GHeart size={16} />}
-        title="ভবিষ্যৎ অর্ডার"
+        title="উইশলিস্ট খালি"
         sub="স্টক না থাকলে এখানে রাখুন। স্টকে ফিরলে কার্টে যোগ করতে পারবেন।"
         aside={items.length ? (
           <>

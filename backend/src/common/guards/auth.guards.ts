@@ -2,7 +2,7 @@ import { Injectable, type CanActivate, type ExecutionContext } from '@nestjs/com
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import type { UserRole } from '@prisma/client';
-import { IS_PUBLIC, OPTIONAL_AUTH, ROLES } from '@/common/decorators/auth.decorators';
+import { IS_PUBLIC, OPTIONAL_AUTH, PENDING_PASSWORD_OK, ROLES } from '@/common/decorators/auth.decorators';
 import { ForbiddenError, UnauthorizedError } from '@/common/errors/domain.error';
 import type { AuthUser } from '@/common/types/auth-user';
 
@@ -39,9 +39,13 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride<UserRole[]>(ROLES, [ctx.getHandler(), ctx.getClass()]);
-    if (!required?.length) return true;
+    const targets = [ctx.getHandler(), ctx.getClass()];
     const user = ctx.switchToHttp().getRequest().user as AuthUser | undefined;
+    if (user?.mustChangePassword && !this.reflector.getAllAndOverride<boolean>(PENDING_PASSWORD_OK, targets)) {
+      throw new ForbiddenError('auth.password_change_required', 'প্রথমে নিজের নতুন পাসওয়ার্ড সেট করুন');
+    }
+    const required = this.reflector.getAllAndOverride<UserRole[]>(ROLES, targets);
+    if (!required?.length) return true;
     if (!user) throw new UnauthorizedError();
     if (user.role === 'OWNER' || required.includes(user.role)) return true;
     throw new ForbiddenError();

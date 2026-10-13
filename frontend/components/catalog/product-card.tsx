@@ -99,6 +99,11 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             </div>
           )}
         </div>
+        <button type="button" className={`sf-pc-heart${kept ? " on" : ""}`} aria-pressed={kept}
+          aria-label={kept ? "উইশলিস্ট থেকে সরান" : "উইশলিস্টে রাখুন"} title={kept ? "উইশলিস্টে আছে" : "উইশলিস্টে রাখুন"}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); void toggle("book", product.id); }}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z" /></svg>
+        </button>
         {!oos && (low || product.freeShipping) ? (
           <span className="sf-pc-tags">
             {low ? <span className="sf-pc-tag low">অল্প বাকি</span> : null}

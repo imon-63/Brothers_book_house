@@ -58,6 +58,25 @@ export const NAV_GROUPS: { label: string; items: { id: AdminTab; bn: string; en:
   },
 ];
 
+/** Which roles may open each screen — mirrors the API's route guards. OWNER sees everything. */
+export const TAB_ROLES: Record<AdminTab, string[]> = {
+  dashboard: ["ADMIN", "MANAGER", "SUPPORT", "ACCOUNTANT", "WAREHOUSE"],
+  orders: ["ADMIN", "MANAGER", "SUPPORT", "ACCOUNTANT", "WAREHOUSE"],
+  customers: ["ADMIN", "MANAGER", "SUPPORT", "ACCOUNTANT", "WAREHOUSE"],
+  chat: ["ADMIN", "MANAGER", "SUPPORT"],
+  products: ["ADMIN", "MANAGER", "SUPPORT", "ACCOUNTANT", "WAREHOUSE"],
+  packs: ["ADMIN", "MANAGER", "SUPPORT", "ACCOUNTANT", "WAREHOUSE"],
+  cats: ["ADMIN", "MANAGER"],
+  home: ["ADMIN", "MANAGER"],
+  finance: ["ADMIN", "ACCOUNTANT"],
+  activity: ["ADMIN", "MANAGER", "SUPPORT", "ACCOUNTANT", "WAREHOUSE"],
+  settings: ["ADMIN", "MANAGER"],
+};
+
+export function canOpen(tab: AdminTab, role: string | undefined | null) {
+  return !!role && (role === "OWNER" || TAB_ROLES[tab].includes(role));
+}
+
 export const TAB_META: Record<AdminTab, { bn: string; en: string; sub: string }> = {
   dashboard: { bn: "ড্যাশবোর্ড", en: "Dashboard", sub: "আজকের ব্যবসার পুরো ছবি · Overview" },
   orders: { bn: "অর্ডার", en: "Orders", sub: "কনফার্ম, প্যাকিং, কুরিয়ার, ডেলিভারি · Fulfilment" },

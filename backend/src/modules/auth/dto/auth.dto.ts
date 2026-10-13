@@ -30,9 +30,9 @@ export class RegisterDto {
   @IsEmail()
   email?: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({ minLength: 6 })
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   @MaxLength(128)
   password: string;
 }
@@ -62,9 +62,9 @@ export class ResetPasswordDto {
   @Length(4, 8)
   code: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({ minLength: 6 })
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   @MaxLength(128)
   password: string;
 }
@@ -74,9 +74,9 @@ export class ChangePasswordDto {
   @IsString()
   currentPassword: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({ minLength: 6 })
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   @MaxLength(128)
   newPassword: string;
 }

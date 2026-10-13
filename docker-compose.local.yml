@@ -76,6 +76,7 @@ services:
       CORS_ORIGINS: http://localhost:8080,http://localhost:3000
       PUBLIC_WEB_URL: http://localhost:8080
       PUBLIC_API_URL: http://localhost:8080
+      PUBLIC_MEDIA_BASE: "" # media URLs "/uploads/…" → work on localhost, 127.0.0.1 or a LAN IP
       JWT_ACCESS_SECRET: local-docker-secret-change-me-0123456789abcdef
       ADMIN_BOOTSTRAP_EMAIL: admin@cholo.shop
       ADMIN_BOOTSTRAP_PASSWORD: admin123

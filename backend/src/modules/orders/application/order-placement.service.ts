@@ -225,6 +225,21 @@ export class OrderPlacementService {
     return { body, event, sections: [...new Set(q.lines.map((l) => l.sectionCode))] };
   }
 
+  /** Checkout asks early so the customer is told before placing — not after. */
+  async codCheck(phoneRaw: string | undefined, user: AuthUser | undefined) {
+    const blockedMsg = 'আপনার অ্যাকাউন্টে ক্যাশ অন ডেলিভারি বন্ধ আছে — অনলাইনে (SSLCOMMERZ) পেমেন্ট করে অর্ডার দিতে পারবেন।';
+    if (user?.customerId) {
+      const mine = await this.prisma.customer.findUnique({ where: { id: user.customerId }, select: { isBlocked: true } });
+      if (mine?.isBlocked) return { codAllowed: false, message: blockedMsg };
+    }
+    const phone = normalizeBdPhone(phoneRaw ?? '');
+    if (phone) {
+      const c = await this.prisma.customer.findUnique({ where: { phone }, select: { isBlocked: true } });
+      if (c?.isBlocked) return { codAllowed: false, message: 'এই নম্বরে ক্যাশ অন ডেলিভারি বন্ধ আছে — অনলাইনে (SSLCOMMERZ) পেমেন্ট করে অর্ডার দিতে পারবেন।' };
+    }
+    return { codAllowed: true, message: null };
+  }
+
   private async upsertCustomer(tx: Tx, c: { phone: string; name: string; email: string | null }, user?: AuthUser) {
     // a logged-in shopper keeps their own CRM row even if they order with another phone
     if (user?.customerId) {

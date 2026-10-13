@@ -9,7 +9,7 @@ import { CartService } from '../cart/application/cart.service';
 import { CART_TOKEN_HEADER } from '../cart/dto/cart.dto';
 import { CartLinesDto } from '../pricing/dto/quote-line.dto';
 import { OrderPlacementService } from '../application/order-placement.service';
-import { PlaceOrderDto } from '../dto/place-order.dto';
+import { CodCheckDto, PlaceOrderDto } from '../dto/place-order.dto';
 
 const districtRef = (dto: CartLinesDto) => (dto.districtId || dto.district ? { id: dto.districtId, name: dto.district } : null);
 
@@ -44,6 +44,14 @@ export class CheckoutController {
       error: q.couponError,
       quote: q,
     };
+  }
+
+  @Post('checkout/cod-check')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Is cash-on-delivery allowed for this shopper / phone? (blocked customers must pay online)' })
+  codCheck(@Body() dto: CodCheckDto, @CurrentUser() u: AuthUser | undefined) {
+    return this.placement.codCheck(dto.phone, u);
   }
 
   @Post('orders')

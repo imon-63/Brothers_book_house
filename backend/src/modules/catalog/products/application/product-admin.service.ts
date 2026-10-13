@@ -59,7 +59,24 @@ export class ProductAdminService {
     const rows = await this.rows(ids, now);
     // admin sees every scheduled deal (not just the storefront's 7-day window)
     const next = await this.cards.nextDeals(ids, now, 3650);
-    return toPage(rows.map((r) => ({ ...toAdminProductRow(r, now, q.lowStock), nextDeal: next.get(r.id) ?? null })), total, q);
+    const lots = await this.lotSummary(ids);
+    return toPage(
+      rows.map((r) => ({ ...toAdminProductRow(r, now, q.lowStock), nextDeal: next.get(r.id) ?? null, lots: lots.get(r.id) ?? null })),
+      total,
+      q,
+    );
+  }
+
+  /** Per product: live batches and their cost range (restocks at different কেনা দাম). */
+  private async lotSummary(ids: string[]) {
+    const out = new Map<string, { batches: number; minCost: number | null; maxCost: number | null }>();
+    if (!ids.length) return out;
+    const rows = await this.prisma.$queryRaw<{ product_id: string; batches: number; min_cost: Prisma.Decimal | null; max_cost: Prisma.Decimal | null }[]>`
+      SELECT product_id, count(*)::int AS batches, min(unit_cost) AS min_cost, max(unit_cost) AS max_cost
+        FROM stock_lots WHERE qty_left > 0 AND product_id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
+       GROUP BY product_id`;
+    for (const r of rows) out.set(r.product_id, { batches: r.batches, minCost: r.min_cost != null ? toNumber(r.min_cost) : null, maxCost: r.max_cost != null ? toNumber(r.max_cost) : null });
+    return out;
   }
 
   async rows(ids: string[], now = new Date()) {

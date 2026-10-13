@@ -3,7 +3,7 @@
 import "./visibility.css";
 import { useMemo, useState } from "react";
 import { bn } from "@/lib/format";
-import { adminErrorText, useToast } from "@/lib/api/admin/core";
+import { useToast } from "@/lib/api/admin/core";
 import {
   useCategoryTree, useDeleteSection, useSectionCategoriesVisibility, useUpdateCategory, useUpdateSection, type AdminSection,
 } from "@/lib/api/admin/sections";
@@ -11,7 +11,8 @@ import { useAdminSection } from "@/lib/admin/section-context";
 import { useAdminNav } from "@/components/admin/nav";
 import { SectionIcon } from "@/components/admin/shared";
 import { SectionModal } from "@/components/admin/tabs/section-modal";
-import { Badge, Empty, Ico, Modal, SearchInput, Stat, Toggle, num } from "@/components/admin/ui";
+import { useConfirm } from "@/components/admin/confirm";
+import { Badge, Empty, Ico, SearchInput, Stat, Toggle, num } from "@/components/admin/ui";
 
 /*
  * Settings › ক্যাটাগরি — what the shopper can see.
@@ -30,8 +31,7 @@ export function VisibilityPanel() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<{ section: AdminSection | null } | null>(null);
-  const [confirmDel, setConfirmDel] = useState<AdminSection | null>(null);
-  const [delErr, setDelErr] = useState("");
+  const confirm = useConfirm();
   const updSection = useUpdateSection();
   const delSection = useDeleteSection();
   const updCat = useUpdateCategory();
@@ -66,15 +66,32 @@ export function VisibilityPanel() {
   const shown = cats.filter((c) => !term || c.name.toLowerCase().includes(term) || c.subs.some((x) => x.name.toLowerCase().includes(term)));
   const maxCount = Math.max(1, ...cats.map((c) => c.count));
 
-  function flipVert(d: AdminSection, off: boolean) {
+  async function flipVert(d: AdminSection, off: boolean) {
     if (!off && liveVerts <= 1) {
       toast("অন্তত একটা বিভাগ খোলা রাখুন");
       return;
     }
+    if (!off && !(await confirm({
+      tone: "warn", icon: Ico.eye,
+      title: `«${d.name}» বিভাগ দোকান থেকে লুকাবেন?`,
+      body: "পুরো বিভাগ ক্রেতার মেনু, হোম ও সার্চ থেকে সরে যাবে। কিছু মুছবে না — আবার চালু করলেই ফিরবে।",
+      details: [
+        { label: "লুকাবে", value: `${bn(d.products)}টি পণ্য · ${bn(d.categories)}টি ক্যাটাগরি` },
+        { label: "দোকানে", from: "লাইভ", to: "লুকানো" },
+      ],
+      confirmText: "হ্যাঁ, লুকান",
+    }))) return;
     updSection.mutate({ id: d.id, body: { isVisible: off }, toast: off ? "বিভাগ আবার দোকানে দেখাচ্ছে" : "বিভাগ ক্রেতার কাছ থেকে লুকানো" });
   }
 
-  function flipCat(c: { id: string; name: string }, off: boolean) {
+  async function flipCat(c: { id: string; name: string; count: number; subs: unknown[] }, off: boolean) {
+    if (!off && !(await confirm({
+      tone: "warn", icon: Ico.eye,
+      title: `«${c.name}» ক্যাটাগরি লুকাবেন?`,
+      body: "ক্রেতারা এই ক্যাটাগরি ও এর পণ্য আর দেখতে পাবেন না। পরে সুইচ চালু করলেই ফিরবে।",
+      details: [{ label: "লুকাবে", value: `${bn(c.count)}টি পণ্য${c.subs.length ? ` · ${bn(c.subs.length)}টি সাব` : ""}` }],
+      confirmText: "হ্যাঁ, লুকান",
+    }))) return;
     updCat.mutate({ id: c.id, body: { isVisible: off }, toast: off ? `${c.name} আবার দেখাচ্ছে` : `${c.name} লুকানো হয়েছে` });
   }
 
@@ -82,10 +99,20 @@ export function VisibilityPanel() {
     updCat.mutate({ id: x.id, body: { isVisible: off }, toast: off ? `${x.name} আবার দেখাচ্ছে` : `${x.name} লুকানো হয়েছে` });
   }
 
-  function setAll(on: boolean) {
+  async function setAll(on: boolean) {
     if (!sel) return;
     const changed = cats.filter((c) => (on ? c.off : !c.off)).length;
     if (!changed) { toast("কিছু বদলানোর নেই"); return; }
+    if (!on && !(await confirm({
+      tone: "warn", icon: Ico.eye,
+      title: `«${sel.name}» এর সব ক্যাটাগরি লুকাবেন?`,
+      body: "বিভাগটি চালু থাকবে, কিন্তু ভিতরের কোনো পণ্য ক্রেতা দেখতে পাবেন না।",
+      details: [
+        { label: "লুকাবে", value: `${bn(changed)}টি ক্যাটাগরি` },
+        { label: "পণ্য", value: `${bn(cats.filter((c) => !c.off).reduce((s2, c) => s2 + c.count, 0))}টি` },
+      ],
+      confirmText: "হ্যাঁ, সব লুকান",
+    }))) return;
     bulkVis.mutate({ sectionId: sel.id, isVisible: on, toast: on ? `${bn(changed)}টি ক্যাটাগরি চালু হয়েছে` : `${bn(changed)}টি ক্যাটাগরি লুকানো হয়েছে` });
   }
 
@@ -100,20 +127,23 @@ export function VisibilityPanel() {
     updSection.mutate({ id: other.id, body: { sortOrder: a2 }, toast: "" });
   }
 
-  function askDelete(d: AdminSection) {
-    setDelErr("");
-    setConfirmDel(d);
-  }
-  function doDelete() {
-    if (!confirmDel) return;
-    const d = confirmDel;
+  async function askDelete(d: AdminSection) {
+    const full = d.categories > 0 || d.products > 0;
+    if (!(await confirm({
+      tone: "danger",
+      title: `«${d.name}» বিভাগ মুছবেন?`,
+      body: full
+        ? <>এই বিভাগে <b>{bn(d.categories)}</b>টি ক্যাটাগরি ও <b>{bn(d.products)}</b>টি পণ্য আছে — সার্ভার সম্ভবত মুছতে দেবে না। মোছার বদলে বাম পাশের সুইচ দিয়ে লুকিয়ে রাখুন।</>
+        : <>বিভাগটি খালি — মুছে ফেললে এর হিরো স্লাইড ও ডেলিভারি নিয়মও মুছবে। কাজটি অ্যাক্টিভিটি লগে থাকবে।</>,
+      details: [{ label: "ক্যাটাগরি", value: `${bn(d.categories)}টি` }, { label: "পণ্য", value: `${bn(d.products)}টি`, bad: d.products > 0 }],
+      requireText: d.name,
+      confirmText: "হ্যাঁ, মুছুন", confirmIcon: Ico.trash,
+    }))) return;
     delSection.mutate({ id: d.id, name: d.name }, {
       onSuccess: () => {
-        setConfirmDel(null);
         if (pickCode === d.code) setPick(sections.find((x) => x.id !== d.id)?.code ?? "");
         if (current === d.code) setCode(sections.find((x) => x.id !== d.id)?.code ?? "book");
       },
-      onError: (e) => setDelErr(adminErrorText(e)),
     });
   }
 
@@ -156,7 +186,7 @@ export function VisibilityPanel() {
                     <span>{d.note}</span>
                   </div>
                   <span onClick={(e) => e.stopPropagation()}>
-                    <Toggle checked={!d.off} onChange={() => flipVert(d, d.off)} />
+                    <Toggle checked={!d.off} onChange={() => void flipVert(d, d.off)} />
                   </span>
                 </div>
                 <div className="vz-vert-meta">
@@ -187,9 +217,9 @@ export function VisibilityPanel() {
                 <button type="button" className="ap-icon-btn sm" title="নিচে সরান" aria-label="নিচে সরান" disabled={sections.at(-1)?.code === sel.code} onClick={() => move(sel, 1)}>{Ico.down}</button>
               </span>
               <button type="button" className="ap-btn sm" onClick={() => setModal({ section: sections.find((x) => x.code === sel.code) ?? null })}>{Ico.edit}বিভাগ এডিট</button>
-              <button type="button" className="ap-btn sm ghost" title={sel.catsN || sel.total ? "খালি বিভাগই মোছা যায়" : "বিভাগ মুছুন"} onClick={() => askDelete(sel)}>{Ico.trash}</button>
-              <button type="button" className="ap-btn sm" disabled={sel.off} onClick={() => setAll(true)}>{Ico.eye}সব চালু</button>
-              <button type="button" className="ap-btn sm" disabled={sel.off} onClick={() => setAll(false)}>সব লুকান</button>
+              <button type="button" className="ap-btn sm ghost" title={sel.catsN || sel.total ? "খালি বিভাগই মোছা যায়" : "বিভাগ মুছুন"} onClick={() => void askDelete(sel)}>{Ico.trash}</button>
+              <button type="button" className="ap-btn sm" disabled={sel.off} onClick={() => void setAll(true)}>{Ico.eye}সব চালু</button>
+              <button type="button" className="ap-btn sm" disabled={sel.off} onClick={() => void setAll(false)}>সব লুকান</button>
               <button type="button" className="ap-btn sm ghost" onClick={() => { setCode(sel.code); go("cats"); }}>{Ico.cats}সাজান</button>
             </div>
           </header>
@@ -234,7 +264,7 @@ export function VisibilityPanel() {
                       </div>
                       <div className="vz-share" title={`${bn(c.count)}টি পণ্য`}><i style={{ width: `${(c.count / maxCount) * 100}%` }} /></div>
                       {c.off ? <Badge tone="gold">লুকানো</Badge> : null}
-                      <Toggle checked={!c.off} disabled={sel.off} onChange={() => flipCat(c, c.off)} />
+                      <Toggle checked={!c.off} disabled={sel.off} onChange={() => void flipCat(c, c.off)} />
                     </div>
                     {c.subs.length ? (
                       <div className="vz-subs" aria-hidden={!expanded}>
@@ -261,24 +291,6 @@ export function VisibilityPanel() {
       <SectionModal open={!!modal} section={modal?.section ?? null} onClose={() => setModal(null)}
         onSaved={(s2) => { setPick(s2.code); }} />
 
-      <Modal open={!!confirmDel} onClose={() => setConfirmDel(null)} width={440}
-        title={confirmDel ? `«${confirmDel.name}» বিভাগ মুছবেন?` : undefined}
-        sub="Delete section · শুধু খালি বিভাগ মোছা যায়"
-        footer={confirmDel ? (
-          <>
-            <button type="button" className="ap-btn ghost" onClick={() => setConfirmDel(null)}>থাক</button>
-            <button type="button" className="ap-btn primary" disabled={delSection.isPending} onClick={doDelete}>{Ico.trash}হ্যাঁ, মুছুন</button>
-          </>
-        ) : undefined}>
-        {confirmDel ? (
-          <div className="sx-form">
-            <p style={{ margin: 0 }}>{confirmDel.categories || confirmDel.products
-              ? <>এই বিভাগে <b>{bn(confirmDel.categories)}</b>টি ক্যাটাগরি ও <b>{bn(confirmDel.products)}</b>টি পণ্য আছে — সার্ভার সম্ভবত মুছতে দেবে না। মোছার বদলে বাম পাশের সুইচ দিয়ে লুকিয়ে রাখুন।</>
-              : <>বিভাগটি খালি — মুছে ফেললে এর হিরো স্লাইড ও ডেলিভারি নিয়মও মুছবে। কাজটি অ্যাক্টিভিটি লগে থাকবে।</>}</p>
-            {delErr ? <div className="sx-api" role="alert">{Ico.alert}<ul><li>{delErr}</li></ul></div> : null}
-          </div>
-        ) : null}
-      </Modal>
     </div>
   );
 }

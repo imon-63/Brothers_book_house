@@ -143,3 +143,11 @@ export class AdminCreateOrderDto extends OrderBaseDto {
   @MaxLength(1000)
   staffNote?: string;
 }
+
+export class CodCheckDto {
+  @ApiPropertyOptional({ example: '01711111111' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
+}

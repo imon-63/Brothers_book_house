@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { JwtModule } from '@nestjs/jwt';
+import { RateLimitGuard } from '@/common/guards/rate-limit.guard';
 import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
 import { JwtAuthGuard, RolesGuard } from '@/common/guards/auth.guards';
 import { AppConfigModule } from '@/config/config.module';
@@ -35,7 +37,17 @@ import { SupportModule } from '@/modules/support/support.module';
     TelemetryModule,
     EventEmitterModule.forRoot({ wildcard: false, maxListeners: 20, verboseMemoryLeak: true }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRoot([
+      // per minute: a signed-in account gets its own generous budget; anonymous traffic shares one per IP
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: (ctx) => (String(ctx.switchToHttp().getRequest()?.headers?.authorization ?? '').startsWith('Bearer ') ? 600 : 300),
+      },
+      // per second: stops a runaway client or script without bothering real people
+      { name: 'burst', ttl: 1_000, limit: 25 },
+    ]),
+    JwtModule.register({}),
     PlatformModule,
     InventoryModule,
     // ── features ──
@@ -55,7 +67,7 @@ import { SupportModule } from '@/modules/support/support.module';
     ActivityModule,
   ],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

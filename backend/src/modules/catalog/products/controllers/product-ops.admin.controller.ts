@@ -23,7 +23,7 @@ import {
   CreateDealDto,
   DealsQueryDto,
   ReorderImagesDto,
-  StockAdjustDto,
+  RestockLotDto, StockAdjustDto,
   StockMovementsQueryDto,
 } from '../dto/product-ops.dto';
 
@@ -102,6 +102,21 @@ export class ProductOpsAdminController {
   @ApiOperation({ summary: 'Stock ledger for a product (newest first)' })
   movements(@Param('id', ParseUUIDPipe) id: string, @Query() q: StockMovementsQueryDto) {
     return this.stock.movements(id, q);
+  }
+
+  @Get('products/:id/stock/lots')
+  @Staff()
+  @ApiOperation({ summary: 'Stock batches (FIFO) with their own cost, left qty and value' })
+  lots(@Param('id', ParseUUIDPipe) id: string) {
+    return this.stock.lots(id);
+  }
+
+  @Post('products/:id/stock/restock')
+  @HttpCode(200)
+  @StockKeepers()
+  @ApiOperation({ summary: 'Add a new batch at its own cost price (optionally a new selling price)' })
+  restockLot(@Param('id', ParseUUIDPipe) id: string, @Body() dto: RestockLotDto, @CurrentUser() user: AuthUser) {
+    return this.stock.restockLot(id, dto, user);
   }
 
   @Post('products/:id/stock/adjust')

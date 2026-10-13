@@ -185,3 +185,9 @@
 .vz-verts-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .vz-sec-emoji { font-size: 18px; line-height: 1; }
 .vz-order { display: inline-flex; gap: 2px; }
+
+/* phone polish: action row fills its lines evenly */
+@media (max-width: 760px) {
+  .vz-panel-acts { width: 100%; gap: 6px; }
+  .vz-panel-acts > .ap-btn { flex: 1 1 auto; }
+}

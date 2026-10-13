@@ -86,7 +86,7 @@ export class AuthService implements OnApplicationBootstrap {
       this.metrics.count(this.metrics.authEvents, { event: 'login_failed' });
       throw fail;
     }
-    if (user.status !== 'ACTIVE') throw new UnauthorizedError('auth.disabled', 'অ্যাকাউন্টটি বন্ধ আছে');
+    if (user.status !== 'ACTIVE') throw new UnauthorizedError('auth.disabled', 'আপনার অ্যাকাউন্টে লগইন বন্ধ করা হয়েছে — সাহায্যের জন্য হেল্পলাইনে যোগাযোগ করুন');
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       throw new UnauthorizedError('auth.locked', 'বারবার ভুল চেষ্টার কারণে কিছুক্ষণের জন্য লক করা হয়েছে');
     }
@@ -141,7 +141,7 @@ export class AuthService implements OnApplicationBootstrap {
   async me(user: AuthUser) {
     const u = await this.prisma.user.findUniqueOrThrow({
       where: { id: user.id },
-      select: { id: true, name: true, email: true, phone: true, role: true, status: true, avatarUrl: true, preferences: true, lastLoginAt: true, customer: { select: { id: true, ordersCount: true, totalSpent: true } } },
+      select: { id: true, name: true, email: true, phone: true, role: true, status: true, mustChangePassword: true, avatarUrl: true, preferences: true, lastLoginAt: true, customer: { select: { id: true, ordersCount: true, totalSpent: true } } },
     });
     return u;
   }
@@ -192,7 +192,7 @@ export class AuthService implements OnApplicationBootstrap {
     const u = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     if (!u.passwordHash || !(await argon2.verify(u.passwordHash, current))) throw new BusinessRuleError('auth.password_wrong', 'বর্তমান পাসওয়ার্ড ভুল');
     await this.prisma.tx(async (tx) => {
-      await tx.user.update({ where: { id: u.id }, data: { passwordHash: await this.hash(next) } });
+      await tx.user.update({ where: { id: u.id }, data: { passwordHash: await this.hash(next), mustChangePassword: false } });
       await tx.authSession.updateMany({ where: { userId: u.id, revokedAt: null, NOT: { id: user.sessionId } }, data: { revokedAt: new Date() } });
     });
     return { ok: true };
@@ -223,7 +223,7 @@ export class AuthService implements OnApplicationBootstrap {
         expiresAt: new Date(Date.now() + this.config.get('JWT_REFRESH_TTL_DAYS') * 86_400_000),
       },
     });
-    const claims: AccessClaims = { sub: user.id, role: user.role, name: user.name, cid: customer?.id ?? null, sid: session.id };
+    const claims: AccessClaims = { sub: user.id, role: user.role, name: user.name, cid: customer?.id ?? null, sid: session.id, ...(user.mustChangePassword ? { mcp: true } : {}) };
     const accessToken = await this.jwt.signAsync(claims, { issuer: 'cholo-api', audience: 'cholo' });
     const decoded = this.jwt.decode<{ exp: number; iat: number }>(accessToken);
     return { accessToken, refreshToken, expiresIn: decoded.exp - decoded.iat, tokenType: 'Bearer' };

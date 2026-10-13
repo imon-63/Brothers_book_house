@@ -22,7 +22,8 @@ export class LocalDiskStorage extends StorageDriver {
     const path = this.pathOf(key);
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, body, { flag: 'wx' }); // never overwrite an existing object
-    return { url: `${this.config.get('PUBLIC_API_URL').replace(/\/+$/, '')}${UPLOADS_ROUTE}/${key}` };
+    const base = this.config.get('PUBLIC_MEDIA_BASE') ?? this.config.get('PUBLIC_API_URL');
+    return { url: `${base.replace(/\/+$/, '')}${UPLOADS_ROUTE}/${key}` };
   }
 
   async delete(key: string) {

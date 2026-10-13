@@ -37,7 +37,7 @@ function pageName(path: string) {
   if (path.startsWith("/cart")) return "কার্ট";
   if (path.startsWith("/checkout")) return "চেকআউট";
   if (path.startsWith("/orders")) return "অর্ডার";
-  if (path.startsWith("/wait")) return "ভবিষ্যৎ অর্ডার";
+  if (path.startsWith("/wait")) return "উইশলিস্ট";
   if (path.startsWith("/track")) return "অর্ডার খুঁজুন";
   if (path.startsWith("/admin")) return "অ্যাডমিন";
   return "হোম";
@@ -303,7 +303,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
             <Link className={`book-only${path.startsWith("/packs") || path.startsWith("/pack") ? " active" : ""}`} href="/packs">প্যাকেজ</Link>
             <Link className={`book-only${path.startsWith("/authors") ? " active" : ""}`} href="/authors">লেখক</Link>
             <Link className={path.startsWith("/orders") ? "active" : ""} href={user ? "/orders" : "/track"}>অর্ডার</Link>
-            {user && !isStaff ? <Link className={path.startsWith("/wait") ? "active" : ""} href="/wait">ভবিষ্যৎ</Link> : null}
+            {user && !isStaff ? <Link className={path.startsWith("/wait") ? "active" : ""} href="/wait">উইশলিস্ট</Link> : null}
           </nav>
           <div className="nav-tools">
             <div className="nav-cpns">
@@ -379,7 +379,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
             <Link className="book-only" href="/packs" onClick={() => dispatch(setMenu(false))}>প্যাকেজ</Link>
             <Link className="book-only" href="/authors" onClick={() => dispatch(setMenu(false))}>লেখক</Link>
             <Link href="/orders" onClick={() => dispatch(setMenu(false))}>অর্ডার</Link>
-            {user && !isStaff ? <Link href="/wait" onClick={() => dispatch(setMenu(false))}>ভবিষ্যৎ অর্ডার</Link> : null}
+            {user && !isStaff ? <Link href="/wait" onClick={() => dispatch(setMenu(false))}>উইশলিস্ট</Link> : null}
             <Link href="/track" onClick={() => dispatch(setMenu(false))}>অর্ডার খুঁজুন</Link>
             <button type="button" onClick={() => { dispatch(setMenu(false)); dispatch(setMiniCart(true)); }}>কার্ট</button>
           </nav>
@@ -416,7 +416,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
             <Link className="book-only" href="/packs">প্যাকেজ</Link>
             <Link className="book-only" href="/authors">লেখক</Link>
             <Link href="/cart">কার্ট</Link>
-            {isStaff ? null : <Link href="/wait">ভবিষ্যৎ অর্ডার</Link>}
+            {isStaff ? null : <Link href="/wait">উইশলিস্ট</Link>}
           </nav>
           <nav aria-label="সাহায্য">
             <h4>সাহায্য</h4>
@@ -718,15 +718,15 @@ function ByeGate({ name, onLeave, onDone }: { name: string; onLeave: () => void;
     return () => { window.clearTimeout(a); window.clearTimeout(b); window.clearTimeout(c); };
   }, []);
   return (
-    <div className={`bye-gate${phase === "out" ? " bye" : ""}`} role="status" aria-live="polite" aria-label="লগআউট হচ্ছে">
+    <div className={`bye-gate${phase === "out" ? " bye" : ""}`} role="status" aria-live="polite" aria-label="Signing out">
       <div className="bye-stage">
         <div className="bye-mark">
           <img src="/icons/cholo-mark.svg" alt="" width={84} height={84} />
           <span className="bye-wave" aria-hidden="true">👋</span>
         </div>
-        <small>চলো</small>
-        <h2>আবার দেখা হবে{name ? `, ${name}` : ""}</h2>
-        <p>নিরাপদে লগআউট হচ্ছে…</p>
+        <small>CHOLO</small>
+        <h2>See you soon{name ? `, ${name}` : ""}</h2>
+        <p>Signing you out safely…</p>
         <div className="bye-dots" aria-hidden="true"><i /><i /><i /></div>
       </div>
     </div>
@@ -747,7 +747,7 @@ function LoginGate({ name, admin, onDone }: { name: string; admin?: boolean; onD
     };
   }, [admin]);
   return (
-    <div className={`land-gate${admin ? " admin" : ""}${bye ? " bye" : ""}`} role="status" aria-live="polite" aria-label={`স্বাগতম, ${name}`}>
+    <div className={`land-gate${admin ? " admin" : ""}${bye ? " bye" : ""}`} role="status" aria-live="polite" aria-label={`Welcome, ${name}`}>
       <span className="land-rays" aria-hidden="true" />
       <span className="land-sparks" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ ["--i" as string]: i }} />)}</span>
       <div className="land-stage">
@@ -758,9 +758,9 @@ function LoginGate({ name, admin, onDone }: { name: string; admin?: boolean; onD
           {admin ? <span className="land-crown" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" /></svg></span> : null}
         </div>
         <div className="land-copy">
-          <small>{admin ? "চলো · অ্যাডমিন ডেস্ক" : "চলো"}</small>
-          <h2>স্বাগতম, {name}</h2>
-          <p>{admin ? "আপনার ডেস্ক প্রস্তুত হচ্ছে…" : "চলো, কিনে ফেলি"}</p>
+          <small>{admin ? "CHOLO · ADMIN STUDIO" : "CHOLO"}</small>
+          <h2>Welcome, {name}</h2>
+          <p>{admin ? "Getting your desk ready…" : "Let's go shopping"}</p>
           <div className="land-bar" aria-hidden="true"><i /></div>
         </div>
       </div>
@@ -828,7 +828,7 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string, admin: 
     await qc.invalidateQueries({ queryKey: cartKey });
     const kept = staff ? false : await flushWait();
     close();
-    onEnter(name.split(" ")[0] || "চলো", kept ? "ভবিষ্যৎ অর্ডারে রাখা হয়েছে" : "", staff);
+    onEnter(name.split(" ")[0] || "চলো", kept ? "উইশলিস্টে রাখা হয়েছে" : "", staff);
     if (staff) router.push("/admin");
   }
 
@@ -849,7 +849,7 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string, admin: 
     const who = values.name.trim();
     const mobile = bnDigits(values.phone.trim());
     const mail = values.email.trim();
-    if (values.password.length < 8) { signupForm.setError("password", { message: "পাসওয়ার্ড অন্তত ৮ অক্ষর" }); return; }
+    if (values.password.length < 6) { signupForm.setError("password", { message: "পাসওয়ার্ড অন্তত ৬ অক্ষর" }); return; }
     setBusy(true);
     try {
       const me = await registerAccount({ name: who, phone: mobile, email: mail || undefined, password: values.password });
@@ -876,7 +876,7 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string, admin: 
   async function onReset(values: ResetValues) {
     const who = bnDigits(values.id.trim());
     const token = bnDigits(values.code.trim());
-    if (values.password.length < 8) { resetForm.setError("password", { message: "পাসওয়ার্ড অন্তত ৮ অক্ষর" }); return; }
+    if (values.password.length < 6) { resetForm.setError("password", { message: "পাসওয়ার্ড অন্তত ৬ অক্ষর" }); return; }
     setBusy(true);
     try {
       await post("/auth/password/reset", { identifier: who, code: token, password: values.password }, { auth: false });
@@ -957,7 +957,7 @@ function AuthModal({ onEnter }: { onEnter: (name: string, toast: string, admin: 
                 <label className="lab-ico"><IcoMail /> ইমেইল <span className="author">(ঐচ্ছিক)</span></label>
                 <Field icon={<IcoMail />} type="email" autoComplete="email" warn={signupErr.email?.message} placeholder="name@email.com" {...signupForm.register("email", { validate: (v) => !v.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) || "সঠিক ইমেইল দিন", onChange: () => signupForm.clearErrors("email") })} />
                 <label>পাসওয়ার্ড</label>
-                <Field icon={<IcoLock />} type="password" autoComplete="new-password" warn={signupErr.password?.message} placeholder="অন্তত ৮ অক্ষর" {...signupForm.register("password", { required: "পাসওয়ার্ড দিন", onChange: () => signupForm.clearErrors("password") })} />
+                <Field icon={<IcoLock />} type="password" autoComplete="new-password" warn={signupErr.password?.message} placeholder="অন্তত ৬ অক্ষর" {...signupForm.register("password", { required: "পাসওয়ার্ড দিন", onChange: () => signupForm.clearErrors("password") })} />
                 <button className="btn btn-primary btn-wide" style={{ marginTop: 14 }} type="submit" disabled={busy}>অ্যাকাউন্ট খুলুন</button>
               </>
             )}

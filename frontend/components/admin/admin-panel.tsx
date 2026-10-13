@@ -11,9 +11,11 @@ import { setBye } from "@/store/slices/ui-slice";
 import { useAppDispatch } from "@/store/hooks";
 import { SectionIcon } from "@/components/admin/shared";
 import { FinanceDesk } from "@/components/admin/finance-desk";
-import { AdminNavContext, NAV_GROUPS, TAB_META, type AdminTab } from "@/components/admin/nav";
+import { AdminNavContext, NAV_GROUPS, TAB_META, canOpen, type AdminTab } from "@/components/admin/nav";
+import { PasswordGate } from "@/components/admin/password-gate";
 import { CommandPalette } from "@/components/admin/command";
 import { Notifications } from "@/components/admin/notify";
+import { ConfirmProvider } from "@/components/admin/confirm";
 import { Avatar, Ico, Kbd, Menu, Modal, PageHead } from "@/components/admin/ui";
 import { DashboardTab } from "@/components/admin/tabs/dashboard";
 import { OrdersTab } from "@/components/admin/tabs/orders";
@@ -48,7 +50,9 @@ const ROLE_BN: Record<string, string> = { OWNER: "মালিক", ADMIN: "অ�
 export function AdminPanel() {
   return (
     <AdminSectionProvider>
-      <AdminShell />
+      <ConfirmProvider>
+        <AdminShell />
+      </ConfirmProvider>
     </AdminSectionProvider>
   );
 }
@@ -130,6 +134,14 @@ function AdminShell() {
   const hour = new Date().getHours();
   const shift = hour < 12 ? "সকাল" : hour < 17 ? "দুপুর" : hour < 20 ? "সন্ধ্যা" : "রাত";
 
+  /* a role without access to this screen lands on the first screen it may open */
+  const allowedTab = canOpen(tab, me?.role) ? tab : (NAV_GROUPS.flatMap((g) => g.items).find((t) => canOpen(t.id, me?.role))?.id ?? "dashboard");
+  useEffect(() => {
+    if (me && allowedTab !== tab) setTab(allowedTab);
+  }, [me, allowedTab, tab]);
+
+  if (me && (me as { mustChangePassword?: boolean }).mustChangePassword) return <PasswordGate name={me.name} />;
+
   return (
     <AdminNavContext.Provider value={nav}>
       <div className={`adm ap-shell${navOpen ? " nav-on" : ""}${rail ? " rail" : ""}`}>
@@ -158,7 +170,7 @@ function AdminShell() {
           </div>
 
           <nav className="ap-nav">
-            {NAV_GROUPS.map((g) => (
+            {NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((t) => canOpen(t.id, me?.role)) })).filter((g) => g.items.length).map((g) => (
               <div className="ap-nav-group" key={g.label}>
                 <p>{g.label}</p>
                 {g.items.map((t) => {
@@ -220,11 +232,11 @@ function AdminShell() {
                 {(close) => (
                   <>
                     <p className="ap-menu-label">Create · তৈরি করুন</p>
-                    <button type="button" className="ap-menu-item" onClick={() => { go("products", "new"); close(); }}>{Ico.products}নতুন পণ্য<small>Product</small></button>
-                    <button type="button" className="ap-menu-item" onClick={() => { go("packs"); close(); }}>{Ico.packs}নতুন প্যাকেজ<small>Bundle</small></button>
-                    <button type="button" className="ap-menu-item" onClick={() => { go("settings", "coupons"); close(); }}>{Ico.tag}নতুন কুপন<small>Coupon</small></button>
-                    <button type="button" className="ap-menu-item" onClick={() => { go("finance", "buy"); close(); }}>{Ico.cash}ক্রয় বিল<small>Purchase</small></button>
-                    <button type="button" className="ap-menu-item" onClick={() => { go("cats"); close(); }}>{Ico.cats}নতুন ক্যাটাগরি<small>Category</small></button>
+                    {canOpen("products", me?.role) ? <button type="button" className="ap-menu-item" onClick={() => { go("products", "new"); close(); }}>{Ico.products}নতুন পণ্য<small>Product</small></button> : null}
+                    {canOpen("packs", me?.role) ? <button type="button" className="ap-menu-item" onClick={() => { go("packs"); close(); }}>{Ico.packs}নতুন প্যাকেজ<small>Bundle</small></button> : null}
+                    {canOpen("settings", me?.role) ? <button type="button" className="ap-menu-item" onClick={() => { go("settings", "coupons"); close(); }}>{Ico.tag}নতুন কুপন<small>Coupon</small></button> : null}
+                    {canOpen("finance", me?.role) ? <button type="button" className="ap-menu-item" onClick={() => { go("finance", "buy"); close(); }}>{Ico.cash}ক্রয় বিল<small>Purchase</small></button> : null}
+                    {canOpen("cats", me?.role) ? <button type="button" className="ap-menu-item" onClick={() => { go("cats"); close(); }}>{Ico.cats}নতুন ক্যাটাগরি<small>Category</small></button> : null}
                   </>
                 )}
               </Menu>

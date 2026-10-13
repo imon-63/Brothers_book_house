@@ -99,6 +99,13 @@ export class StockAdjustDto {
 
 export class StockMovementsQueryDto extends PageQueryDto {}
 
+export class RestockLotDto {
+  @ApiProperty({ description: 'নতুন কপি', example: 20 }) @IsInt() @Min(1) @Max(1_000_000) qty: number;
+  @ApiProperty({ description: 'এই লটের কেনা দাম (প্রতি কপি)', example: 260 }) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(MONEY_MAX) unitCost: number;
+  @ApiPropertyOptional({ description: 'নতুন বিক্রয় মূল্য — দিলে পণ্যের দামও বদলাবে' }) @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0.01) @Max(MONEY_MAX) salePrice?: number;
+  @ApiPropertyOptional({ example: 'নীলক্ষেত থেকে ২য় চালান' }) @IsOptional() @IsString() @MaxLength(300) note?: string;
+}
+
 export class CreateDealDto {
   @ApiProperty({ description: 'ছাড়ের দাম — must be below the regular price', example: 299 })
   @IsNumber({ maxDecimalPlaces: 2 })

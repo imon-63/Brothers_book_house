@@ -52,22 +52,22 @@ export class SslCommerzController {
   }
 
   // Browser redirects from SSLCOMMERZ (application/x-www-form-urlencoded).
-  @Public() @SkipThrottle() @ApiExcludeEndpoint() @Post('success')
+  @Public() @SkipThrottle({ default: true, burst: true }) @ApiExcludeEndpoint() @Post('success')
   async success(@Body() body: Record<string, unknown>, @Res() res: Response) {
     res.redirect(302, await this.callbacks.callback('success', body));
   }
 
-  @Public() @SkipThrottle() @ApiExcludeEndpoint() @Post('fail')
+  @Public() @SkipThrottle({ default: true, burst: true }) @ApiExcludeEndpoint() @Post('fail')
   async fail(@Body() body: Record<string, unknown>, @Res() res: Response) {
     res.redirect(302, await this.callbacks.callback('fail', body));
   }
 
-  @Public() @SkipThrottle() @ApiExcludeEndpoint() @Post('cancel')
+  @Public() @SkipThrottle({ default: true, burst: true }) @ApiExcludeEndpoint() @Post('cancel')
   async cancel(@Body() body: Record<string, unknown>, @Res() res: Response) {
     res.redirect(302, await this.callbacks.callback('cancel' as CallbackKind, body));
   }
 
-  @Public() @SkipThrottle() @ApiExcludeEndpoint() @Post('ipn') @HttpCode(200)
+  @Public() @SkipThrottle({ default: true, burst: true }) @ApiExcludeEndpoint() @Post('ipn') @HttpCode(200)
   ipn(@Body() body: Record<string, unknown>) {
     return this.callbacks.ipn(body);
   }

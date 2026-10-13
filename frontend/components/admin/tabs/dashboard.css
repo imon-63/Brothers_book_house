@@ -308,3 +308,20 @@
   .db *, .db *::before, .db *::after { animation: none !important; transition: none !important; }
   .db-confetti { display: none; }
 }
+
+/* ═════════ phone polish (≤560px) ═════════ */
+@media (max-width: 560px) {
+  .db { gap: 14px; }
+  .db-kpis { gap: 10px; }
+  .db-kpis .ap-stat { min-height: 0; padding-bottom: 32px; }
+  .db-legend { gap: 10px; font-size: 11.5px; }
+  /* top products: fit the phone, no clipped stock column */
+  .adm .db-table th, .adm .db-table td { padding-left: 6px; padding-right: 6px; }
+  .adm .db-table th:first-child, .adm .db-table td:first-child { padding-left: 14px; width: 14px; }
+  .adm .db-table th:last-child, .adm .db-table td:last-child { padding-right: 14px; }
+  .db-table th { font-size: 10px; letter-spacing: .04em; }
+  .db-prod { gap: 8px; }
+  .db-prod b { max-width: 42vw; }
+  .db-thumb { width: 28px; height: 38px; }
+  .db-rev { min-width: 0; }
+}

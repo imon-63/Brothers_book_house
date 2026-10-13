@@ -139,7 +139,7 @@ export default function PackPage({ params }: { params: Promise<{ id: string }> }
 
           {oos ? (
             <div className="pp-actions">
-              <button className={`btn ${kept ? "btn-primary" : "btn-gold"} pp-main`} type="button" onClick={() => toggle("pack", pack.id)}>{kept ? "তালিকায় আছে · সরান" : "ভবিষ্যৎ তালিকায় রাখুন"}</button>
+              <button className={`btn ${kept ? "btn-primary" : "btn-gold"} pp-main`} type="button" onClick={() => toggle("pack", pack.id)}>{kept ? "উইশলিস্টে আছে · সরান" : "উইশলিস্টে রাখুন"}</button>
               {user ? <Link className="btn btn-ghost" href="/wait">তালিকা দেখুন</Link> : <button className="btn btn-ghost" type="button" onClick={() => dispatch(setAuth(true))}>লগইন</button>}
             </div>
           ) : (

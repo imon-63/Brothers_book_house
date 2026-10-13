@@ -1,7 +1,7 @@
 "use client";
 
 import "./orders.css";
-import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { BnRangeButton } from "@/components/ui/bangla-calendar";
 import { bn, localPhone } from "@/lib/format";
 import { phoneKey } from "@/lib/admin/insights";
@@ -18,6 +18,7 @@ import { DocModal } from "@/components/admin/doc-frame";
 import { printElement } from "@/lib/admin/print";
 import { Pager, SectionIcon, VertTags } from "@/components/admin/shared";
 import { useAdminNav } from "@/components/admin/nav";
+import { useConfirm, useConfirmInput } from "@/components/admin/confirm";
 import {
   Avatar, Badge, CopyBtn, Drawer, Empty, Ico, Kbd, Menu, Modal, PageHead, Segmented, SearchInput, Stat, StatusPill,
   ago, dateOnly, num, tk, when, useSelection,
@@ -169,6 +170,11 @@ function OrderBadges({ p, tags, max = 2 }: { p: Priority; tags: { id: string; na
 
 export function OrdersTab() {
   const toast = useToast();
+  const confirm = useConfirm();
+  const ask = useConfirmInput();
+  const lossRef = useRef(0);
+  const reopenTo = useRef<"PENDING" | "CONFIRMED">("PENDING");
+  const reopenM = useReopenOrder();
   const { focus, go, clearFocus } = useAdminNav();
   const { sections } = useAdminSection();
 
@@ -188,10 +194,6 @@ export function OrdersTab() {
   const [size, setSize] = useState(10);
   const [open, setOpen] = useState<string | null>(null);
   const [sheet, setSheet] = useState<{ id: string; title: string } | null>(null);
-  const [ret, setRet] = useState<Row | OrderDetail | null>(null);
-  const [reason, setReason] = useState(RETURN_REASONS[0]);
-  const [loss, setLoss] = useState(0);
-  const [reopen, setReopen] = useState<Row | OrderDetail | null>(null);
   const [pick, setPick] = useState<string[] | null>(null);
   const [dragOver, setDragOver] = useState<OrderStatus | null>(null);
   const sel = useSelection<string>();
@@ -262,7 +264,14 @@ export function OrdersTab() {
     changeM.mutate({ ref: refOf(o), to: next, version: o.version, credit, toast: msg });
   }
 
-  function payOrder(o: { orderNo: string; version: number }) {
+  async function payOrder(o: Row | OrderDetail) {
+    if (!(await confirm({
+      tone: "info", icon: Ico.cash,
+      title: `${o.orderNo} — টাকা পেয়েছেন?`,
+      body: <><b>{retName(o)}</b> এর অর্ডার «পরিশোধিত» হিসেবে খাতায় উঠবে, রিসিট কাটা হবে।</>,
+      details: [{ label: "টাকা", value: tk(retTotal(o)) }, { label: "পেমেন্ট", from: "বকেয়া", to: "পরিশোধিত" }],
+      confirmText: "হ্যাঁ, টাকা পেয়েছি",
+    }))) return;
     paidM.mutate({ ref: refOf(o), version: o.version });
   }
 
@@ -270,14 +279,76 @@ export function OrdersTab() {
   function askCancel(o: Row | OrderDetail) {
     const target = voidTarget(o.status);
     if (!target) return;
-    if (o.status === "PENDING") changeStatus(o, "CANCELLED");
-    else { setRet(o); setReason(RETURN_REASONS[0]); setLoss(0); }
+    if (o.status === "PENDING") {
+      void confirm({
+        tone: "danger",
+        title: `${o.orderNo} বাতিল করবেন?`,
+        body: <><b>{retName(o)}</b> এর অর্ডার বাতিল হবে, রিজার্ভ করা স্টক ফিরে যাবে। পরে «ফিরিয়ে আনুন» দিয়ে আবার চালু করা যায়।</>,
+        details: [
+          { label: "অর্ডার", value: `${bn(o.items.reduce((s2, i) => s2 + i.quantity, 0))}টি আইটেম · ${tk(retTotal(o))}` },
+          { label: "স্ট্যাটাস", from: statusLabel(o.status), to: statusLabel("CANCELLED") },
+        ],
+        confirmText: "হ্যাঁ, বাতিল করুন", cancelText: "না, রাখুন",
+      }).then((ok) => { if (ok) changeStatus(o, "CANCELLED"); });
+    } else void askReturn(o, target);
+  }
+  /** Live order → credit note: reason + courier loss, all in the confirm sheet. */
+  async function askReturn(o: Row | OrderDetail, target: OrderStatus) {
+    lossRef.current = 0;
+    const shipped = target === "RETURNED";
+    const reason = await ask({
+      tone: "danger",
+      title: `ফেরত / বাতিল · ${o.orderNo}`,
+      eyebrow: "ক্রেডিট নোট · Return",
+      body: <>ক্রেডিট নোট কাটবে, স্টক ফিরবে।{shipped ? " এই অর্ডার কুরিয়ারে উঠেছে · ডেলিভারি খরচ ফেরত আসবে না।" : ""} বাড়তি লস আলাদা লাইনে উঠবে।</>,
+      details: [
+        { label: retName(o), value: tk(retTotal(o)) },
+        { label: "পণ্য", value: o.items.map((i) => `${i.title} × ${bn(i.quantity)}`).join(", ") },
+        { label: "স্ট্যাটাস", from: statusLabel(o.status), to: statusLabel(target) },
+      ],
+      detailsTitle: "অর্ডার",
+      extra: <NumberField label="কুরিয়ার লস (৳) · Courier loss" onChange={(n) => { lossRef.current = n; }} />,
+      input: { label: "কারণ · Reason", chips: RETURN_REASONS, initial: RETURN_REASONS[0], minLength: 1 },
+      confirmText: "ক্রেডিট নোট কাটুন", cancelText: "থাক",
+    });
+    if (reason === null) return;
+    changeStatus(o, target, { reason: reason || "ফেরত", courierLoss: lossRef.current });
+  }
+  /** Cancelled / returned → back to live. */
+  async function reopenOrder(o: Row | OrderDetail) {
+    const wasConfirmed = "cancelledFrom" in o ? !!o.cancelledFrom && o.cancelledFrom !== "PENDING" : o.status === "RETURNED";
+    reopenTo.current = wasConfirmed ? "CONFIRMED" : "PENDING";
+    const reason = await ask({
+      tone: "warn", icon: OI.undo,
+      title: `বাতিল থেকে ফিরিয়ে আনবেন? · ${o.orderNo}`,
+      eyebrow: "Reopen order · কারণ লগে থাকবে",
+      body: "স্টক আবার রিজার্ভ হবে, কুপন ফেরত আসবে। কারণসহ একটি পিন করা নোট ও ইতিহাসে এন্ট্রি যোগ হবে।",
+      details: [
+        { label: retName(o), value: tk(retTotal(o)) },
+        { label: "পণ্য", value: o.items.map((i) => `${i.title} × ${bn(i.quantity)}`).join(", ") },
+      ],
+      detailsTitle: "অর্ডার",
+      extra: <ReopenAs initial={reopenTo.current} onChange={(v) => { reopenTo.current = v; }} />,
+      input: { label: "কারণ · Reason", chips: REOPEN_REASONS, placeholder: "কেন ফিরিয়ে আনছেন? (অন্তত ৩ অক্ষর)", minLength: 3 },
+      confirmText: "আবার চালু করুন", cancelText: "থাক",
+    });
+    if (!reason) return;
+    reopenM.mutate({ ref: o.orderNo, reason, to: reopenTo.current, version: o.version }, { onSuccess: () => setOpen(o.orderNo) });
   }
   function advance(o: Row | OrderDetail) {
     if (o.next) changeStatus(o, o.next.status);
   }
-  function regress(o: Row | OrderDetail) {
-    if (o.canRegress) regressM.mutate({ ref: refOf(o), version: o.version });
+  async function regress(o: Row | OrderDetail) {
+    if (!o.canRegress) return;
+    const prev = FLOW[FLOW.indexOf(o.status) - 1];
+    if (!(await confirm({
+      tone: "warn",
+      title: `${o.orderNo} আগের ধাপে ফেরাবেন?`,
+      body: "ভুল করে এগিয়ে গেলে ব্যবহার করুন — ইতিহাসে এন্ট্রি থাকবে।",
+      details: [{ label: "স্ট্যাটাস", from: statusLabel(o.status), to: prev ? statusLabel(prev) : "আগের ধাপ" }],
+      confirmText: "হ্যাঁ, ফেরান",
+    }))) return;
+    regressM.mutate({ ref: refOf(o), version: o.version });
   }
   function moveTo(o: Row, target: OrderStatus) {
     if (o.status === target) return;
@@ -287,11 +358,11 @@ export function OrdersTab() {
       askCancel(o);
       return;
     }
-    if (isClosedStatus(o.status)) { setReopen(o); return; }
+    if (isClosedStatus(o.status)) { void reopenOrder(o); return; }
     if (o.status === "PENDING" && target !== "CONFIRMED") { changeStatus(o, "CONFIRMED"); toast("আগে কনফার্ম হলো · এরপর ধাপ বদলান"); return; }
     const a = FLOW.indexOf(o.status);
     const b = FLOW.indexOf(target);
-    if (b === a - 1 && o.canRegress) { regress(o); return; }
+    if (b === a - 1 && o.canRegress) { void regress(o); return; }
     changeStatus(o, target);
   }
 
@@ -311,13 +382,31 @@ export function OrdersTab() {
   const bulkPending = selected.filter((o) => o.status === "PENDING");
   const bulkNext = selected.filter((o) => o.next != null);
   const bulkPay = selected.filter(dueCod);
-  function bulkConfirm() {
+  async function bulkConfirm() {
+    if (!(await confirm({
+      tone: "info", title: `${bn(bulkPending.length)}টি অর্ডার কনফার্ম করবেন?`,
+      body: "প্রতিটির ইনভয়েস কাটা হবে, স্টক নিশ্চিত হবে, কাস্টমার নোটিফিকেশন পাবেন।",
+      details: [{ label: "অর্ডার", value: `${bn(bulkPending.length)}টি` }, { label: "মোট", value: tk(bulkPending.reduce((s2, o) => s2 + retTotal(o), 0)) }, { label: "স্ট্যাটাস", from: statusLabel("PENDING"), to: statusLabel("CONFIRMED") }],
+      confirmText: "হ্যাঁ, কনফার্ম",
+    }))) return;
     bulkM.mutate({ ids: bulkPending.map(refOf), action: "confirm", toast: `${bn(bulkPending.length)}টি অর্ডার কনফার্ম হয়েছে` });
   }
-  function bulkAdvance() {
+  async function bulkAdvance() {
+    if (!(await confirm({
+      tone: "info", title: `${bn(bulkNext.length)}টি অর্ডার পরের ধাপে নেবেন?`,
+      body: "প্রতিটি অর্ডার নিজের পরের ধাপে যাবে (যেমন প্যাকিং → কুরিয়ার)।",
+      details: [{ label: "অর্ডার", value: `${bn(bulkNext.length)}টি` }],
+      confirmText: "হ্যাঁ, এগিয়ে দিন",
+    }))) return;
     bulkM.mutate({ ids: bulkNext.map(refOf), action: "advance", toast: `${bn(bulkNext.length)}টি অর্ডার পরের ধাপে` });
   }
-  function bulkMarkPaid() {
+  async function bulkMarkPaid() {
+    if (!(await confirm({
+      tone: "info", icon: Ico.cash, title: `${bn(bulkPay.length)}টি অর্ডারের টাকা পেয়েছেন?`,
+      body: "সবগুলো «পরিশোধিত» হিসেবে খাতায় উঠবে, রিসিট কাটা হবে।",
+      details: [{ label: "অর্ডার", value: `${bn(bulkPay.length)}টি` }, { label: "মোট টাকা", value: tk(bulkPay.reduce((s2, o) => s2 + retTotal(o), 0)) }],
+      confirmText: "হ্যাঁ, টাকা পেয়েছি",
+    }))) return;
     bulkPaidM.mutate({ ids: bulkPay.map(refOf), toast: `${bn(bulkPay.length)}টি অর্ডারের টাকা পাওয়া গেছে` });
   }
 
@@ -356,15 +445,15 @@ export function OrdersTab() {
     if (!open) return;
     const key = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (ret || sheet || reopen || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (sheet || document.querySelector(".ap-cf-wrap") || e.metaKey || e.ctrlKey || e.altKey) return;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
       if (e.key === "j") { e.preventDefault(); step(1); }
       if (e.key === "k") { e.preventDefault(); step(-1); }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [open, ret, sheet, reopen, step]);
-  const closeDrawer = useCallback(() => { if (!ret && !sheet && !pick && !reopen) setOpen(null); }, [ret, sheet, pick, reopen]);
+  }, [open, sheet, step]);
+  const closeDrawer = useCallback(() => { if (!sheet && !pick) setOpen(null); }, [sheet, pick]);
 
   /* ───────── row pieces ───────── */
 
@@ -376,9 +465,9 @@ export function OrdersTab() {
             <div className="ap-menu-label">{o.orderNo}</div>
             <button type="button" className="ap-menu-item" onClick={() => { close(); setOpen(o.orderNo); }}>{Ico.eye}খুলুন<small>Open</small></button>
             {o.next ? <button type="button" className="ap-menu-item" onClick={() => { close(); advance(o); }}>{Ico.check}{nextLabel(o)}<small>Next</small></button> : null}
-            {o.canRegress ? <button type="button" className="ap-menu-item" onClick={() => { close(); regress(o); }}>{OI.undo}আগের ধাপে<small>Back</small></button> : null}
-            {dueCod(o) ? <button type="button" className="ap-menu-item" onClick={() => { close(); payOrder(o); }}>{Ico.cash}টাকা পেয়েছি<small>Mark paid</small></button> : null}
-            {isClosedStatus(o.status) ? <button type="button" className="ap-menu-item" onClick={() => { close(); setReopen(o); }}>{OI.undo}বাতিল থেকে ফিরিয়ে আনুন<small>Reopen</small></button> : null}
+            {o.canRegress ? <button type="button" className="ap-menu-item" onClick={() => { close(); void regress(o); }}>{OI.undo}আগের ধাপে<small>Back</small></button> : null}
+            {dueCod(o) ? <button type="button" className="ap-menu-item" onClick={() => { close(); void payOrder(o); }}>{Ico.cash}টাকা পেয়েছি<small>Mark paid</small></button> : null}
+            {isClosedStatus(o.status) ? <button type="button" className="ap-menu-item" onClick={() => { close(); void reopenOrder(o); }}>{OI.undo}বাতিল থেকে ফিরিয়ে আনুন<small>Reopen</small></button> : null}
             {o.customer?.id ? <button type="button" className="ap-menu-item" onClick={() => { close(); go("customers", o.customer!.id); }}>{Ico.user}কাস্টমার প্রোফাইল</button> : null}
             {voidTarget(o.status) ? (
               <>
@@ -518,12 +607,12 @@ export function OrdersTab() {
                       {o.tags.slice(0, 2).map((t) => <OrderTag key={t.id} t={t} />)}
                     </div>
                     <div className="od-card-acts" onClick={(e) => e.stopPropagation()}>
-                      {o.canRegress ? <button type="button" className="ap-icon-btn sm" title="আগের ধাপ" aria-label="আগের ধাপ" onClick={() => regress(o)}>{OI.back}</button> : null}
+                      {o.canRegress ? <button type="button" className="ap-icon-btn sm" title="আগের ধাপ" aria-label="আগের ধাপ" onClick={() => void regress(o)}>{OI.back}</button> : null}
                       {voidTarget(o.status) ? <button type="button" className="ap-icon-btn sm od-x" title="বাতিল" aria-label="বাতিল" onClick={() => askCancel(o)}>{OI.x}</button> : null}
                       <span className="spacer" />
                       {o.next ? <button type="button" className="ap-btn sm primary" onClick={() => advance(o)}>{nextLabel(o)}{Ico.chevR}</button> : null}
-                      {isClosedStatus(o.status) ? <button type="button" className="ap-btn sm" onClick={() => setReopen(o)}>{OI.undo}ফিরিয়ে আনুন</button> : null}
-                      {o.status === "DELIVERED" && dueCod(o) ? <button type="button" className="ap-btn sm gold" onClick={() => payOrder(o)}>টাকা পেয়েছি</button> : null}
+                      {isClosedStatus(o.status) ? <button type="button" className="ap-btn sm" onClick={() => void reopenOrder(o)}>{OI.undo}ফিরিয়ে আনুন</button> : null}
+                      {o.status === "DELIVERED" && dueCod(o) ? <button type="button" className="ap-btn sm gold" onClick={() => void payOrder(o)}>টাকা পেয়েছি</button> : null}
                     </div>
                   </article>
                 );
@@ -672,9 +761,9 @@ export function OrdersTab() {
       {sel.size ? (
         <div className="ap-bulk od-bulk" role="toolbar" aria-label="বাছাই করা অর্ডার">
           <b>{bn(sel.size)}টি বাছাই</b>
-          {bulkPending.length ? <button type="button" className="ap-btn gold" disabled={bulkM.isPending} onClick={bulkConfirm}>{Ico.check}কনফার্ম ({bn(bulkPending.length)})</button> : null}
-          {bulkNext.length ? <button type="button" className="ap-btn" disabled={bulkM.isPending} onClick={bulkAdvance}>{Ico.chevR}পরের ধাপ ({bn(bulkNext.length)})</button> : null}
-          {bulkPay.length ? <button type="button" className="ap-btn" disabled={bulkPaidM.isPending} onClick={bulkMarkPaid}>{Ico.cash}টাকা পেয়েছি ({bn(bulkPay.length)})</button> : null}
+          {bulkPending.length ? <button type="button" className="ap-btn gold" disabled={bulkM.isPending} onClick={() => void bulkConfirm()}>{Ico.check}কনফার্ম ({bn(bulkPending.length)})</button> : null}
+          {bulkNext.length ? <button type="button" className="ap-btn" disabled={bulkM.isPending} onClick={() => void bulkAdvance()}>{Ico.chevR}পরের ধাপ ({bn(bulkNext.length)})</button> : null}
+          {bulkPay.length ? <button type="button" className="ap-btn" disabled={bulkPaidM.isPending} onClick={() => void bulkMarkPaid()}>{Ico.cash}টাকা পেয়েছি ({bn(bulkPay.length)})</button> : null}
           <button type="button" className="ap-btn" onClick={openPick}>{Ico.print}পিক-লিস্ট</button>
           <button type="button" className="ap-btn" onClick={exportSelected}>{Ico.download}CSV</button>
           <button type="button" className="ap-btn" onClick={sel.clear}>{Ico.close}বাতিল</button>
@@ -695,7 +784,7 @@ export function OrdersTab() {
               <small>{idx >= 0 ? `${bn((cur - 1) * size + idx + 1)} / ${bn(total)}` : "ফিল্টারের বাইরে"} · <Kbd>J</Kbd><Kbd>K</Kbd></small>
             </div>
             <span className="spacer" />
-            {isClosedStatus(detail.status) ? <button type="button" className="ap-btn" onClick={() => setReopen(detail)}>{OI.undo}বাতিল থেকে ফিরিয়ে আনুন</button> : null}
+            {isClosedStatus(detail.status) ? <button type="button" className="ap-btn" onClick={() => void reopenOrder(detail)}>{OI.undo}বাতিল থেকে ফিরিয়ে আনুন</button> : null}
             {detail.next ? (
               <button type="button" className="ap-btn primary" disabled={changeM.isPending} onClick={() => advance(detail)}>{Ico.check}{nextLabel(detail)}</button>
             ) : null}
@@ -703,47 +792,14 @@ export function OrdersTab() {
         ) : undefined}>
         {detail ? (
           <OrderPanel key={detail.id} o={detail}
-            onAdvance={() => advance(detail)} onRegress={() => regress(detail)} onCancel={() => askCancel(detail)} onReopen={() => setReopen(detail)}
-            onPay={() => payOrder(detail)} onPaper={setSheet}
+            onAdvance={() => advance(detail)} onRegress={() => void regress(detail)} onCancel={() => askCancel(detail)} onReopen={() => void reopenOrder(detail)}
+            onPay={() => void payOrder(detail)} onPaper={setSheet}
             onCustomer={() => (detail.customer ? go("customers", detail.customer.id) : undefined)}
             onProduct={(id) => go("products", id)} onPack={() => go("packs")} />
         ) : null}
       </Drawer>
 
-      <Modal open={!!ret} onClose={() => setRet(null)} width={480}
-        title={ret ? `ফেরত / বাতিল · ${ret.orderNo}` : undefined}
-        sub="Return & credit note"
-        footer={ret ? (
-          <>
-            <button type="button" className="ap-btn ghost" onClick={() => setRet(null)}>থাক</button>
-            <button type="button" className="ap-btn primary" onClick={() => {
-              const target = voidTarget(ret.status);
-              if (target) changeStatus(ret, target, { reason: reason.trim() || "ফেরত", courierLoss: loss });
-              setRet(null);
-            }}>ক্রেডিট নোট কাটুন</button>
-          </>
-        ) : undefined}>
-        {ret ? (
-          <div className="od-ret">
-            <div className="od-ret-sum">
-              <Avatar name={retName(ret)} size={36} />
-              <span><b>{retName(ret)}</b><small>{ret.items.map((i) => `${i.title} × ${bn(i.quantity)}`).join(", ")}</small></span>
-              <strong>{tk(retTotal(ret))}</strong>
-            </div>
-            <p className="od-hint">{Ico.alert}ক্রেডিট নোট কাটবে, স্টক ফিরবে। কুরিয়ারে উঠে থাকলে খরচ থেকে যাবে, বাড়তি লস আলাদা লাইন।</p>
-            <label htmlFor="od-reason">কারণ · Reason</label>
-            <div className="od-reason-chips">
-              {RETURN_REASONS.map((r) => <button key={r} type="button" className={`ap-chip${reason === r ? " on" : ""}`} onClick={() => setReason(r)}>{r}</button>)}
-            </div>
-            <input id="od-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
-            <label htmlFor="od-loss">কুরিয়ার লস (৳) · Courier loss</label>
-            <input id="od-loss" type="number" min={0} value={loss || ""} placeholder="০" onChange={(e) => setLoss(Number(e.target.value) || 0)} />
-            {voidTarget(ret.status) === "RETURNED" ? <p className="od-hint soft">এই অর্ডার কুরিয়ারে উঠেছে · ডেলিভারি খরচ ফেরত আসবে না।</p> : null}
-          </div>
-        ) : null}
-      </Modal>
 
-      <ReopenModal order={reopen} onClose={() => setReopen(null)} onDone={(no) => { setReopen(null); setOpen(no); }} />
 
       <Modal open={!!pick} onClose={() => setPick(null)} width={680} title="পিক-লিস্ট · Pick list"
         sub={pick ? `${bn(pick.length)}টি অর্ডার · পণ্য অনুযায়ী সাজানো` : undefined}
@@ -763,64 +819,29 @@ function retTotal(o: Row | OrderDetail) {
   return "money" in o ? o.money.grandTotal : o.grandTotal;
 }
 
-/* ═══════════════════════════ reopen ═══════════════════════════ */
+/* ═══════════════════════════ confirm-sheet fields ═══════════════════════════ */
 
-function ReopenModal({ order, onClose, onDone }: { order: Row | OrderDetail | null; onClose: () => void; onDone: (orderNo: string) => void }) {
-  const reopen = useReopenOrder();
-  const [reason, setReason] = useState("");
-  const [to, setTo] = useState<"PENDING" | "CONFIRMED">("PENDING");
-  const [err, setErr] = useState("");
-  const wasConfirmed = !!order && "cancelledFrom" in order ? !!order.cancelledFrom && order.cancelledFrom !== "PENDING" : !!order && order.status === "RETURNED";
-  useEffect(() => {
-    if (!order) return;
-    setReason("");
-    setErr("");
-    setTo(wasConfirmed ? "CONFIRMED" : "PENDING");
-  }, [order, wasConfirmed]);
-  if (!order) return null;
-  const ok = reason.trim().length >= 3;
-
-  function submit() {
-    if (!order) return;
-    if (!ok) { setErr("কারণ লিখুন — অন্তত ৩ অক্ষর"); return; }
-    setErr("");
-    reopen.mutate(
-      { ref: order.orderNo, reason: reason.trim(), to, version: order.version },
-      { onSuccess: () => onDone(order.orderNo), onError: (e) => setErr(adminErrorText(e)) },
-    );
-  }
-
+function NumberField({ label, onChange }: { label: string; onChange: (n: number) => void }) {
+  const [v, setV] = useState("");
   return (
-    <Modal open onClose={onClose} width={500}
-      title={`বাতিল থেকে ফিরিয়ে আনুন · ${order.orderNo}`}
-      sub="Reopen order · কারণ লগে থাকবে"
-      footer={(
-        <>
-          <button type="button" className="ap-btn ghost" onClick={onClose}>থাক</button>
-          <button type="button" className="ap-btn primary" disabled={!ok || reopen.isPending} onClick={submit}>{OI.undo}{reopen.isPending ? "চালু হচ্ছে…" : "আবার চালু করুন"}</button>
-        </>
-      )}>
-      <div className="od-ret">
-        <div className="od-ret-sum">
-          <Avatar name={retName(order)} size={36} />
-          <span><b>{retName(order)}</b><small>{statusLabel(order.status)} · {order.items.map((i) => `${i.title} × ${bn(i.quantity)}`).join(", ")}</small></span>
-          <strong>{tk(retTotal(order))}</strong>
-        </div>
-        <p className="od-hint">{Ico.alert}স্টক আবার রিজার্ভ হবে, কুপন ফেরত আসবে। কারণসহ একটি পিন করা নোট ও ইতিহাসে এন্ট্রি যোগ হবে।</p>
-        <label>কোন ধাপে ফিরবে · Reopen as</label>
-        <Segmented<"PENDING" | "CONFIRMED"> value={to} onChange={setTo} options={[
-          { id: "PENDING", label: "অপেক্ষমাণ" },
-          { id: "CONFIRMED", label: "কনফার্ম" },
-        ]} />
-        <p className="od-hint soft">{to === "CONFIRMED" ? "সরাসরি কনফার্ম — নতুন ইনভয়েস কাটা হবে।" : "অপেক্ষমাণে ফিরবে — আবার কনফার্ম করতে হবে।"}</p>
-        <label htmlFor="od-reopen-reason">কারণ · Reason <span style={{ color: "var(--ap-red, #B42318)" }}>*</span></label>
-        <div className="od-reason-chips">
-          {REOPEN_REASONS.map((r) => <button key={r} type="button" className={`ap-chip${reason === r ? " on" : ""}`} onClick={() => { setReason(r); setErr(""); }}>{r}</button>)}
-        </div>
-        <textarea id="od-reopen-reason" rows={3} value={reason} placeholder="কেন ফিরিয়ে আনছেন? (অন্তত ৩ অক্ষর)" onChange={(e) => { setReason(e.target.value); setErr(""); }} />
-        {err ? <p className="od-hint" role="alert" style={{ color: "var(--ap-red, #B42318)" }}>{Ico.alert}{err}</p> : null}
-      </div>
-    </Modal>
+    <label>
+      <span className="ap-cf-lbl">{label}</span>
+      <input type="number" min={0} inputMode="numeric" value={v} placeholder="০" onChange={(e) => { setV(e.target.value); onChange(Math.max(0, Number(e.target.value) || 0)); }} />
+    </label>
+  );
+}
+
+function ReopenAs({ initial, onChange }: { initial: "PENDING" | "CONFIRMED"; onChange: (v: "PENDING" | "CONFIRMED") => void }) {
+  const [to, setTo] = useState(initial);
+  return (
+    <div>
+      <span className="ap-cf-lbl">কোন ধাপে ফিরবে · Reopen as</span>
+      <Segmented<"PENDING" | "CONFIRMED"> value={to} onChange={(v) => { setTo(v); onChange(v); }} options={[
+        { id: "PENDING", label: "অপেক্ষমাণ" },
+        { id: "CONFIRMED", label: "কনফার্ম" },
+      ]} />
+      <p>{to === "CONFIRMED" ? "সরাসরি কনফার্ম — নতুন ইনভয়েস কাটা হবে।" : "অপেক্ষমাণে ফিরবে — আবার কনফার্ম করতে হবে।"}</p>
+    </div>
   );
 }
 

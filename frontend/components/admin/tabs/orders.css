@@ -484,3 +484,30 @@
 }
 .od-prio-filter { display: inline-flex; }
 .od-prio-filter .ap-chip { height: 36px; padding: 0 12px; border-radius: 11px; font-size: 12px; }
+
+/* ═════════ phone polish (≤760px) ═════════ */
+@media (max-width: 760px) {
+  /* filter groups: one tidy line each, swipe sideways */
+  .od-filters.od-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 8px 0 8px 8px; border-radius: 16px; }
+  .od-filters > .od-fgroup { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 0 4px 0 0; overscroll-behavior-x: contain; }
+  .od-filters > .od-fgroup::-webkit-scrollbar { display: none; }
+  /* no mask on the date group: its calendar opens as an overlay inside it */
+  .od-filters > .od-fgroup:not(:has(.od-range)) { -webkit-mask: linear-gradient(90deg, #000 calc(100% - 26px), transparent); mask: linear-gradient(90deg, #000 calc(100% - 26px), transparent); }
+  .od-filters > .od-fgroup > * { flex: 0 0 auto; }
+  .od-filters > .od-fgroup > :last-child { margin-right: 22px; }
+  .od-filters .od-flabel { min-width: 40px; }
+  .od-filters .ap-seg { overflow: visible; }
+  .od-filters .ap-seg button { height: 30px; padding: 0 11px; font-size: 12px; }
+  .od-filters .ap-chip { height: 32px; padding: 0 12px; font-size: 12px; }
+  .od-toolbar-top { gap: 8px; }
+  .od-toolbar-top .spacer { flex: 1 1 0; }
+  .od-prio-filter .ap-chip { height: 38px; }
+
+  /* order cards: section tags sit in their own row instead of a vertical stack */
+  .adm .ap-table.od-table tr.od-row { padding: 12px 12px 12px 10px; border-radius: 18px; }
+  .adm .ap-table.od-table tr.od-row td.od-c-vert { display: block; grid-column: 2 / -1; }
+  .od-c-vert .vt-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .ap-drawer-foot .od-dfoot { width: 100%; }
+}
+@media (max-width: 760px) { .ap-bulk.od-bulk { justify-content: flex-start; } }

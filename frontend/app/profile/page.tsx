@@ -152,7 +152,7 @@ export default function ProfilePage() {
       </div>
       <nav className="sf-quick" aria-label="দ্রুত লিংক">
         <Link href="/orders"><span><GBox size={22} /></span><b>আমার অর্ডার</b><small>ধাপ, রসিদ, পেমেন্ট</small></Link>
-        <Link href="/wait"><span><GHeart size={22} /></span><b>ভবিষ্যৎ অর্ডার</b><small>{bn(wishQ.data?.length ?? 0)}টি রাখা আছে</small></Link>
+        <Link href="/wait"><span><GHeart size={22} /></span><b>উইশলিস্ট</b><small>{bn(wishQ.data?.length ?? 0)}টি রাখা আছে</small></Link>
         <Link href="/cart"><span><GBag size={22} /></span><b>কার্ট</b><small>{bn(cartCount)}টি আইটেম</small></Link>
         <Link href="/track"><span><GTruck size={22} /></span><b>অর্ডার খুঁজুন</b><small>ফোন বা অর্ডার আইডি</small></Link>
       </nav>
@@ -180,7 +180,7 @@ export default function ProfilePage() {
               <small>স্টেপ আর রসিদ</small>
             </Link>
             <Link href="/wait">
-              <b>ভবিষ্যৎ অর্ডার</b>
+              <b>উইশলিস্ট</b>
               <small>{bn(wishQ.data?.length ?? 0)}টি রাখা আছে</small>
             </Link>
             <Link href="/track">

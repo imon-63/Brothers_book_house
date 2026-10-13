@@ -97,7 +97,7 @@ export default function CartPage() {
       {loading ? <RowSkeleton n={3} tall /> : !rows.length ? (
         <EmptyState art="bag" title="কার্ট এখন খালি" text="পছন্দের পণ্য যোগ করুন — বই, ঘরের বাজার ও গ্যাজেট এক কার্টে।">
           <Link className="btn btn-primary" href="/shop">ক্যাটালগ দেখুন <GArrow size={16} /></Link>
-          <Link className="btn btn-ghost sf-btn-ghost" href="/wait">ভবিষ্যৎ তালিকা</Link>
+          <Link className="btn btn-ghost sf-btn-ghost" href="/wait">উইশলিস্ট</Link>
         </EmptyState>
       ) : (
         <div className="sf-cart-grid">

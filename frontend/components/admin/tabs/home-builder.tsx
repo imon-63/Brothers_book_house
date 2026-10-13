@@ -17,6 +17,7 @@ import { HOME_BLOCKS, readHomeLayout, type DealMode, type HomeBlock, type HomeLa
 import { SectionIcon } from "@/components/admin/shared";
 import { Badge, Empty, Ico, Modal, SearchInput, Segmented, Toggle, tk } from "@/components/admin/ui";
 import { DealDialog, DealLayer, toLocalDt, toShop, type ShopProduct } from "./products";
+import { useConfirm } from "@/components/admin/confirm";
 
 const same = (a: HomeLayout, b: HomeLayout) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -185,6 +186,20 @@ function DealsCard({ code, sectionName, mode, savedMode, dealsOn, onMode }: {
   const [tab, setTab] = useState<"active" | "scheduled">("active");
   const q = useSectionDeals(code, tab);
   const cancelM = useCancelDeal();
+  const confirm = useConfirm();
+  async function stopDeal(d: AdminDeal) {
+    const running = d.state !== "scheduled";
+    if (!(await confirm({
+      tone: running ? "danger" : "warn", icon: Ico.clock,
+      title: running ? "চলমান ছাড় এখনই বন্ধ করবেন?" : "শিডিউল করা ছাড় বাতিল করবেন?",
+      body: <><b>{d.product.title}</b> — {running ? "টাইমার থেমে যাবে, দাম সাথে সাথে আগের দামে ফিরবে, হোমের ছাড় তালিকা থেকেও সরবে।" : "এই ছাড় আর চালু হবে না।"}</>,
+      details: running
+        ? [{ label: "দাম", from: tk(d.dealPrice), to: tk(d.product.regularPrice) }, { label: "যত পর্যন্ত চলার কথা", value: fmtShipDt(toLocalDt(d.endsAt)) }]
+        : [{ label: "ছাড়ের দাম", value: `${tk(d.dealPrice)} · ${bn(d.discountPct)}%` }, { label: "শুরু হওয়ার কথা", value: fmtShipDt(toLocalDt(d.startsAt)) }],
+      confirmText: running ? "হ্যাঁ, ছাড় বন্ধ" : "হ্যাঁ, বাতিল",
+    }))) return;
+    cancelM.mutate({ dealId: d.id });
+  }
   const [target, setTarget] = useState<ShopProduct | null>(null);
   const [picking, setPicking] = useState(false);
   const deals = q.data?.items ?? [];
@@ -240,7 +255,7 @@ function DealsCard({ code, sectionName, mode, savedMode, dealsOn, onMode }: {
               </div>
               <div className="hb-deal-acts">
                 <button type="button" className="ap-btn sm" onClick={() => setTarget(dealTarget(d))}>{Ico.clock}বদলান</button>
-                <button type="button" className="ap-btn sm danger" disabled={cancelM.isPending} onClick={() => cancelM.mutate({ dealId: d.id })}>সরান</button>
+                <button type="button" className="ap-btn sm danger" disabled={cancelM.isPending} onClick={() => void stopDeal(d)}>সরান</button>
               </div>
             </li>
           ))}

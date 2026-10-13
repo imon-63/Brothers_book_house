@@ -14,12 +14,13 @@ import { useAdminPrefs, useSetAdminPrefs } from "@/lib/api/admin/prefs";
 import { useCategoryTree } from "@/lib/api/admin/sections";
 import {
   exportProducts, uploadMedia, useAdjustStock, useAdminProduct, useAdminProducts, useBulkProducts, useCancelDeal, useCreateDeal, useCreateProduct,
-  useDeleteProducts, useDuplicateProduct, usePatchProduct, useProductSummary, useStockMovements, useUploadProductImage,
+  useDeleteProducts, useDuplicateProduct, usePatchProduct, useProductSummary, useStockMovements, useStockLots, useRestockLot, useUploadProductImage,
   type AdminProductRow, type ProductPatch,
 } from "@/lib/api/admin/products";
 import { COLORS, readFile, Pager } from "@/components/admin/shared";
 import { useAdminNav } from "@/components/admin/nav";
 import { DescEditor } from "@/components/admin/desc-editor";
+import { useConfirm } from "@/components/admin/confirm";
 import {
   Badge, Columns, Drawer, Empty, Ico, Menu, Modal, PageHead, SearchInput, Segmented, Stat, StatusPill, Toggle,
   dateOnly, downloadCsv, num, tk, useSelection,
@@ -40,6 +41,7 @@ export type ShopProduct = {
   freeShip: boolean; image?: string; deal?: { id: string; price: number; until: string; from?: string }; version: number; hidden: boolean;
   /** scheduled, not started yet */
   soon?: { price: number; from: string; until: string };
+  lots?: { batches: number; minCost: number | null; maxCost: number | null } | null;
 };
 export function toLocalDt(iso: string) {
   const d = new Date(iso);
@@ -54,6 +56,7 @@ export function toShop(r: AdminProductRow): ShopProduct {
     freeShip: r.freeShipping, image: r.cover.url ?? undefined, deal: r.deal ? { id: r.deal.id, price: r.deal.dealPrice, until: toLocalDt(r.deal.endsAt), from: toLocalDt(r.deal.startsAt) } : undefined,
     version: r.version, hidden: r.categoryHidden,
     soon: r.nextDeal ? { price: r.nextDeal.dealPrice, from: r.nextDeal.startsAt, until: r.nextDeal.endsAt } : undefined,
+    lots: r.lots ?? null,
   };
 }
 function offerOf(p: Pick<ShopProduct, "price" | "old" | "deal">, now = Date.now()) {
@@ -109,15 +112,34 @@ const imgIco = (
 
 /** Number input that commits on blur / Enter (each commit is one PATCH). */
 function NumCell({ value, onCommit, className = "pr-in", placeholder, min = 0, max, label, title }: {
-  value: number; onCommit: (n: number) => void; className?: string; placeholder?: string; min?: number; max?: number; label?: string; title?: string;
+  value: number; onCommit: (n: number) => void | boolean | Promise<boolean | void>; className?: string; placeholder?: string; min?: number; max?: number; label?: string; title?: string;
 }) {
   const [v, setV] = useState(value ? String(value) : "");
+  const [editing, setEditing] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { setV(value ? String(value) : ""); }, [value]);
-  const commit = () => { const n = n0(v); if (n !== n0(value)) onCommit(n); };
+  /* select once the Latin value is rendered, so typing replaces it */
+  useEffect(() => { if (editing) ref.current?.select(); }, [editing]);
+  const commit = () => {
+    setEditing(false);
+    const raw = v.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))).replace(/[^\d.]/g, "");
+    let n = n0(raw);
+    if (n < min) n = min;
+    if (max != null && n > max) n = max;
+    const reset = () => setV(value ? String(value) : "");
+    if (n !== n0(value)) {
+      /* a vetoed commit (confirm → cancel) snaps back to the saved value */
+      void Promise.resolve(onCommit(n)).then((r) => { if (r === false) reset(); });
+    } else reset();
+  };
+  /* reads in Bangla digits; while editing it is a plain number field */
+  const shown = editing ? v : v ? bn(v) : "";
   return (
-    <input className={className} type="number" min={min} max={max} value={v} placeholder={placeholder} aria-label={label} title={title}
+    <input ref={ref} className={className} type="text" inputMode="decimal" value={shown} placeholder={placeholder} aria-label={label} title={title}
       style={{ ["--len" as string]: Math.max(2, (v || placeholder || "").length) }}
-      onChange={(e) => setV(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setV(value ? String(value) : ""); }} />
+      onFocus={() => setEditing(true)}
+      onChange={(e) => setV(e.target.value)} onBlur={commit}
+      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") { setV(value ? String(value) : ""); setEditing(false); (e.target as HTMLInputElement).blur(); } }} />
   );
 }
 
@@ -193,14 +215,17 @@ function StockCell({ p, low, onSet }: { p: ShopProduct; low: number; onSet: (v: 
   const cap = Math.max(n0(p.copies), n0(p.stock), 1);
   const pct = Math.max(0, Math.min(100, (n0(p.stock) / cap) * 100));
   const tone = p.stock <= 0 ? "out" : p.stock <= low ? "low" : "ok";
+  const label = tone === "out" ? "শেষ" : tone === "low" ? "কম" : "আছে";
   return (
-    <div className={`pr-stk ${tone}`}>
-      <div className="pr-stk-top">
-        <NumCell value={p.stock} label="বাকি" title="বাকি · In stock (বদলাতে লিখুন)" placeholder="০" onCommit={onSet} />
-        <span className="pr-stk-of">/ {bn(cap)}</span>
-        <em>{tone === "out" ? "শেষ" : tone === "low" ? "কম" : "আছে"}</em>
+    <div className={`pr-stk2 ${tone}`} title={`বাকি ${bn(p.stock)} · মোট ${bn(cap)} কপি · ${label}`}>
+      <div className="pr-stk2-txt">
+        <span className="pr-stk2-num">
+          <NumCell value={p.stock} label="বাকি" title="বাকি · ক্লিক করে বদলান" placeholder="০" onCommit={onSet} />
+          <small>/{bn(cap)}</small>
+        </span>
+        <em>{label}</em>
+        <span className="pr-stk2-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
       </div>
-      <span className="pr-stk-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
     </div>
   );
 }
@@ -259,10 +284,122 @@ function RowMenu({ children, label = "আরও" }: { children: (close: () => vo
   );
 }
 
+/* ───────── স্টক লট — each restock with its own কেনা দাম (FIFO) ───────── */
+
+const LOT_SRC: Record<string, { bn: string; tone: string }> = {
+  OPENING: { bn: "শুরুর স্টক", tone: "ink" },
+  PURCHASE: { bn: "ক্রয় বিল", tone: "blue" },
+  RESTOCK: { bn: "রিস্টক", tone: "green" },
+  RETURN: { bn: "ফেরত", tone: "gold" },
+  ADJUST: { bn: "গণনা", tone: "ink" },
+};
+
+function LotsPanel({ id, price }: { id: string; price: number }) {
+  const q = useStockLots(id);
+  const restockM = useRestockLot();
+  const confirm = useConfirm();
+  const [open, setOpen] = useState(false);
+  const [qty, setQty] = useState("");
+  const [cost, setCost] = useState("");
+  const [sale, setSale] = useState("");
+  const [note, setNote] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const d = q.data;
+  const sm = d?.summary;
+  const items = (d?.items ?? []).filter((l) => showAll || l.qtyLeft > 0);
+  const nQty = n0(qty), nCost = n0(cost), nSale = n0(sale);
+  const newMargin = nCost > 0 ? Math.round((((nSale || price) - nCost) / (nSale || price)) * 100) : null;
+
+  async function submit() {
+    if (!(nQty > 0)) return;
+    if (!(nCost > 0)) return;
+    const ok = await confirm({
+      title: `+${bn(nQty)} কপি নতুন লটে যোগ করবেন?`,
+      body: "এই কপিগুলোর কেনা দাম আলাদা থাকবে। বিক্রিতে আগের লট আগে খরচ হবে (FIFO), তাই লাভের হিসাব হবে আসল কেনা দামে।",
+      tone: "info",
+      confirmText: "লট যোগ করুন",
+      details: [
+        { label: "নতুন কপি", value: `+${bn(nQty)}` },
+        { label: "কেনা দাম (প্রতি কপি)", value: tk(nCost) },
+        ...(nSale > 0 && nSale !== price ? [{ label: "বিক্রয় মূল্য", from: tk(price), to: tk(nSale) }] : []),
+        ...(newMargin != null ? [{ label: "এই লটে লাভ", value: `${bn(newMargin)}%`, bad: newMargin < 10 }] : []),
+      ],
+    });
+    if (!ok) return;
+    restockM.mutate({ id, qty: nQty, unitCost: nCost, ...(nSale > 0 && nSale !== price ? { salePrice: nSale } : {}), note: note.trim() || undefined }, {
+      onSuccess: () => { setQty(""); setCost(""); setSale(""); setNote(""); setOpen(false); },
+    });
+  }
+
+  return (
+    <section className="pr-d-sec pr-lots">
+      <div className="pr-lots-head">
+        <h4>স্টক লট <span>Batches · FIFO</span></h4>
+        <button type="button" className={`ap-btn sm ${open ? "" : "primary"}`} onClick={() => setOpen((v) => !v)}>{open ? Ico.close : Ico.plus}{open ? "বন্ধ" : "নতুন দামে রিস্টক"}</button>
+      </div>
+
+      {sm ? (
+        <div className="pr-lots-sum">
+          <div><small>লট</small><b>{bn(sm.batches)}</b></div>
+          <div><small>গড় কেনা</small><b>{sm.avgCost != null ? tk(sm.avgCost) : "—"}</b></div>
+          <div><small>কেনা দামের সীমা</small><b className={sm.mixedCost ? "mixed" : ""}>{sm.minCost != null ? (sm.mixedCost ? `${tk(sm.minCost)} – ${tk(sm.maxCost!)}` : tk(sm.minCost)) : "—"}</b></div>
+          <div><small>স্টকের মূল্য</small><b>{tk(sm.stockValue)}</b></div>
+        </div>
+      ) : null}
+
+      {open ? (
+        <div className="pr-lots-form">
+          <label><span>কপি</span><input type="number" min={1} value={qty} placeholder="২০" onChange={(e) => setQty(e.target.value)} /></label>
+          <label><span>কেনা দাম / কপি</span><input type="number" min={0} value={cost} placeholder={sm?.avgCost ? String(sm.avgCost) : "৳"} onChange={(e) => setCost(e.target.value)} /></label>
+          <label><span>নতুন বিক্রয় মূল্য <em>ঐচ্ছিক</em></span><input type="number" min={0} value={sale} placeholder={String(price)} onChange={(e) => setSale(e.target.value)} /></label>
+          <label className="wide"><span>নোট</span><input value={note} maxLength={300} placeholder="যেমন: নীলক্ষেত থেকে ২য় চালান" onChange={(e) => setNote(e.target.value)} /></label>
+          <div className="pr-lots-prev">
+            {nQty > 0 && nCost > 0 ? (
+              <>মোট কেনা <b>{tk(nQty * nCost)}</b>{newMargin != null ? <> · লাভ <b className={newMargin < 10 ? "bad" : "good"}>{bn(newMargin)}%</b></> : null}{nSale > 0 && nSale !== price ? <> · দাম {tk(price)} → <b>{tk(nSale)}</b></> : null}</>
+            ) : "কপি আর কেনা দাম দিন"}
+          </div>
+          <button type="button" className="ap-btn primary" disabled={!(nQty > 0 && nCost > 0) || restockM.isPending} onClick={() => void submit()}>{Ico.plus}লট যোগ করুন</button>
+        </div>
+      ) : null}
+
+      {q.isLoading ? <div className="pr-lots-empty">লোড হচ্ছে…</div> : items.length ? (
+        <ol className="pr-lots-list">
+          {items.map((l) => {
+            const pct = l.qtyIn ? Math.round((l.qtyLeft / l.qtyIn) * 100) : 0;
+            const src = LOT_SRC[l.source] ?? LOT_SRC.ADJUST;
+            return (
+              <li key={l.id} className={`pr-lot${l.qtyLeft === 0 ? " done" : ""}`}>
+                <div className="pr-lot-top">
+                  <span className={`pr-lot-src t-${src.tone}`}>{src.bn}</span>
+                  <span className="pr-lot-date">{dateOnly(ms(l.receivedAt))}</span>
+                  {l.purchase ? <span className="pr-lot-ref">{l.purchase.purchaseNo}</span> : null}
+                  <b className="pr-lot-cost">{l.unitCost != null ? tk(l.unitCost) : "—"}<small>/কপি</small></b>
+                </div>
+                <div className="pr-lot-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
+                <div className="pr-lot-meta">
+                  <span><b>{bn(l.qtyLeft)}</b> / {bn(l.qtyIn)} বাকি</span>
+                  {l.sold ? <span>{bn(l.sold)} বিক্রি</span> : null}
+                  {l.value != null && l.qtyLeft ? <span>মূল্য {tk(l.value)}</span> : null}
+                  {l.marginNow != null ? <span className={`m ${marginTone(l.marginNow)}`}>এখনকার দামে লাভ {bn(l.marginNow)}%</span> : null}
+                  {l.salePrice != null && l.salePrice !== price ? <span>তখন দাম {tk(l.salePrice)}</span> : null}
+                </div>
+                {l.note ? <p className="pr-lot-note">{l.note}{l.createdBy ? ` · ${l.createdBy.name}` : ""}</p> : null}
+              </li>
+            );
+          })}
+        </ol>
+      ) : <div className="pr-lots-empty">কোনো চলমান লট নেই</div>}
+      {sm && sm.untracked > 0 ? <p className="pr-lots-warn">{bn(sm.untracked)} কপির লট নেই (পুরনো হিসাব) — এগুলো এখনকার কেনা দামে ধরা হবে।</p> : null}
+      {(d?.items ?? []).some((l) => l.qtyLeft === 0) ? <button type="button" className="ap-btn sm ghost" onClick={() => setShowAll((v) => !v)}>{showAll ? "শুধু চলমান লট" : "শেষ হওয়া লটও দেখুন"}</button> : null}
+    </section>
+  );
+}
+
 /* ───────── screen ───────── */
 
 export function ProductsTab() {
   const toast = useToast();
+  const confirm = useConfirm();
   const { focus, go, clearFocus } = useAdminNav();
   const { code: vertical, section } = useAdminSection();
   const prefs = useAdminPrefs();
@@ -288,7 +425,6 @@ export function ProductsTab() {
   const [size, setSize] = useState(25);
   const [dealId, setDealId] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
-  const [confirmIds, setConfirmIds] = useState<string[] | null>(null);
   const [bulk, setBulk] = useState<BulkKind>(null);
   const sel = useSelection<string>();
   const [known, setKnown] = useState<Map<string, ShopProduct>>(new Map());
@@ -421,8 +557,39 @@ export function ProductsTab() {
     dupM.mutate({ id: p.id }, { onSuccess: (d) => setDrawerId(d.id) });
   }
 
+  async function stockOut(p: ShopProduct) {
+    if (!(await confirm({
+      tone: "warn", title: `«${p.title}» স্টক আউট করবেন?`,
+      body: "সাইটে সাথে সাথে «স্টক আউট» দেখাবে, কেউ আর অর্ডার করতে পারবে না।",
+      details: [{ label: "স্টক", from: `${bn(p.stock)} কপি`, to: "০ · আউট" }],
+      confirmText: "হ্যাঁ, স্টক আউট",
+    }))) return;
+    setStock(p, 0, "স্টক আউট করা হলো (অ্যাডমিন)", "স্টক আউট করা হলো");
+  }
+  /** Inline price edit — asks first when it sells below cost or jumps more than 50%. */
+  async function commitPrice(p: ShopProduct, v: number) {
+    if (!(v > 0)) return false;
+    const cost = n0(p.cost);
+    const below = cost > 0 && v < cost;
+    const jump = p.price > 0 ? Math.round((Math.abs(v - p.price) / p.price) * 100) : 0;
+    if (below || jump > 50) {
+      const ok = await confirm({
+        tone: below ? "danger" : "warn",
+        title: below ? "কেনা দামের নিচে বিক্রি করবেন?" : `দাম ${bn(jump)}% ${v > p.price ? "বাড়ছে" : "কমছে"} — ঠিক আছে?`,
+        body: <><b>{p.title}</b> — {below ? "এই দামে প্রতি কপিতে লস হবে।" : "বড় পরিবর্তন, টাইপো নয় তো?"}</>,
+        details: [
+          { label: "বিক্রির দাম", from: tk(p.price), to: tk(v), bad: below },
+          ...(cost > 0 ? [{ label: "কেনা দাম", value: tk(cost) }, { label: "প্রতি কপিতে", value: `${v - cost < 0 ? "লস" : "লাভ"} ${tk(Math.abs(v - cost))}`, bad: below }] : []),
+        ],
+        confirmText: "হ্যাঁ, দাম বসান",
+      });
+      if (!ok) return false;
+    }
+    patch(p, { price: v });
+  }
+
   function toggleStock(p: ShopProduct) {
-    if (p.stock > 0) setStock(p, 0, "স্টক আউট করা হলো (অ্যাডমিন)", "স্টক আউট করা হলো");
+    if (p.stock > 0) void stockOut(p);
     else setStock(p, p.copies || 12, "আবার স্টকে (অ্যাডমিন)", "স্টকে ফিরেছে");
   }
 
@@ -447,7 +614,30 @@ export function ProductsTab() {
         if (drawerId && ids.includes(drawerId)) setDrawerId(null);
       },
     });
-    setConfirmIds(null);
+  }
+  async function askDelete(ids: string[]) {
+    if (!ids.length) return;
+    const many = ids.length > 1;
+    const list = ids.map((id) => known.get(id)).filter((x): x is ShopProduct => !!x);
+    const units = list.reduce((s2, p) => s2 + Math.max(0, p.stock), 0);
+    const ok = await confirm({
+      tone: "danger",
+      title: many ? `${num(ids.length)}টি পণ্য মুছবেন?` : "পণ্যটি মুছবেন?",
+      body: (
+        <>
+          <p>মুছে ফেলা পণ্য দোকানে আর দেখাবে না, কার্টেও যোগ করা যাবে না। পুরনো অর্ডারের হিসাব থাকবে।</p>
+          <ul className="pr-confirm-list">
+            {list.slice(0, many ? 5 : 1).map((p) => <li key={p.id}><Cover p={p} /><span><b>{p.title}</b><small>স্টকে {bn(p.stock)} · {num(soldOf(p))} বিক্রি</small></span></li>)}
+            {ids.length > 5 ? <li className="more">আরও {bn(ids.length - 5)}টি…</li> : null}
+          </ul>
+        </>
+      ),
+      details: many ? [{ label: "পণ্য", value: `${num(ids.length)}টি` }, { label: "স্টকে থাকা কপি", value: `${num(units)}টি` }] : undefined,
+      requireText: ids.length >= 5 ? "DELETE" : undefined,
+      confirmText: many ? `হ্যাঁ, ${num(ids.length)}টি মুছুন` : "হ্যাঁ, মুছুন",
+      confirmIcon: Ico.trash,
+    });
+    if (ok) doDelete(ids);
   }
 
   function bulkFree() {
@@ -726,7 +916,7 @@ export function ProductsTab() {
                   const m = marginOf(offer.price, b.cost);
                   const off = discount(b.price, b.old);
                   return (
-                    <tr key={b.id} className={sel.has(b.id) ? "sel" : ""}>
+                    <tr key={b.id} className={`pr-row stk-${b.stock <= 0 ? "out" : b.stock <= low ? "low" : "ok"}${offer.on ? " deal" : ""}${sel.has(b.id) ? " sel" : ""}`}>
                       <td className="pr-c-check"><input type="checkbox" className="ap-check" aria-label="বাছুন" checked={sel.has(b.id)} onChange={() => sel.toggle(b.id)} /></td>
                       <td className="pr-c-prod">
                         <div className="pr-prod">
@@ -756,7 +946,7 @@ export function ProductsTab() {
                       <td className="num" data-label="দাম · ছাড়">
                         <div className="pr-pc">
                           <div className="pr-pc-main">
-                            <span className="pr-money hot"><i>৳</i><NumCell value={b.price} onCommit={(v) => { if (v > 0) patch(b, { price: v }); }} /></span>
+                            <span className="pr-money hot"><i>৳</i><NumCell value={b.price} onCommit={(v) => commitPrice(b, v)} /></span>
                             <span className={`pr-pct${off ? " on" : ""}`} title="ছাড় % · বদলাতে লিখুন"><NumCell value={off} max={95} placeholder="০" onCommit={(v) => patch(b, { compareAtPrice: oldFromDiscount(b.price, v) || null })} /><i>%</i></span>
                           </div>
                           <div className="pr-pc-sub">
@@ -772,6 +962,12 @@ export function ProductsTab() {
                             <MarginPill m={m} />
                           </div>
                           <div className="pr-pc-sub">
+                            {b.lots && b.lots.minCost != null && b.lots.maxCost != null && b.lots.minCost !== b.lots.maxCost ? (
+                              <button type="button" className="pr-lotchip" onClick={() => setDrawerId(b.id)}
+                                title={`${bn(b.lots.batches)}টি লট · কেনা ৳${bn(b.lots.minCost)} – ৳${bn(b.lots.maxCost)} · গড় দেখানো হচ্ছে`}>
+                                {bn(b.lots.batches)} লট · ৳{bn(b.lots.minCost)}–{bn(b.lots.maxCost)}
+                              </button>
+                            ) : null}
                             <span className={`pr-profit ${marginTone(m)}`}>{m == null ? "কেনা দাম দিন" : `লাভ ${tk(offer.price - n0(b.cost))}/কপি`}</span>
                           </div>
                         </div>
@@ -792,9 +988,9 @@ export function ProductsTab() {
                                 <button type="button" className="ap-menu-item" onClick={() => { duplicate(b); close(); }}>{Ico.copy}কপি করুন<small>Duplicate</small></button>
                                 <button type="button" className="ap-menu-item" onClick={() => { setDealId(b.id); close(); }}>{Ico.clock}সময়ের ছাড়<small>Deal</small></button>
                                 <button type="button" className="ap-menu-item" onClick={() => { patch(b, { freeShipping: !b.freeShip }, b.freeShip ? "ফ্রি ডেলিভারি বন্ধ" : "ফ্রি ডেলিভারি চালু"); close(); }}>{Ico.truck}{b.freeShip ? "ফ্রি ডেলিভারি বন্ধ" : "ফ্রি ডেলিভারি চালু"}</button>
-                                <button type="button" className="ap-menu-item" disabled={b.stock <= 0} onClick={() => { setStock(b, 0, "স্টক আউট করা হলো (অ্যাডমিন)", "স্টক আউট করা হলো"); close(); }}>{Ico.box}স্টক আউট করুন</button>
+                                <button type="button" className="ap-menu-item" disabled={b.stock <= 0} onClick={() => { close(); void stockOut(b); }}>{Ico.box}স্টক আউট করুন</button>
                                 <div className="ap-menu-sep" />
-                                <button type="button" className="ap-menu-item danger" onClick={() => { setConfirmIds([b.id]); close(); }}>{Ico.trash}মুছে ফেলুন<small>Delete</small></button>
+                                <button type="button" className="ap-menu-item danger" onClick={() => { close(); void askDelete([b.id]); }}>{Ico.trash}মুছে ফেলুন<small>Delete</small></button>
                               </>
                             )}
                           </RowMenu>
@@ -847,7 +1043,7 @@ export function ProductsTab() {
                           <button type="button" className="ap-menu-item" onClick={() => { patch(b, { freeShipping: !b.freeShip }, b.freeShip ? "ফ্রি ডেলিভারি বন্ধ" : "ফ্রি ডেলিভারি চালু"); close(); }}>{Ico.truck}{b.freeShip ? "ফ্রি ডেলিভারি বন্ধ" : "ফ্রি ডেলিভারি চালু"}</button>
                           <label className="ap-menu-item pr-menu-file">{imgIco}ছবি বদলান<input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) imgM.mutate({ id: b.id, file: f }); close(); }} /></label>
                           <div className="ap-menu-sep" />
-                          <button type="button" className="ap-menu-item danger" onClick={() => { setConfirmIds([b.id]); close(); }}>{Ico.trash}মুছে ফেলুন</button>
+                          <button type="button" className="ap-menu-item danger" onClick={() => { close(); void askDelete([b.id]); }}>{Ico.trash}মুছে ফেলুন</button>
                         </>
                       )}
                     </RowMenu>
@@ -870,34 +1066,12 @@ export function ProductsTab() {
           <button type="button" className="ap-btn" onClick={bulkFree}>{Ico.truck}ফ্রি ডেলিভারি</button>
           <button type="button" className="ap-btn" onClick={() => setBulk("move")}>{Ico.cats}সরান</button>
           <button type="button" className="ap-btn" onClick={() => downloadCsv(`products-selected-${new Date().toISOString().slice(0, 10)}.csv`, csvRows(selected))}>{Ico.download}CSV</button>
-          <button type="button" className="ap-btn pr-bulk-del" onClick={() => setConfirmIds(selected.map((p) => p.id))}>{Ico.trash}মুছুন</button>
+          <button type="button" className="ap-btn pr-bulk-del" onClick={() => void askDelete(selected.map((p) => p.id))}>{Ico.trash}মুছুন</button>
           <button type="button" className="ap-btn ghost" aria-label="বাছাই মুছুন" onClick={sel.clear}>{Ico.close}</button>
         </div>
       ) : null}
 
       <BulkModal kind={bulk} items={selected} cats={cats} onClose={() => setBulk(null)} onDone={() => { setBulk(null); }} />
-
-      <Modal
-        open={!!confirmIds}
-        onClose={() => setConfirmIds(null)}
-        title={confirmIds && confirmIds.length > 1 ? `${num(confirmIds.length)}টি পণ্য মুছবেন?` : "পণ্যটি মুছবেন?"}
-        sub="মুছে ফেলা পণ্য দোকানে দেখাবে না · Soft delete"
-        width={440}
-        footer={
-          <>
-            <button type="button" className="ap-btn ghost" onClick={() => setConfirmIds(null)}>বাতিল</button>
-            <button type="button" className="ap-btn primary pr-danger" disabled={delM.isPending} onClick={() => confirmIds && doDelete(confirmIds)}>{Ico.trash}হ্যাঁ, মুছুন</button>
-          </>
-        }
-      >
-        <ul className="pr-confirm-list">
-          {(confirmIds || []).slice(0, 6).map((id) => {
-            const p = known.get(id);
-            return p ? <li key={id}><Cover p={p} /><span><b>{p.title}</b><small>স্টকে {bn(p.stock)} · {num(soldOf(p))} বিক্রি</small></span></li> : null;
-          })}
-          {confirmIds && confirmIds.length > 6 ? <li className="more">আরও {bn(confirmIds.length - 6)}টি…</li> : null}
-        </ul>
-      </Modal>
 
       {drawerId != null ? (
         <ProductDrawer
@@ -907,7 +1081,7 @@ export function ProductsTab() {
           cats={cats}
           onClose={closeDrawer}
           onDeal={(id) => setDealId(id)}
-          onDelete={(id) => setConfirmIds([id])}
+          onDelete={(id) => void askDelete([id])}
           onOrder={(oid) => { setDrawerId(null); go("orders", oid); }}
         />
       ) : null}
@@ -923,6 +1097,7 @@ function BulkModal({ kind, items, cats, onClose, onDone }: {
   kind: BulkKind; items: ShopProduct[]; cats: Cat[]; onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const bulkM = useBulkProducts();
   const [sign, setSign] = useState<"up" | "down">("up");
   const [pct, setPct] = useState("10");
@@ -938,13 +1113,34 @@ function BulkModal({ kind, items, cats, onClose, onDone }: {
   const preview = items.slice(0, 4);
   const ids = items.map((x) => x.id);
 
-  function apply() {
+  async function apply() {
     if (!items.length) return;
     const done = { onSuccess: () => onDone() };
+    const n = `${num(items.length)}টি পণ্য`;
     if (kind === "price") {
       if (!p) { toast("শতাংশ দিন"); return; }
+      const loss = items.filter((x) => n0(x.cost) > 0 && nextPrice(x.price) < n0(x.cost)).length;
+      if (!(await confirm({
+        tone: sign === "down" || loss ? "danger" : "warn",
+        title: `${num(items.length)}টি পণ্যের দাম ${bn(p)}% ${sign === "up" ? "বাড়াবেন" : "কমাবেন"}?`,
+        body: "সাথে সাথে সাইটের দাম বদলে যাবে · নিকটতম ৳৫ এ গোল হবে।",
+        details: [
+          { label: "পণ্য", value: n },
+          { label: "পরিবর্তন", value: `${sign === "up" ? "+" : "−"}${bn(p)}%` },
+          ...preview.slice(0, 2).map((x) => ({ label: x.title, from: tk(x.price), to: tk(nextPrice(x.price)), bad: n0(x.cost) > 0 && nextPrice(x.price) < n0(x.cost) })),
+          ...(loss ? [{ label: "কেনা দামের নিচে যাবে", value: `${num(loss)}টি`, bad: true }] : []),
+        ],
+        confirmText: "হ্যাঁ, দাম বসান",
+      }))) return;
       bulkM.mutate({ kind: "price", ids, percent: p, direction: sign, toast: `${num(items.length)}টির দাম ${bn(p)}% ${sign === "up" ? "বাড়ানো" : "কমানো"} হলো` }, done);
     } else if (kind === "discount") {
+      if (!(await confirm({
+        tone: "warn",
+        title: d ? `${num(items.length)}টি পণ্যে ${bn(d)}% ছাড় দেখাবেন?` : `${n} থেকে ছাড় সরাবেন?`,
+        body: d ? "প্রতিটির আগের (কাটা) দাম নতুন করে হিসাব হবে — বিক্রির দাম একই থাকবে।" : "কাটা দাম মুছে যাবে, ছাড়ের ব্যাজ আর দেখাবে না।",
+        details: [{ label: "পণ্য", value: n }, { label: "ছাড়", value: d ? `${bn(d)}%` : "নেই" }],
+        confirmText: d ? "হ্যাঁ, ছাড় বসান" : "হ্যাঁ, সরান",
+      }))) return;
       bulkM.mutate({ kind: "discount", ids, percent: d, toast: d ? `${num(items.length)}টিতে ${bn(d)}% ছাড় দেখানো হচ্ছে` : "ছাড় সরানো হলো" }, done);
     } else if (kind === "restock") {
       if (!u) { toast("কত ইউনিট আসছে দিন"); return; }
@@ -953,6 +1149,17 @@ function BulkModal({ kind, items, cats, onClose, onDone }: {
       if (!cat) return;
       const name = cats.find((c) => c.id === cat)?.name ?? "";
       const sname = subs.find((x) => x.id === sub)?.name ?? "";
+      const fromCats = [...new Set(items.map((x) => x.cat).filter(Boolean))];
+      if (!(await confirm({
+        tone: "warn",
+        title: `${n} «${name}${sname ? ` · ${sname}` : ""}» এ সরাবেন?`,
+        body: "সাইটে এগুলো নতুন ক্যাটাগরির নিচে দেখাবে।",
+        details: [
+          { label: "পণ্য", value: n },
+          { label: "ক্যাটাগরি", from: fromCats.length > 1 ? `${bn(fromCats.length)}টি ক্যাটাগরি` : fromCats[0] ?? "—", to: `${name}${sname ? ` · ${sname}` : ""}` },
+        ],
+        confirmText: "হ্যাঁ, সরান",
+      }))) return;
       bulkM.mutate({ kind: "move", ids, categoryId: cat, subcategoryId: sub || undefined, toast: `${num(items.length)}টি «${name}${sname ? ` · ${sname}` : ""}» এ সরানো হলো` }, done);
     }
   }
@@ -968,7 +1175,7 @@ function BulkModal({ kind, items, cats, onClose, onDone }: {
 
   return (
     <Modal open onClose={onClose} title={m.title} sub={`${num(items.length)}টি পণ্য · ${m.sub}`} width={480}
-      footer={<><button type="button" className="ap-btn ghost" onClick={onClose}>বাতিল</button><button type="button" className="ap-btn primary" disabled={bulkM.isPending} onClick={apply}>{m.cta}</button></>}>
+      footer={<><button type="button" className="ap-btn ghost" onClick={onClose}>বাতিল</button><button type="button" className="ap-btn primary" disabled={bulkM.isPending} onClick={() => void apply()}>{m.cta}</button></>}>
       <div className="pr-bulk-body">
         {kind === "price" ? (
           <>
@@ -1033,6 +1240,7 @@ function ProductDrawer({ id, low, cats, onClose, onDeal, onDelete, onOrder }: {
   id: string; low: number; cats: Cat[]; onClose: () => void; onDeal: (id: string) => void; onDelete: (id: string) => void; onOrder: (orderNo: string) => void;
 }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const q = useAdminProduct(id);
   const movesQ = useStockMovements(id);
   const patchM = usePatchProduct();
@@ -1095,11 +1303,25 @@ function ProductDrawer({ id, low, cats, onClose, onDeal, onDelete, onOrder }: {
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => (d ? { ...d, [k]: v } : d));
   const who = product.vertical === "book" ? "লেখক / প্রকাশনী" : "ব্র্যান্ড / একক";
 
-  function save() {
+  async function save() {
     if (!draft || !product) return;
     const title = draft.title.trim();
     if (!title) { toast("নাম খালি রাখা যাবে না"); return; }
     if (!(price > 0)) { toast("বিক্রির দাম দিন"); return; }
+    const jump = product.price > 0 ? Math.round((Math.abs(price - product.price) / product.price) * 100) : 0;
+    const below = cost > 0 && price < cost;
+    if (price !== product.price && (below || jump > 50)) {
+      if (!(await confirm({
+        tone: below ? "danger" : "warn",
+        title: below ? "কেনা দামের নিচে বিক্রি করবেন?" : `দাম ${bn(jump)}% ${price > product.price ? "বাড়ছে" : "কমছে"} — ঠিক আছে?`,
+        body: <><b>{product.title}</b> — {below ? "এই দামে প্রতি কপিতে লস হবে।" : "বড় পরিবর্তন, টাইপো নয় তো?"}</>,
+        details: [
+          { label: "বিক্রির দাম", from: tk(product.price), to: tk(price), bad: below },
+          ...(cost > 0 ? [{ label: "কেনা দাম", value: tk(cost) }, { label: "প্রতি কপিতে", value: `${price - cost < 0 ? "লস" : "লাভ"} ${tk(Math.abs(price - cost))}`, bad: below }] : []),
+        ],
+        confirmText: "হ্যাঁ, সেভ করুন",
+      }))) return;
+    }
     const body: ProductPatch = {};
     if (title !== product.title) body.title = title;
     if (draft.author.trim() !== product.author) body.subtitle = draft.author.trim() || null;
@@ -1145,7 +1367,7 @@ function ProductDrawer({ id, low, cats, onClose, onDeal, onDelete, onOrder }: {
           <button type="button" className="ap-btn danger pr-foot-del" onClick={() => onDelete(product.id)}>{Ico.trash}মুছুন</button>
           <span className="pr-foot-sp" />
           <button type="button" className="ap-btn ghost" disabled={!dirty} onClick={() => setDraft(toDraft(product))}>বাতিল</button>
-          <button type="button" className="ap-btn primary" disabled={!dirty || patchM.isPending} onClick={save}>{Ico.check}সেভ করুন</button>
+          <button type="button" className="ap-btn primary" disabled={!dirty || patchM.isPending} onClick={() => void save()}>{Ico.check}সেভ করুন</button>
         </>
       }
     >
@@ -1219,6 +1441,8 @@ function ProductDrawer({ id, low, cats, onClose, onDeal, onDelete, onOrder }: {
             <Toggle checked={draft.freeShip} onChange={(v) => set("freeShip", v)} label="ফ্রি ডেলিভারি" sub="শুধু এই পণ্য থাকলে কুরিয়ার ৳০ · Free delivery" />
           </div>
         </section>
+
+        <LotsPanel id={product.id} price={product.price} />
 
         <section className="pr-d-sec">
           <h4>৩০ দিনের বিক্রি <span>Last 30 days · {num(days.total)} ইউনিট</span></h4>
@@ -1298,6 +1522,7 @@ function spanText(ms: number) {
  */
 export function DealDialog({ product, onClose, scheduled = false }: { product: ShopProduct | null; onClose: () => void; scheduled?: boolean }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const createM = useCreateDeal();
   const cancelM = useCancelDeal();
   const upcoming = Boolean(product?.deal?.from && Date.parse(product.deal.from) > Date.now());
@@ -1306,7 +1531,10 @@ export function DealDialog({ product, onClose, scheduled = false }: { product: S
   const [from, setFrom] = useState(upcoming ? product!.deal!.from! : "");
   const [until, setUntil] = useState(product?.deal?.until || "");
   useEffect(() => {
-    const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || document.querySelector(".ap-cf-wrap")) return; // the confirm sheet owns Escape while open
+      e.stopPropagation(); onClose();
+    };
     window.addEventListener("keydown", key, true);
     return () => window.removeEventListener("keydown", key, true);
   }, [onClose]);
@@ -1349,8 +1577,18 @@ export function DealDialog({ product, onClose, scheduled = false }: { product: S
     );
   }
 
-  function clear() {
+  async function clear() {
     if (!product?.deal) return;
+    const running = offerOf(product).on;
+    if (!(await confirm({
+      tone: running ? "danger" : "warn",
+      title: running ? "চলমান ছাড় এখনই বন্ধ করবেন?" : "শিডিউল করা ছাড় বাতিল করবেন?",
+      body: <><b>{product.title}</b> — {running ? "টাইমার থেমে যাবে, দাম সাথে সাথে আগের দামে ফিরবে।" : "এই ছাড় আর চালু হবে না।"}</>,
+      details: running
+        ? [{ label: "দাম", from: tk(product.deal.price), to: tk(product.price) }, { label: "যত পর্যন্ত চলার কথা", value: fmtShipDt(product.deal.until) }]
+        : [{ label: "ছাড়ের দাম", value: tk(product.deal.price) }, { label: "শুরু হওয়ার কথা", value: product.deal.from ? fmtShipDt(product.deal.from) : "—" }],
+      confirmText: running ? "হ্যাঁ, ছাড় বন্ধ" : "হ্যাঁ, বাতিল",
+    }))) return;
     cancelM.mutate({ dealId: product.deal.id }, { onSuccess: onClose });
   }
 
@@ -1394,7 +1632,7 @@ export function DealDialog({ product, onClose, scheduled = false }: { product: S
         {live && product.deal ? <p className="author">এখন চলছে · {fmtShipDt(product.deal.until)} পর্যন্ত</p> : null}
         {upcoming && product.deal?.from ? <p className="author">শিডিউল করা · {fmtShipDt(product.deal.from)} থেকে শুরু</p> : null}
         <div className="save-row">
-          {product.deal ? <button type="button" className="btn btn-ghost" onClick={clear}>টাইমার সরান</button> : <span />}
+          {product.deal ? <button type="button" className="btn btn-ghost" onClick={() => void clear()}>টাইমার সরান</button> : <span />}
           <button type="button" className="btn btn-primary" disabled={createM.isPending} onClick={save}>{later ? "শিডিউল করুন" : "বসান"}</button>
         </div>
       </div>

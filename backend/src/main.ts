@@ -28,7 +28,7 @@ async function bootstrap() {
     origin: config.get('CORS_ORIGINS'),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    exposedHeaders: ['x-request-id'],
+    exposedHeaders: ['x-request-id', 'retry-after', 'retry-after-burst'],
   });
 
   app.setGlobalPrefix(prefix, { exclude: ['metrics'] });

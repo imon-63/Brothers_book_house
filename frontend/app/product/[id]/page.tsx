@@ -169,13 +169,21 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <div className={`pd-desc${longDesc ? " clamp" : ""}${openDesc ? " on" : ""}`}>
               {descParts.intro ? <p className="desc">{descParts.intro}</p> : null}
               {descParts.points.length ? (
-                <ul className="pd-points">
-                  {descParts.points.map((pt, i) => (
-                    <li key={i} style={{ ["--i" as string]: i }}>
-                      <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" /></svg></span>{pt}
-                    </li>
-                  ))}
-                </ul>
+                <section className="pd-feat" aria-label="মূল বৈশিষ্ট্য">
+                  <header className="pd-feat-head">
+                    <span className="pd-feat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z" /></svg></span>
+                    <b>মূল বৈশিষ্ট্য</b>
+                    <small>{bn(descParts.points.length)}টি</small>
+                  </header>
+                  <ul className="pd-points">
+                    {descParts.points.map((pt, i) => (
+                      <li key={i} style={{ ["--i" as string]: i }}>
+                        <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" /></svg></span>
+                        <p>{pt}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ) : null}
             </div>
           ) : null}
@@ -186,11 +194,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <div className="oos-banner">
                 <div>
                   <b>এই পণ্যটি এখন স্টক আউট</b>
-                  <p>{routerUser ? "কার্টে যোগ করা যাবে না। চাইলে ভবিষ্যৎ অর্ডার তালিকায় রাখুন — স্টকে এলে এখান থেকেই কিনতে পারবেন।" : "কার্টে যোগ করা যাবে না। লগইন করলে ভবিষ্যৎ অর্ডার তালিকায় রাখতে পারবেন।"}</p>
+                  <p>{routerUser ? "কার্টে যোগ করা যাবে না। উইশলিস্টে রাখুন — স্টকে এলে এখান থেকেই কিনতে পারবেন।" : "কার্টে যোগ করা যাবে না। লগইন করলে উইশলিস্টে রাখতে পারবেন।"}</p>
                 </div>
               </div>
               <div className="buy-row">
-                <button className={`btn ${kept ? "btn-primary" : "btn-gold"}`} type="button" onClick={() => toggle("book", product.id)}>{kept ? "তালিকায় আছে · সরান" : "ভবিষ্যৎ তালিকায় রাখুন"}</button>
+                <button className={`btn ${kept ? "btn-primary" : "btn-gold"}`} type="button" onClick={() => toggle("book", product.id)}>{kept ? "উইশলিস্টে আছে · সরান" : "উইশলিস্টে রাখুন"}</button>
                 {routerUser ? <Link className="btn btn-ghost" href="/wait">তালিকা দেখুন</Link> : <button className="btn btn-ghost" type="button" onClick={() => dispatch(setAuth(true))}>লগইন</button>}
               </div>
             </>
@@ -205,11 +213,15 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 </div>
                 <button className="btn btn-primary" type="button" onClick={() => add()}>কার্টে যোগ</button>
                 <button className="btn btn-gold" type="button" onClick={() => { add(qty, false); router.push("/checkout"); }}>এখনই কিনুন</button>
+                <button className={`pd-heart${kept ? " on" : ""}`} type="button" aria-pressed={kept} onClick={() => toggle("book", product.id)}
+                  aria-label={kept ? "উইশলিস্ট থেকে সরান" : "উইশলিস্টে রাখুন"} title={kept ? "উইশলিস্টে আছে · সরান" : "উইশলিস্টে রাখুন"}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z" /></svg>
+                </button>
               </div>
             </>
           )}
           <div className="pd-links">
-            {oos ? null : <button type="button" onClick={() => toggle("book", product.id)}>{kept ? "তালিকায় আছে" : "পছন্দের তালিকায় রাখুন"}</button>}
+            {oos ? null : <button type="button" onClick={() => toggle("book", product.id)}>{kept ? "উইশলিস্টে আছে" : "উইশলিস্টে রাখুন"}</button>}
             <button type="button" onClick={share}>বন্ধুদের সাথে শেয়ার</button>
           </div>
           <p className="note">সারা বাংলাদেশে হোম ডেলিভারি · হেল্পলাইন {helpline}</p>

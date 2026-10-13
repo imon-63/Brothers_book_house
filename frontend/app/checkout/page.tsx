@@ -10,7 +10,7 @@ import { cartLines, useCart, useCartActions, useCartRows } from "@/lib/api/cart"
 import { useHeaderCoupons } from "@/lib/api/content";
 import { apiErrorText, rememberPlaced, startSslPayment, useDistricts, usePlaceOrder, useProfile, useQuote, useUnions, useUpazilas } from "@/lib/api/shop";
 import { useQuery } from "@tanstack/react-query";
-import { get } from "@/lib/api/client";
+import { ApiError, get, post } from "@/lib/api/client";
 import { showToast } from "@/store/slices/ui-slice";
 import { useAppDispatch } from "@/store/hooks";
 
@@ -41,6 +41,8 @@ function IcoTicket() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 8.5A2.5 2.5 0 0 0 6.5 6h11A2.5 2.5 0 0 0 20 8.5v1a2 2 0 0 1 0 5v1A2.5 2.5 0 0 0 17.5 18h-11A2.5 2.5 0 0 0 4 15.5v-1a2 2 0 0 1 0-5v-1z" /><path d="M12 7v10" strokeDasharray="2 3" /></svg>;
 }
 
+const JUST_PLACED = "cholo_just_placed";
+
 export default function CheckoutPage() {
   const { me: user } = useMe();
   const profile = useProfile().data;
@@ -52,7 +54,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const placeM = usePlaceOrder();
   const [placing, setPlacing] = useState<"" | "run" | "fail" | "bye">("");
-  const [placeNote, setPlaceNote] = useState("ইন্টারনেট সংযোগ নেই");
+  const [placeNote, setPlaceNote] = useState("No internet connection");
   const placingRef = useRef(false);
   const phaseRef = useRef<"" | "run" | "fail" | "bye">("");
   const placeTimers = useRef<number[]>([]);
@@ -98,6 +100,29 @@ export default function CheckoutPage() {
   void useDistricts;
 
   const rows = useCartRows(cartQ.data).map((r) => ({ ...r, id: r.itemId }));
+
+  /* blocked shoppers: tell them BEFORE placing that only online payment works */
+  const phoneDigits = (phoneLive || "").replace(/\D/g, "");
+  const codQ = useQuery({
+    queryKey: ["cod-check", user?.id ?? "guest", phoneDigits.length >= 10 ? phoneDigits : ""],
+    enabled: !!user || phoneDigits.length >= 10,
+    staleTime: 60_000,
+    queryFn: () => post<{ codAllowed: boolean; message: string | null }>("/checkout/cod-check", { phone: phoneDigits.length >= 10 ? phoneDigits : undefined }),
+  });
+  const codBlocked = codQ.data?.codAllowed === false;
+  useEffect(() => {
+    if (codBlocked && form.getValues("pay") === "cod") form.setValue("pay", "ssl");
+  }, [codBlocked, form]);
+
+  /* an order was just placed from this tab → the checkout can't be reopened with Back */
+  useEffect(() => {
+    if (cartQ.isLoading) return;
+    let just = "";
+    try { just = sessionStorage.getItem(JUST_PLACED) || ""; } catch { /* ignore */ }
+    if (!just) return;
+    if (rows.length) { try { sessionStorage.removeItem(JUST_PLACED); } catch { /* ignore */ } return; }
+    router.replace("/orders");
+  }, [cartQ.isLoading, rows.length, router]);
   const lines = cartLines(cartQ.data);
   const quoteQ = useQuote(lines, { couponCode: coupon || undefined, districtId: distId, phone: phoneLive?.replace(/\D/g, "").length >= 11 ? phoneLive : undefined });
   const qd = quoteQ.data ?? cartQ.data?.quote ?? null;
@@ -221,7 +246,7 @@ export default function CheckoutPage() {
   }
 
   function failNetwork() {
-    failPay("ইন্টারনেট সংযোগ নেই", "ইন্টারনেট নেই। অর্ডার হয়নি");
+    failPay("No internet connection", "ইন্টারনেট নেই · Order not placed");
   }
 
   useEffect(() => () => {
@@ -253,7 +278,7 @@ export default function CheckoutPage() {
     placingRef.current = true;
     setPhase("run");
     if (!navigator.onLine) { failNetwork(); return; }
-    // the real API answers in ~200 ms — keep the "অর্ডার রাখা হচ্ছে" gate up long enough to be seen
+    // the real API answers in ~200 ms — keep the "Placing your order" gate up long enough to be seen
     const minShow = new Promise<void>((resolve) => placeLater(resolve, 1600));
     const upName = upazilas.find((u) => String(u.id) === values.cUpa)?.nameBn;
     const phone = values.cPhone.trim();
@@ -269,6 +294,7 @@ export default function CheckoutPage() {
         paymentMethod: values.pay === "ssl" ? "SSLCOMMERZ" : "COD",
       });
       rememberPlaced(placed.orderNo, phone);
+      try { sessionStorage.setItem(JUST_PLACED, placed.orderNo); } catch { /* ignore */ }
       await minShow;
       if (values.pay === "ssl") {
         try {
@@ -289,7 +315,10 @@ export default function CheckoutPage() {
       await minShow;
       placingRef.current = false;
       if (e instanceof TypeError) failNetwork();
-      else failPay(apiErrorText(e), "অর্ডার হয়নি");
+      else {
+        if (e instanceof ApiError && e.code === "order.customer_blocked") { form.setValue("pay", "ssl"); void codQ.refetch(); }
+        failPay(apiErrorText(e), "Order not placed");
+      }
     }
   }
 
@@ -382,8 +411,8 @@ export default function CheckoutPage() {
 
             <h3 className="addr-head">পেমেন্ট</h3>
             <div className="pay-modes">
-              <label className={`pay-card${pay === "cod" ? " on" : ""}`}>
-                <input type="radio" value="cod" {...form.register("pay")} />
+              <label className={`pay-card${pay === "cod" ? " on" : ""}${codBlocked ? " off" : ""}`} aria-disabled={codBlocked}>
+                <input type="radio" value="cod" disabled={codBlocked} {...form.register("pay")} />
                 <b>ক্যাশ অন ডেলিভারি</b>
                 <span>পণ্য হাতে পেয়ে টাকা দিন</span>
               </label>
@@ -393,6 +422,12 @@ export default function CheckoutPage() {
                 <span>SSLCOMMERZ — বিকাশ, নগদ, কার্ড</span>
               </label>
             </div>
+            {codBlocked ? (
+              <div className="cod-block" role="alert">
+                <span aria-hidden="true">!</span>
+                <p><b>ক্যাশ অন ডেলিভারি বন্ধ</b>{codQ.data?.message ?? "এই অ্যাকাউন্টে ক্যাশ অন ডেলিভারি বন্ধ — অনলাইনে পেমেন্ট করে অর্ডার দিন।"}</p>
+              </div>
+            ) : null}
             {!user ? <p className="guest-note">গেস্ট হিসেবে অর্ডার করতে পারবেন। পরে মোবাইল নম্বর অথবা অর্ডার আইডি দিয়ে ট্র্যাক করবেন।</p> : null}
             <p className="note">{shipNote}</p>
             <button className="btn btn-primary btn-wide" type="submit" style={{ marginTop: 16 }} disabled={placing !== ""}>
@@ -494,7 +529,7 @@ export default function CheckoutPage() {
           className={`place-gate${placing === "fail" || placing === "bye" ? " fail" : ""}${placing === "bye" ? " bye" : ""}`}
           role="status"
           aria-live="polite"
-          aria-label={placing === "run" ? "অর্ডার রাখা হচ্ছে" : "অর্ডার হয়নি"}
+          aria-label={placing === "run" ? "Placing your order" : "Order not placed"}
         >
           <div className="land-stage">
             <div className="land-mark">
@@ -503,15 +538,15 @@ export default function CheckoutPage() {
             </div>
             {placing === "run" ? (
               <div className="place-copy" key="run">
-                <small><i />চলো<i /></small>
-                <h2>অর্ডার রাখা হচ্ছে</h2>
-                <p>পণ্য · ঠিকানা · ডেলিভারি</p>
+                <small><i />CHOLO<i /></small>
+                <h2>Placing your order…</h2>
+                <p>Items · Address · Delivery</p>
                 <div className="land-bar" aria-hidden="true"><i className="place-fill" /></div>
               </div>
             ) : (
               <div className="place-copy" key="fail">
-                <small><i />চলো<i /></small>
-                <h2>অর্ডার হয়নি</h2>
+                <small><i />CHOLO<i /></small>
+                <h2>Order not placed</h2>
                 <p>{placeNote}</p>
                 <div className="land-bar" aria-hidden="true"><i className="place-hold" /></div>
               </div>

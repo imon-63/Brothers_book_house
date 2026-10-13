@@ -5,6 +5,10 @@ import type { AuthUser } from '@/common/types/auth-user';
 export const IS_PUBLIC = 'auth:public';
 export const ROLES = 'auth:roles';
 export const OPTIONAL_AUTH = 'auth:optional';
+export const PENDING_PASSWORD_OK = 'auth:pending-password-ok';
+
+/** Reachable while a temporary password still has to be changed (auth routes). */
+export const AllowPendingPassword = () => SetMetadata(PENDING_PASSWORD_OK, true);
 
 /** Route needs no login. */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
@@ -18,7 +22,7 @@ export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES, roles);
 /** Common role sets, so controllers read like policy. */
 export const Staff = () => Roles('ADMIN', 'MANAGER', 'SUPPORT', 'ACCOUNTANT', 'WAREHOUSE');
 export const Managers = () => Roles('ADMIN', 'MANAGER');
-export const Finance = () => Roles('ADMIN', 'MANAGER', 'ACCOUNTANT');
+export const Finance = () => Roles('ADMIN', 'ACCOUNTANT');
 export const Fulfilment = () => Roles('ADMIN', 'MANAGER', 'WAREHOUSE', 'SUPPORT');
 
 /** Inject the authenticated user (or undefined on optional-auth routes). */

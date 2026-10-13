@@ -2,7 +2,7 @@
 
 import { useAdminNav } from "@/components/admin/nav";
 import { VisibilityPanel } from "@/components/admin/tabs/visibility";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { BnDateField } from "@/components/ui/bangla-calendar";
 import { bn } from "@/lib/format";
@@ -14,8 +14,13 @@ import {
 } from "@/lib/api/admin/settings";
 import { readFile, TabMark } from "@/components/admin/shared";
 import { StaffPanel } from "@/components/admin/tabs/staff";
+import { AccessPanel } from "@/components/admin/tabs/access";
+import { useMe } from "@/lib/api/auth";
+import { useConfirm, type ConfirmDetail } from "@/components/admin/confirm";
+import { Ico, Segmented, Toggle } from "@/components/admin/ui";
+import "./settings.css";
 
-type SetMenu = "cats" | "ship" | "coupons" | "promo" | "ticker" | "staff";
+type SetMenu = "cats" | "ship" | "coupons" | "promo" | "ticker" | "staff" | "access";
 
 const SET_MENUS: { id: SetMenu; label: string }[] = [
   { id: "cats", label: "ক্যাটাগরি" },
@@ -24,10 +29,15 @@ const SET_MENUS: { id: SetMenu; label: string }[] = [
   { id: "promo", label: "অফার মডাল" },
   { id: "ticker", label: "টপবার" },
   { id: "staff", label: "স্টাফ" },
+  { id: "access", label: "অ্যাক্সেস" },
 ];
+const ADMIN_ONLY: SetMenu[] = ["staff", "access"];
 
 export function SettingsTab() {
   const { focus, clearFocus } = useAdminNav();
+  const { me } = useMe();
+  const isAdmin = me?.role === "OWNER" || me?.role === "ADMIN";
+  const menus = SET_MENUS.filter((m) => isAdmin || !ADMIN_ONLY.includes(m.id));
   const [menu, setMenu] = useState<SetMenu>(() => (SET_MENUS.some((m) => m.id === focus) ? (focus as SetMenu) : "cats"));
   useEffect(() => {
     if (focus && SET_MENUS.some((m) => m.id === focus)) { setMenu(focus as SetMenu); clearFocus(); }
@@ -36,7 +46,7 @@ export function SettingsTab() {
   return (
     <div className="set-page">
       <nav className="set-steps" aria-label="সেটিংস">
-        {SET_MENUS.map((item, i) => (
+        {menus.map((item, i) => (
           <button key={item.id} type="button" className={menu === item.id ? "on" : ""} onClick={() => setMenu(item.id)}>
             <i>{bn(i + 1)}</i>
             <span>{item.label}</span>
@@ -48,7 +58,8 @@ export function SettingsTab() {
       {menu === "coupons" ? <div className="set-panel"><CouponsTab /></div> : null}
       {menu === "promo" ? <div className="set-panel"><PromoTab /></div> : null}
       {menu === "ticker" ? <div className="set-panel"><TickerTab /></div> : null}
-      {menu === "staff" ? <div className="set-panel"><StaffPanel /></div> : null}
+      {menu === "staff" && isAdmin ? <div className="set-panel"><StaffPanel /></div> : null}
+      {menu === "access" && isAdmin ? <div className="set-panel"><AccessPanel /></div> : null}
     </div>
   );
 }
@@ -61,6 +72,7 @@ function TickerTab() {
   const createM = useCreateAnnouncement();
   const updateM = useUpdateAnnouncement();
   const deleteM = useDeleteAnnouncement();
+  const confirm = useConfirm();
   const form = useForm({ defaultValues: { text: "" } });
   return (
     <section className="cfg-card">
@@ -86,7 +98,16 @@ function TickerTab() {
             <li key={t.id}>
               <span className="cfg-no">{bn(i + 1)}</span>
               <LineInput value={t.text} onCommit={(text) => updateM.mutate({ id: t.id, text }, { onSuccess: () => toast("লাইন সেভ হয়েছে") })} />
-              <button type="button" className="pk-del" aria-label="সরান" title="সরান" onClick={() => deleteM.mutate({ id: t.id })}>
+              <button type="button" className="pk-del" aria-label="সরান" title="সরান" onClick={async () => {
+                if (!(await confirm({
+                  tone: "danger",
+                  title: "টপবারের এই লাইন মুছবেন?",
+                  body: <>«{t.text}»</>,
+                  details: [{ label: "টপবারে থাকবে", from: `${bn(rows.length)}টি লাইন`, to: `${bn(rows.length - 1)}টি লাইন` }],
+                  confirmText: "হ্যাঁ, মুছুন", confirmIcon: Ico.trash,
+                }))) return;
+                deleteM.mutate({ id: t.id });
+              }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13" /></svg>
               </button>
             </li>
@@ -108,6 +129,7 @@ function CouponsTab() {
   const q = useCoupons();
   const createM = useCreateCoupon();
   const toggleM = useToggleCoupon();
+  const confirm = useConfirm();
   const coupons: AdminCoupon[] = q.data?.items ?? [];
   const form = useForm({ defaultValues: { code: "", off: "", type: "pct" } });
   const live = form.watch();
@@ -219,7 +241,16 @@ function CouponsTab() {
                   </div>
                   <span className="cp-uses">{n ? `${bn(n)}টি অর্ডারে ব্যবহার` : "এখনো ব্যবহার হয়নি"}</span>
                   <label className="pk-switch sm">
-                    <input type="checkbox" checked={c.isActive} onChange={() => toggleM.mutate({ id: c.id, code: c.code, on: !c.isActive })} />
+                    <input type="checkbox" checked={c.isActive} onChange={async () => {
+                      if (c.isActive && !(await confirm({
+                        tone: "warn", icon: Ico.tag,
+                        title: `কুপন ${c.code} বন্ধ করবেন?`,
+                        body: "চেকআউটে এই কোড আর কাজ করবে না। আগের অর্ডারের ছাড় বদলাবে না।",
+                        details: [{ label: "অবস্থা", from: "চালু", to: "বন্ধ" }, { label: "ব্যবহার", value: n ? `${bn(n)}টি অর্ডারে` : "এখনো হয়নি" }],
+                        confirmText: "হ্যাঁ, বন্ধ করুন",
+                      }))) return;
+                      toggleM.mutate({ id: c.id, code: c.code, on: !c.isActive });
+                    }} />
                     <span className="sw" aria-hidden="true" />
                     <span>{c.isActive ? (c.expired ? "চালু · মেয়াদ শেষ" : "চালু") : "বন্ধ"}</span>
                   </label>
@@ -331,6 +362,7 @@ function ShipTab() {
   const zoneM = usePatchZone();
   const ruleM = useSaveShipRule();
   const kvM = useSetStoreSettings();
+  const confirm = useConfirm();
   const zIn = zonesQ.data?.find((z) => z.code === "inside_dhaka");
   const zOut = zonesQ.data?.find((z) => z.code === "outside_dhaka");
   const rule = (t: ShipRule["type"], section?: string) => rulesQ.data?.find((r) => r.type === t && (!section || r.section?.code === section));
@@ -344,10 +376,30 @@ function ShipTab() {
   const [draft, setDraft] = useState<ShipSettings>(ship);
   useEffect(() => setDraft(ship), [ship]);
   const set = (patch: Partial<ShipSettings>) => setDraft({ ...draft, ...patch });
-  const live = draft.freeAllOn;
+  const [calc, setCalc] = useState({ total: 800, zone: "in" as "in" | "out", pack: false, books: false });
   const [saving, setSaving] = useState(false);
 
   async function save() {
+    /* turning a free-delivery rule off or changing a fee hits every checkout — ask first */
+    const tkS = (n: number) => `৳${bn(n)}`;
+    const onOff = (v: boolean) => (v ? "চালু" : "বন্ধ");
+    const diff: ConfirmDetail[] = [];
+    let risky = false;
+    const fee = (label: string, a: number, b: number) => { if (a !== b) { diff.push({ label, from: tkS(a), to: tkS(b) }); risky = true; } };
+    const rule = (label: string, a: boolean, b: boolean) => { if (a !== b) { diff.push({ label, from: onOff(a), to: onOff(b), bad: !b }); if (!b) risky = true; } };
+    fee("ঢাকার ভিতর · কাস্টমার", ship.dhaka, draft.dhaka);
+    fee("ঢাকার বাইরে · কাস্টমার", ship.outside, draft.outside);
+    rule("প্যাকেজে ফ্রি ডেলিভারি", ship.freeOnPack, draft.freeOnPack);
+    rule("শুধু বইয়ে ফ্রি ডেলিভারি", ship.freeOnBooks, draft.freeOnBooks);
+    rule(`৳${bn(draft.freeAbove)}+ এ ফ্রি`, ship.freeAboveOn, draft.freeAboveOn);
+    rule("সবার জন্য ফ্রি ক্যাম্পেইন", ship.freeAllOn, draft.freeAllOn);
+    if (risky && !(await confirm({
+      tone: diff.some((d) => d.bad) ? "danger" : "warn", icon: Ico.truck,
+      title: "ডেলিভারি নিয়ম বদলাবেন?",
+      body: "সেভ করলেই চেকআউট ও কার্টে নতুন খরচ বসবে — চলমান কার্টেও।",
+      details: diff,
+      confirmText: "হ্যাঁ, সেভ করুন",
+    }))) return;
     setSaving(true);
     const jobs: Promise<unknown>[] = [];
     const run = <T,>(m: { mutateAsync: (v: T) => Promise<unknown> }, v: T) => jobs.push(m.mutateAsync(v));
@@ -370,59 +422,227 @@ function ShipTab() {
     } catch { /* each mutation already toasted its error */ }
     setSaving(false);
   }
+  const camp = campaignState(draft.freeAllOn, draft.freeFrom, draft.freeTo);
+  const dirty = (Object.keys(draft) as (keyof ShipSettings)[]).filter((k) => draft[k] !== ship[k]).length;
+  const rulesOn = [draft.freeOnPack, draft.freeOnBooks, draft.freeAboveOn, camp.k === "live"].filter(Boolean).length;
+  const num = (v: string) => Number(v) || 0;
+
+  /* "customer will pay" preview — mirrors the order in which checkout grants free delivery */
+  const zoneFee = calc.zone === "in" ? draft.dhaka : draft.outside;
+  const zoneCost = calc.zone === "in" ? draft.costDhaka : draft.costOutside;
+  const why = camp.k === "live" ? "ক্যাম্পেইন চলছে"
+    : draft.freeOnPack && calc.pack ? "কার্টে প্যাকেজ আছে"
+    : draft.freeOnBooks && calc.books ? "কার্টে শুধু বই"
+    : draft.freeAboveOn && draft.freeAbove > 0 && calc.total >= draft.freeAbove ? `৳${bn(draft.freeAbove)}+ অর্ডার`
+    : null;
+  const pay = why ? 0 : zoneFee;
+  const gap = !why && draft.freeAboveOn && draft.freeAbove > calc.total ? draft.freeAbove - calc.total : 0;
+  const gapPct = draft.freeAbove > 0 ? Math.min(100, Math.round((calc.total / draft.freeAbove) * 100)) : 0;
+  const margin = pay - zoneCost;
+
+  const zone = (k: "in" | "out") => {
+    const fee = k === "in" ? draft.dhaka : draft.outside;
+    const cost = k === "in" ? draft.costDhaka : draft.costOutside;
+    const m = fee - cost;
+    return (
+      <section className={`dl-zone z-${k}`}>
+        <div className="dl-zone-top">
+          <span className="dl-zone-ico" aria-hidden="true">{k === "in" ? DlIco.pin : Ico.truck}</span>
+          <div>
+            <h3>{k === "in" ? "ঢাকার ভিতর" : "ঢাকার বাইরে"}</h3>
+            <p>{k === "in" ? "শুধু জেলা ঢাকা" : "অন্য সব জেলা (৬৩টি)"}</p>
+          </div>
+          <ZoneArt k={k} />
+        </div>
+        <label className="dl-money big">
+          <span>কাস্টমার দেখবে</span>
+          <div><i>৳</i><input type="number" inputMode="numeric" min={0} value={fee} onChange={(e) => set(k === "in" ? { dhaka: num(e.target.value) } : { outside: num(e.target.value) })} /></div>
+        </label>
+        <div className="dl-zone-foot">
+          <label className="dl-money">
+            <span>আপনার খরচ (কুরিয়ার)</span>
+            <div><i>৳</i><input type="number" inputMode="numeric" min={0} value={cost} onChange={(e) => set(k === "in" ? { costDhaka: num(e.target.value) } : { costOutside: num(e.target.value) })} /></div>
+          </label>
+          <span className={`dl-margin ${m > 0 ? "up" : m < 0 ? "down" : ""}`} title="কাস্টমার ফি − কুরিয়ার খরচ">
+            <small>প্রতি অর্ডারে</small>
+            <b>{m > 0 ? "+" : m < 0 ? "−" : ""}৳{bn(Math.abs(m))}</b>
+            <em>{m > 0 ? "লাভ" : m < 0 ? "ভর্তুকি" : "সমান"}</em>
+          </span>
+        </div>
+      </section>
+    );
+  };
+
   return (
-    <div className="ship-page">
-      <div className="ship-hero">
-        <div>
+    <div className="dl">
+      <header className={`dl-hero${camp.k === "live" ? " camp" : ""}`}>
+        <div className="dl-hero-copy">
+          <span className="dl-eyebrow">{Ico.truck} DELIVERY</span>
           <h2>ডেলিভারি সেটিং</h2>
           <p>ঢাকা জেলা = ভিতর · অন্য জেলা = বাইরে। চেকআউটে জেলা বাছাই করলে এই খরচ বসবে।</p>
-        </div>
-        <span className={`ship-live${live ? " on" : ""}`}>{live ? "ক্যাম্পেইন চালু · ফ্রি" : "সাধারণ রেট চালু"}</span>
-      </div>
-      <div className="ship-rate-grid">
-        <section className="ship-card">
-          <div className="ship-card-h"><div><h3>ঢাকার ভিতর</h3><p>শুধু জেলা ঢাকা</p></div></div>
-          <div className="ship-fields">
-            <div><label>কাস্টমার দেখবে (৳)</label><input type="number" value={draft.dhaka} onChange={(e) => set({ dhaka: Number(e.target.value) || 0 })} /></div>
-            <div><label>আপনার খরচ (৳)</label><input type="number" value={draft.costDhaka} onChange={(e) => set({ costDhaka: Number(e.target.value) || 0 })} /></div>
+          <div className="dl-hero-chips">
+            <span><small>ঢাকার ভিতর</small><b>৳{bn(draft.dhaka)}</b></span>
+            <span><small>ঢাকার বাইরে</small><b>৳{bn(draft.outside)}</b></span>
+            <span><small>ফ্রি নিয়ম চালু</small><b>{bn(rulesOn)}টি</b></span>
           </div>
-        </section>
-        <section className="ship-card out">
-          <div className="ship-card-h"><div><h3>ঢাকার বাইরে</h3><p>অন্য সব জেলা</p></div></div>
-          <div className="ship-fields">
-            <div><label>কাস্টমার দেখবে (৳)</label><input type="number" value={draft.outside} onChange={(e) => set({ outside: Number(e.target.value) || 0 })} /></div>
-            <div><label>আপনার খরচ (৳)</label><input type="number" value={draft.costOutside} onChange={(e) => set({ costOutside: Number(e.target.value) || 0 })} /></div>
+        </div>
+        <span className={`dl-live k-${camp.k === "live" ? "live" : "base"}`}><i />{camp.k === "live" ? "ক্যাম্পেইন চালু · সবার জন্য ফ্রি" : "সাধারণ রেট চালু"}</span>
+      </header>
+
+      <div className="dl-grid">
+        <div className="dl-main">
+          <div className="dl-sec-h"><h3>জোন ও ফি</h3><p>কাস্টমার যা দেবে আর কুরিয়ারকে আপনি যা দেবেন</p></div>
+          <div className="dl-zones">{zone("in")}{zone("out")}</div>
+
+          <div className="dl-sec-h"><h3>ফ্রি হোম ডেলিভারি</h3><p>টগল চালু করলে সেই অর্ডারে কুরিয়ার ৳০</p></div>
+          <div className="dl-rules">
+            <RuleCard on={draft.freeOnPack} icon={Ico.packs} title="প্যাকেজ কিনলে" sub="কার্টে প্যাকেজ থাকলে ফ্রি" onChange={(freeOnPack) => set({ freeOnPack })} />
+            <RuleCard on={draft.freeOnBooks} icon={Ico.products} title="শুধু বই কিনলে" sub="কার্টে বই ছাড়া কিছু না থাকলে" onChange={(freeOnBooks) => set({ freeOnBooks })} />
+            <RuleCard wide on={draft.freeAboveOn} icon={Ico.cash} title="অঙ্কের উপরে" sub={`৳${bn(draft.freeAbove)} বা বেশি অর্ডারে ফ্রি`} onChange={(freeAboveOn) => set({ freeAboveOn })}>
+              <div className="dl-thresh">
+                <label className="dl-money">
+                  <span>ফ্রি হবে যে অঙ্ক থেকে</span>
+                  <div><i>৳</i><input type="number" inputMode="numeric" min={0} value={draft.freeAbove} onChange={(e) => set({ freeAbove: num(e.target.value) })} /></div>
+                </label>
+                <div className="dl-chips" role="group" aria-label="দ্রুত অঙ্ক">
+                  {QUICK.map((v) => (
+                    <button key={v} type="button" className={draft.freeAbove === v ? "on" : ""} onClick={() => set({ freeAbove: v })}>৳{bn(v.toLocaleString("en-IN"))}</button>
+                  ))}
+                </div>
+              </div>
+            </RuleCard>
           </div>
-        </section>
+
+          <section className={`dl-camp k-${camp.k}`}>
+            <div className="dl-camp-top">
+              <span className="dl-rule-ico" aria-hidden="true">{DlIco.cal}</span>
+              <div className="dl-rule-txt">
+                <b>সময় বেঁধে সবার জন্য ফ্রি</b>
+                <small>এই সময়ের মধ্যে সব অর্ডারে হোম ডেলিভারি ফ্রি</small>
+              </div>
+              <span className="dl-camp-state"><i />{camp.label}</span>
+              <Toggle checked={draft.freeAllOn} onChange={(freeAllOn) => set({ freeAllOn })} />
+            </div>
+            <div className="dl-camp-range">
+              <div className="dl-date"><BnDateField label="শুরু" withTime value={draft.freeFrom} onChange={(freeFrom) => set({ freeFrom })} /></div>
+              <span className="dl-camp-arrow" aria-hidden="true">{Ico.chevR}</span>
+              <div className="dl-date"><BnDateField label="শেষ" withTime end value={draft.freeTo} onChange={(freeTo) => set({ freeTo })} /></div>
+            </div>
+            <p className="dl-note">খালি রাখলে সময়ের সীমা নেই — টগল চালু থাকা পর্যন্ত ফ্রি।</p>
+          </section>
+
+          <section className="dl-ssl">
+            <span className="dl-rule-ico" aria-hidden="true">{DlIco.card}</span>
+            <div className="dl-rule-txt">
+              <b>SSL ফি</b>
+              <small>লাভ-ক্ষতির হিসাবে SSLCOMMERZ অর্ডারে এই হারে ফি ধরা হয় — কাস্টমার দেখবে না (gateway_fee_pct)</small>
+            </div>
+            <label className="dl-money pct">
+              <span className="sr">ফি %</span>
+              <div><input type="number" inputMode="decimal" min={0} step="0.1" value={draft.sslFeePct} onChange={(e) => set({ sslFeePct: num(e.target.value) })} /><i>%</i></div>
+            </label>
+          </section>
+        </div>
+
+        <aside className="dl-calc" aria-label="কাস্টমার কত দেবে">
+          <div className="dl-calc-h">
+            <span className="dl-eyebrow">{DlIco.calc} লাইভ প্রিভিউ</span>
+            <h3>কাস্টমার কত দেবে?</h3>
+            <p>এখনকার (সেভ না করা) সেটিং দিয়ে হিসাব</p>
+          </div>
+          <label className="dl-money">
+            <span>কার্ট টোটাল</span>
+            <div><i>৳</i><input type="number" inputMode="numeric" min={0} value={calc.total} onChange={(e) => setCalc({ ...calc, total: num(e.target.value) })} /></div>
+          </label>
+          <Segmented size="sm" value={calc.zone} onChange={(zone) => setCalc({ ...calc, zone })} options={[{ id: "in", label: "ঢাকার ভিতর" }, { id: "out", label: "ঢাকার বাইরে" }]} />
+          <div className="dl-calc-flags">
+            <Toggle checked={calc.pack} onChange={(pack) => setCalc({ ...calc, pack })} label="প্যাকেজ আছে" />
+            <Toggle checked={calc.books} onChange={(books) => setCalc({ ...calc, books })} label="শুধু বই" />
+          </div>
+          <div className={`dl-ticket${why ? " free" : ""}`} key={`${pay}-${why ?? ""}`}>
+            <div className="dl-ticket-row"><span>সাবটোটাল</span><b>৳{bn(calc.total.toLocaleString("en-IN"))}</b></div>
+            <div className="dl-ticket-row"><span>ডেলিভারি</span><b>{why ? <s>৳{bn(zoneFee)}</s> : null}{why ? "ফ্রি" : `৳${bn(zoneFee)}`}</b></div>
+            <div className="dl-ticket-total"><span>কাস্টমার দেবে</span><b>৳{bn((calc.total + pay).toLocaleString("en-IN"))}</b></div>
+            {why ? <span className="dl-ticket-why">{Ico.check} ফ্রি · {why}</span> : null}
+          </div>
+          {gap > 0 ? (
+            <div className="dl-gap">
+              <span>আর <b>৳{bn(gap.toLocaleString("en-IN"))}</b> কিনলে ফ্রি ডেলিভারি</span>
+              <div className="dl-gap-bar"><i style={{ width: `${gapPct}%` }} /></div>
+            </div>
+          ) : null}
+          <div className={`dl-calc-net ${margin < 0 ? "down" : "up"}`}>
+            <span>আপনার কুরিয়ার খরচ ৳{bn(zoneCost)}</span>
+            <b>{margin < 0 ? "ভর্তুকি" : "ডেলিভারিতে লাভ"} ৳{bn(Math.abs(margin))}</b>
+          </div>
+        </aside>
       </div>
-      <section className="ship-card">
-        <div className="ship-card-h"><div><h3>ফ্রি হোম ডেলিভারি</h3><p>টগল চালু করলে সেই অর্ডারে কুরিয়ার ৳০</p></div></div>
-        <div className="ship-togs">
-          <label className="tog"><input type="checkbox" checked={draft.freeOnPack} onChange={(e) => set({ freeOnPack: e.target.checked })} /><span><b>প্যাকেজ কিনলে</b><small>কার্টে প্যাকেজ থাকলে ফ্রি</small></span></label>
-          <label className="tog"><input type="checkbox" checked={draft.freeOnBooks} onChange={(e) => set({ freeOnBooks: e.target.checked })} /><span><b>শুধু বই কিনলে</b></span></label>
-          <label className="tog"><input type="checkbox" checked={draft.freeAboveOn} onChange={(e) => set({ freeAboveOn: e.target.checked })} /><span><b>অঙ্কের উপরে</b></span></label>
-        </div>
-        <div className="ship-nested"><label>ফ্রি হবে যে অঙ্ক থেকে (৳)</label><input type="number" value={draft.freeAbove} onChange={(e) => set({ freeAbove: Number(e.target.value) || 0 })} /></div>
-      </section>
-      <section className="ship-card camp">
-        <div className="ship-card-h"><div><h3>সময় বেঁধে সবার জন্য ফ্রি</h3><p>এই সময়ের মধ্যে সব অর্ডারে হোম ডেলিভারি ফ্রি</p></div></div>
-        <label className="tog"><input type="checkbox" checked={draft.freeAllOn} onChange={(e) => set({ freeAllOn: e.target.checked })} /><span><b>ক্যাম্পেইন চালু</b></span></label>
-        <div className="form-grid" style={{ marginTop: 12 }}>
-          <BnDateField label="শুরু" withTime value={draft.freeFrom} onChange={(freeFrom) => set({ freeFrom })} />
-          <BnDateField label="শেষ" withTime end value={draft.freeTo} onChange={(freeTo) => set({ freeTo })} />
-        </div>
-      </section>
-      <section className="ship-card">
-        <div className="ship-card-h"><div><h3>SSL ফি</h3><p>হিসাবে পেমেন্ট গেটওয়ে খরচ — কাস্টমার দেখবে না</p></div></div>
-        <div className="ship-ssl">
-          <div><label>ফি %</label><input type="number" value={draft.sslFeePct} onChange={(e) => set({ sslFeePct: Number(e.target.value) || 0 })} /></div>
-          <p className="hint-txt">লাভ-ক্ষতির হিসাবে SSLCOMMERZ অর্ডারে এই হারে ফি ধরা হয় (সেটিং: gateway_fee_pct)।</p>
-        </div>
-      </section>
-      <div className="save-row">
-        <span className="hint-txt">সেভ করলে চেকআউট ও কার্টে সাথে সাথে বসবে</span>
-        <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void save()}>{saving ? "সেভ হচ্ছে…" : "সেভ করুন"}</button>
+
+      <div className={`dl-bar${dirty ? " dirty" : ""}`}>
+        <span className="dl-bar-msg">
+          <i />
+          {dirty ? <><b>{bn(dirty)}টি অসংরক্ষিত পরিবর্তন</b><small>সেভ করলে চেকআউট ও কার্টে সাথে সাথে বসবে</small></> : <><b>সব সেভ করা আছে</b><small>সেভ করলে চেকআউট ও কার্টে সাথে সাথে বসবে</small></>}
+        </span>
+        {dirty ? <button type="button" className="ap-btn ghost" disabled={saving} onClick={() => setDraft(ship)}>বাতিল</button> : null}
+        <button type="button" className="ap-btn primary" disabled={saving} onClick={() => void save()}>{saving ? "সেভ হচ্ছে…" : "সেভ করুন"}</button>
       </div>
     </div>
+  );
+}
+
+const QUICK = [500, 1000, 1500, 2000];
+
+function campaignState(on: boolean, from: string, to: string): { k: "off" | "soon" | "live" | "over"; label: string } {
+  if (!on) return { k: "off", label: "বন্ধ" };
+  const now = Date.now();
+  if (from && now < new Date(from).getTime()) return { k: "soon", label: "নির্ধারিত" };
+  if (to && now > new Date(to).getTime()) return { k: "over", label: "সময় শেষ" };
+  return { k: "live", label: "এখন চলছে" };
+}
+
+const DP = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+const DlIco = {
+  pin: <svg {...DP}><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.4" /></svg>,
+  cal: <svg {...DP}><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /><path d="m9.5 14.5 1.8 1.8 3.5-3.5" /></svg>,
+  card: <svg {...DP}><rect x="3" y="5.5" width="18" height="13" rx="2.5" /><path d="M3 10h18M7 15h3" /></svg>,
+  calc: <svg {...DP}><rect x="5" y="3" width="14" height="18" rx="2.5" /><path d="M8 7h8M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01M8.5 18h.01M12 18h.01" /></svg>,
+};
+
+/** tiny decorative "map": inside = one city ring, outside = routes fanning out */
+function ZoneArt({ k }: { k: "in" | "out" }) {
+  return (
+    <svg className="dl-zone-art" viewBox="0 0 120 64" aria-hidden="true">
+      {k === "in" ? (
+        <>
+          <circle cx="60" cy="32" r="28" className="r3" />
+          <circle cx="60" cy="32" r="18" className="r2" />
+          <circle cx="60" cy="32" r="8" className="r1" />
+          <circle cx="60" cy="32" r="3.2" className="dot" />
+        </>
+      ) : (
+        <>
+          <path d="M22 32 C 45 6, 75 6, 100 14 M22 32 C 50 32, 70 40, 104 34 M22 32 C 45 58, 78 60, 98 54" className="route" />
+          <circle cx="22" cy="32" r="5" className="dot" />
+          <circle cx="100" cy="14" r="3.4" className="node" />
+          <circle cx="104" cy="34" r="3.4" className="node" />
+          <circle cx="98" cy="54" r="3.4" className="node" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function RuleCard({ on, icon, title, sub, onChange, wide, children }: {
+  on: boolean; icon: ReactNode; title: string; sub: string; onChange: (v: boolean) => void; wide?: boolean; children?: ReactNode;
+}) {
+  return (
+    <section className={`dl-rule${on ? " on" : ""}${wide ? " wide" : ""}`}>
+      <div className="dl-rule-top">
+        <span className="dl-rule-ico" aria-hidden="true">{icon}</span>
+        <div className="dl-rule-txt"><b>{title}</b><small>{sub}</small></div>
+        <Toggle checked={on} onChange={onChange} />
+      </div>
+      {children ? <div className="dl-rule-body">{children}</div> : null}
+    </section>
   );
 }

@@ -8,11 +8,14 @@ import { useToast } from "@/lib/api/admin/core";
 import { useAdminProducts } from "@/lib/api/admin/products";
 import { useAdminBundles, useCreateBundle, useDeleteBundle, usePatchBundle } from "@/lib/api/admin/bundles";
 import { TabMark, PackStack } from "@/components/admin/shared";
+import { useConfirm } from "@/components/admin/confirm";
+import { Ico } from "@/components/admin/ui";
 
 type Book = { id: string; title: string; author: string; cat: string; price: number; color: string; image?: string };
 
 export function PacksTab() {
   const toast = useToast();
+  const confirm = useConfirm();
   const { code, section } = useAdminSection();
   const [q, setQ] = useState("");
   const [term, setTerm] = useState("");
@@ -153,7 +156,16 @@ export function PacksTab() {
                       <span className="sw" aria-hidden="true" />
                       <span>ফ্রি ডেলিভারি</span>
                     </label>
-                    <button type="button" className="pk-del" aria-label="মুছুন" title="মুছুন" onClick={() => delM.mutate({ id: p.id })}>
+                    <button type="button" className="pk-del" aria-label="মুছুন" title="মুছুন" onClick={async () => {
+                      if (!(await confirm({
+                        tone: "danger",
+                        title: `«${p.title}» প্যাকেজ মুছবেন?`,
+                        body: "প্যাকেজটি দোকান থেকে সরে যাবে। ভিতরের বইগুলো আলাদাভাবে আগের মতোই থাকবে।",
+                        details: [{ label: "বই", value: `${bn(p.bookIds.length)}টি` }, { label: "প্যাকেজ দাম", value: `৳${bn(p.price)}` }],
+                        confirmText: "হ্যাঁ, মুছুন", confirmIcon: Ico.trash,
+                      }))) return;
+                      delM.mutate({ id: p.id });
+                    }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13" /></svg>
                     </button>
                   </div>

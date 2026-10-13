@@ -19,6 +19,11 @@ export const envSchema = z.object({
     .transform((s) => s.split(',').map((x) => x.trim()).filter(Boolean)),
   PUBLIC_WEB_URL: z.string().url().default('http://localhost:3000'),
   PUBLIC_API_URL: z.string().url().default('http://localhost:4000'),
+  /**
+   * Base for uploaded-media URLs. Unset → PUBLIC_API_URL (dev: web :3000 + api :4000).
+   * Empty string → root-relative "/uploads/…" — use behind one nginx so any host name works.
+   */
+  PUBLIC_MEDIA_BASE: z.string().optional(),
 
   DATABASE_URL: z.string().min(1),
   DIRECT_URL: z.string().min(1).optional(),

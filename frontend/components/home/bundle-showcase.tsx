@@ -57,7 +57,7 @@ export function BundleShowcase({ packs, sectionCode, bare = false }: { packs: Pa
             </div>
             <div className="sf-bfeat-acts">
               {hero.oos ? (
-                <button type="button" className={`btn ${kept ? "btn-primary" : "btn-gold"}`} onClick={() => toggle("pack", hero.id)}>{kept ? "তালিকায় আছে" : "ভবিষ্যৎ তালিকায় রাখুন"}</button>
+                <button type="button" className={`btn ${kept ? "btn-primary" : "btn-gold"}`} onClick={() => toggle("pack", hero.id)}>{kept ? "উইশলিস্টে আছে" : "উইশলিস্টে রাখুন"}</button>
               ) : (
                 <button type="button" className="btn btn-primary sf-btn-cart" onClick={() => { void addToCart("pack", hero.id); }}><IconCart /> কার্টে যোগ</button>
               )}

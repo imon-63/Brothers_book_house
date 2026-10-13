@@ -7,7 +7,8 @@ import { statusLabel, statusTone } from "@/lib/admin/status";
 import { money } from "@/lib/api/admin/core";
 import { useAdminSearch } from "@/lib/api/admin/search";
 import { Avatar, Badge, Ico, Kbd, tk, useEscLayer } from "@/components/admin/ui";
-import { NAV_GROUPS, useAdminNav, type AdminTab } from "@/components/admin/nav";
+import { NAV_GROUPS, canOpen, useAdminNav, type AdminTab } from "@/components/admin/nav";
+import { useMe } from "@/lib/api/auth";
 
 type Item = { id: string; group: string; title: ReactNode; sub?: ReactNode; icon: ReactNode; right?: ReactNode; hay: string; run: () => void };
 
@@ -30,9 +31,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   useEffect(() => { if (open) { setQ(""); setIdx(0); } }, [open]);
 
+  const { me } = useMe();
   const items = useMemo<Item[]>(() => {
     const act = (tab: AdminTab, focus?: string | null) => () => { go(tab, focus ?? null); onClose(); };
-    const nav: Item[] = NAV_GROUPS.flatMap((g) => g.items).map((t) => ({
+    const nav: Item[] = NAV_GROUPS.flatMap((g) => g.items).filter((t) => canOpen(t.id, me?.role)).map((t) => ({
       id: `nav-${t.id}`, group: "যান · Go to", title: t.bn, sub: t.en, icon: TAB_ICON[t.id], hay: `${t.bn} ${t.en}`, run: act(t.id),
     }));
     const actions: Item[] = [
@@ -63,7 +65,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       hay: `${hayQ} ${p.title} ${p.authorLine ?? ""} ${p.category?.name ?? ""}`, run: act("products", p.id),
     }));
     return [...actions, ...nav, ...ord, ...cus, ...pro];
-  }, [orders, customers, products, term, go, onClose]);
+  }, [orders, customers, products, term, go, onClose, me?.role]);
 
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();

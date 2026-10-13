@@ -53,6 +53,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const body = ex.getResponse() as string | { message?: string | string[]; error?: string };
       const messages = typeof body === 'string' ? [body] : Array.isArray(body.message) ? body.message : [body.message ?? ex.message];
       const isValidation = status === HttpStatus.BAD_REQUEST && Array.isArray((body as { message?: unknown }).message);
+      if (status === HttpStatus.TOO_MANY_REQUESTS) {
+        return { ...base, status, title: 'Too Many Requests', code: 'rate.limited', detail: 'একটু বেশি দ্রুত অনুরোধ হচ্ছে — কয়েক সেকেন্ড পরে আবার চেষ্টা করুন' };
+      }
       return {
         ...base,
         status,

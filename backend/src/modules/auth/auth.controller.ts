@@ -1,9 +1,9 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AppConfig } from '@/config/app-config.service';
-import { CurrentUser, OptionalAuth, Public } from '@/common/decorators/auth.decorators';
+import { CurrentUser, OptionalAuth, Public, AllowPendingPassword } from '@/common/decorators/auth.decorators';
 import type { AuthUser } from '@/common/types/auth-user';
 import { AuthService, type SessionMeta, type Tokens } from './auth.service';
 import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RefreshDto, RegisterDto, ResetPasswordDto, TokenResponse } from './dto/auth.dto';
@@ -11,6 +11,7 @@ import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RefreshDto, RegisterDto
 const REFRESH_COOKIE = 'cholo_rt';
 
 @ApiTags('Auth · লগইন')
+@AllowPendingPassword()
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
   constructor(
@@ -66,6 +67,7 @@ export class AuthController {
     res.clearCookie(REFRESH_COOKIE, this.cookieOpts());
   }
 
+  @SkipThrottle({ default: true, burst: true })
   @Get('me')
   @ApiBearerAuth()
   me(@CurrentUser() user: AuthUser) {

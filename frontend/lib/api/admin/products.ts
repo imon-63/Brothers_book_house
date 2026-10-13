@@ -33,6 +33,8 @@ export type AdminProductRow = {
   deal: { id: string; dealPrice: number; startsAt: string; endsAt: string; label: string | null } | null;
   /** next scheduled (not started) deal — list rows only */
   nextDeal?: { dealPrice: number; startsAt: string; endsAt: string } | null;
+  /** live batches + their cost range — list rows only */
+  lots?: { batches: number; minCost: number | null; maxCost: number | null } | null;
   stock: { onHand: number; reserved: number; available: number; threshold: number; initialCopies: number; status: "in" | "low" | "out"; tracked: boolean };
   authorLine: string | null;
   categoryHidden: boolean;
@@ -276,5 +278,30 @@ export function useSectionDeals(section: string, state: "active" | "scheduled" =
   return useQuery({
     queryKey: [...adminKeys.products, "deals", section, state],
     queryFn: () => get<Paged<AdminDeal>>("/admin/deals", { section, state, pageSize: 100 }),
+  });
+}
+
+/* ───────── stock lots (each restock at its own কেনা দাম, FIFO) ───────── */
+
+export type StockLot = {
+  id: string; source: "OPENING" | "PURCHASE" | "RESTOCK" | "RETURN" | "ADJUST"; unitCost: number | null; salePrice: number | null;
+  qtyIn: number; qtyLeft: number; sold: number; value: number | null; marginNow: number | null; note: string | null;
+  purchase: { id: string; purchaseNo: string } | null; createdBy: { id: string; name: string } | null; receivedAt: string;
+};
+export type StockLots = {
+  product: { id: string; title: string; price: number; costPrice: number | null; onHand: number };
+  summary: { batches: number; unitsInBatches: number; untracked: number; stockValue: number; retailValue: number; avgCost: number | null; minCost: number | null; maxCost: number | null; mixedCost: boolean };
+  items: StockLot[];
+};
+
+export function useStockLots(id: string | null) {
+  return useQuery({ queryKey: [...adminKeys.products, "lots", id], enabled: !!id, queryFn: () => get<StockLots>(`/admin/products/${id}/stock/lots`) });
+}
+
+export function useRestockLot() {
+  return useAdminMutation<{ id: string; qty: number; unitCost: number; salePrice?: number; note?: string }, StockLots>({
+    fn: ({ id, ...body }) => post<StockLots>(`/admin/products/${id}/stock/restock`, body),
+    invalidate: fallout,
+    success: (_r, v) => `+${v.qty} কপি যোগ হয়েছে · কেনা ৳${v.unitCost}`,
   });
 }

@@ -76,7 +76,7 @@ export function Hero({ slides, vertical, loading = false }: { slides: Slide[]; v
         <div className="inner">
           <p className="hero-kicker"><i></i> {slide.kicker || vertical.kicker}</p>
           <h1><span>{slide.title || vertical.title}</span><span className="hero-sub">{slide.sub || vertical.sub}</span></h1>
-          <p className="lead">{slide.cat ? `${slide.cat} — ${vertical.lead}` : vertical.lead}</p>
+          <p className="lead">{[slide.cat, vertical.lead].filter(Boolean).join(" — ")}</p>
           <div className="hero-cta">
             <button className="btn btn-hero" type="button" onClick={() => router.push(slide.catSlug ? shopHref(slide.catSlug) : "/shop")}>এই ক্যাটাগরি</button>
             <button className="btn btn-hero-ghost book-only" type="button" onClick={() => router.push("/authors")}>লেখকবৃন্দ</button>

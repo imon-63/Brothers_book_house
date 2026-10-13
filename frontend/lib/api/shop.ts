@@ -2,7 +2,7 @@
 
 /**
  * Storefront glue on top of lib/api/{client,auth,cart,catalog}: add-to-cart
- * with toast, wishlist (ভবিষ্যৎ অর্ডার), my orders, tracking, checkout
+ * with toast, wishlist (উইশলিস্ট), my orders, tracking, checkout
  * (geo → quote → place order → SSLCOMMERZ), profile/addresses, support chat.
  */
 
@@ -58,7 +58,7 @@ export function useAddToCart() {
   }, [actions, d, qc]);
 }
 
-/* ───────── wishlist (ভবিষ্যৎ অর্ডার) ───────── */
+/* ───────── wishlist (উইশলিস্ট) ───────── */
 
 export type WishItem = {
   id: string; kind: "product" | "bundle"; refId: string; slug: string; title: string; subtitle: string | null; imageUrl: string | null;
@@ -82,14 +82,14 @@ export function useWait() {
     if (!me) {
       d(setPendingWait({ kind, id }));
       d(setAuth(true));
-      d(showToast("লগইন করলে তালিকায় রাখতে পারবেন"));
+      d(showToast("লগইন করলে উইশলিস্টে রাখতে পারবেন"));
       return;
     }
     const hit = list.find((w) => w.refId === id);
     try {
       if (hit) await del(`/me/wishlist/${hit.id}`);
       else await post("/me/wishlist", kind === "pack" ? { bundleId: id } : { productId: id });
-      d(showToast(hit ? "তালিকা থেকে সরানো হয়েছে" : "ভবিষ্যৎ অর্ডারে রাখা হয়েছে"));
+      d(showToast(hit ? "উইশলিস্ট থেকে সরানো হয়েছে" : "উইশলিস্টে রাখা হয়েছে ♥"));
     } catch (e) {
       d(showToast(apiErrorText(e)));
     }

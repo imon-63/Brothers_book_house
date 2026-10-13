@@ -120,3 +120,21 @@
   .hb-grip { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .pv, .hb-deal-skel { animation: none; } }
+
+/* ═════════ phone polish (≤760px) ═════════ */
+@media (max-width: 760px) {
+  /* `1fr` let long section names stretch the track past the screen */
+  .hb-grid, .hb-list, .hb-deal-list { grid-template-columns: minmax(0, 1fr); }
+  .hb { gap: 12px; }
+  .hb-top { padding: 12px; gap: 10px; border-radius: 18px; }
+  .hb-sec { width: 100%; }
+  .hb-top-acts { width: 100%; }
+  .hb-top-acts > .ap-btn { flex: 1 1 auto; }
+  .hb-row { gap: 10px; padding: 10px; border-radius: 16px; }
+  .hb-name b { flex-wrap: wrap; row-gap: 0; font-size: 13.5px; }
+  .hb-acts { gap: 4px; }
+  .hb-acts .ap-toggle { margin-left: 2px; }
+  .hb-edit input { width: 100%; height: 40px; font-size: 16px; }
+  .hb-deal { gap: 10px; padding: 10px; border-radius: 16px; }
+  .hb-deal-acts .ap-btn { flex: 1 1 auto; }
+}
