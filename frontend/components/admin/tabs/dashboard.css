@@ -49,7 +49,7 @@
 .db-grid > :nth-child(12) { animation-delay: 530ms; }
 
 .db-grid > .ap-card { transition: box-shadow .3s var(--ap-ease), border-color .3s; }
-.db-grid > .ap-card:hover { box-shadow: 0 1px 2px rgba(28,20,16,.05), 0 12px 32px rgba(60,30,20,.09); border-color: #E3D6BF; }
+.db-grid > .ap-card:hover { box-shadow: 0 1px 2px rgba(var(--k-1c1410-rgb), .05), 0 12px 32px rgba(var(--k-3c1e14-rgb), .09); border-color: #E3D6BF; }
 .db .ap-empty { padding: 26px 12px; flex: 1; align-content: center; }
 .db-hl { color: var(--ap-wine); font-weight: 800; }
 
@@ -188,7 +188,7 @@
 .db-prod b { font-size: 13.5px; max-width: 34ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-prod small { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--ap-muted); }
 .db-prod small .ap-badge { font-size: 10.5px; padding: 0 7px; }
-.db-thumb { flex: 0 0 auto; width: 34px; height: 46px; border-radius: 6px; overflow: hidden; display: grid; place-items: center; background: var(--ap-surface3); box-shadow: 0 1px 2px rgba(28,20,16,.12), 0 4px 10px rgba(60,30,20,.1); transition: transform .25s var(--ap-ease); }
+.db-thumb { flex: 0 0 auto; width: 34px; height: 46px; border-radius: 6px; overflow: hidden; display: grid; place-items: center; background: var(--ap-surface3); box-shadow: 0 1px 2px rgba(var(--k-1c1410-rgb), .12), 0 4px 10px rgba(var(--k-3c1e14-rgb), .1); transition: transform .25s var(--ap-ease); }
 .db-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .db-thumb.swatch { color: #fff; font-weight: 800; font-size: 15px; }
 .db-table tbody tr:hover .db-thumb { transform: rotate(-3deg) scale(1.06); }

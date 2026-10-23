@@ -2,17 +2,17 @@
    Cholo Admin · confirm sheet (components/admin/confirm.tsx)
    Sits above every drawer/modal. Tone drives badge + button.
    ═══════════════════════════════════════════════════════════ */
-.ap-cf-wrap { z-index: 220; background: radial-gradient(120% 90% at 50% 40%, rgba(60,20,26,.38), rgba(28,10,14,.58)); backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1); }
+.ap-cf-wrap { z-index: 220; background: radial-gradient(120% 90% at 50% 40%, rgba(var(--k-3c141a-rgb), .38), rgba(var(--k-1c0a0e-rgb), .58)); backdrop-filter: blur(6px) saturate(1.1); -webkit-backdrop-filter: blur(6px) saturate(1.1); }
 .ap-cf-wrap.cf-danger { --cf: var(--ap-red); --cf-deep: #8E1B12; --cf-tint: var(--ap-red-tint); --cf-ring: rgba(180,35,24,.16); --cf-glow: rgba(180,35,24,.28); }
 .ap-cf-wrap.cf-warn { --cf: #A9832F; --cf-deep: #7C5E1D; --cf-tint: var(--ap-gold-tint); --cf-ring: rgba(196,161,90,.22); --cf-glow: rgba(196,161,90,.34); }
-.ap-cf-wrap.cf-info { --cf: var(--ap-wine); --cf-deep: var(--ap-wine2); --cf-tint: var(--ap-wine-tint); --cf-ring: rgba(122,36,48,.14); --cf-glow: rgba(122,36,48,.26); }
+.ap-cf-wrap.cf-info { --cf: var(--ap-wine); --cf-deep: var(--ap-wine2); --cf-tint: var(--ap-wine-tint); --cf-ring: rgba(var(--k-7a2430-rgb), .14); --cf-glow: rgba(var(--k-7a2430-rgb), .26); }
 
 .ap-cf {
   position: relative; width: min(440px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain;
   padding: 26px 24px 0; border-radius: 22px; background: var(--ap-surface);
   background-image: radial-gradient(110% 60% at 50% -12%, var(--cf-tint), transparent 62%);
   border: 1px solid rgba(255,255,255,.7);
-  box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 2px 6px rgba(28,20,16,.06), 0 30px 80px rgba(40,12,18,.32);
+  box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 2px 6px rgba(var(--k-1c1410-rgb), .06), 0 30px 80px rgba(var(--k-280c12-rgb), .32);
   animation: apCfPop .34s cubic-bezier(.18,1.25,.4,1) both; transform-origin: 50% 60%;
 }
 .ap-cf::before { content: ""; position: absolute; left: 24px; right: 24px; top: 0; height: 3px; border-radius: 0 0 4px 4px; background: linear-gradient(90deg, transparent, var(--cf), transparent); opacity: .55; }
@@ -78,7 +78,7 @@
 .ap-cf-body ul { text-align: left; margin-top: 12px; }
 
 /* footer */
-.ap-cf-foot { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 1.25fr; gap: 10px; margin: 20px -24px 0; padding: 14px 24px 18px; background: linear-gradient(180deg, rgba(255,252,247,0), var(--ap-surface) 30%); }
+.ap-cf-foot { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 1.25fr; gap: 10px; margin: 20px -24px 0; padding: 14px 24px 18px; background: linear-gradient(180deg, rgba(var(--k-fffcf7-rgb), 0), var(--ap-surface) 30%); }
 .ap-cf-foot .ap-btn { height: 44px; border-radius: 13px; font-size: 14px; }
 .ap-cf-foot .ap-cf-cancel { border-color: var(--ap-line); background: var(--ap-surface); color: var(--ap-soft); }
 .ap-cf-foot .ap-cf-cancel:hover { background: var(--ap-surface3); }

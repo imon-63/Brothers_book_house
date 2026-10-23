@@ -515,11 +515,11 @@ export default function CheckoutPage() {
           aria-hidden="true"
         >
           <svg viewBox="0 0 64 82" width="52" height="66">
-            <path fill="#fff8ee" stroke="#7A2430" strokeWidth="2.2" strokeLinejoin="round" d="M14 50c0-6.2 4.4-10.4 10.2-10.4h16.2c5.8 0 10.2 4.2 10.2 10.4v12.4c0 10.4-8.2 18.6-18.4 18.6S14 72.8 14 62.4V50z" />
-            <path fill="#fff8ee" stroke="#7A2430" strokeWidth="2.2" strokeLinecap="round" d="M15.2 52.5c-6.4 1.6-9.2 8-6.6 13.2 1.6 3.2 5 3.6 7.4 2" />
-            <rect x="19" y="2" width="12" height="50" rx="6" fill="#fff8ee" stroke="#7A2430" strokeWidth="2.2" />
-            <rect x="33" y="14" width="12" height="38" rx="6" fill="#fff8ee" stroke="#7A2430" strokeWidth="2.2" />
-            <rect x="18" y="36" width="28" height="20" fill="#fff8ee" />
+            <path fill="var(--k-fff8ee)" stroke="var(--k-7a2430)" strokeWidth="2.2" strokeLinejoin="round" d="M14 50c0-6.2 4.4-10.4 10.2-10.4h16.2c5.8 0 10.2 4.2 10.2 10.4v12.4c0 10.4-8.2 18.6-18.4 18.6S14 72.8 14 62.4V50z" />
+            <path fill="var(--k-fff8ee)" stroke="var(--k-7a2430)" strokeWidth="2.2" strokeLinecap="round" d="M15.2 52.5c-6.4 1.6-9.2 8-6.6 13.2 1.6 3.2 5 3.6 7.4 2" />
+            <rect x="19" y="2" width="12" height="50" rx="6" fill="var(--k-fff8ee)" stroke="var(--k-7a2430)" strokeWidth="2.2" />
+            <rect x="33" y="14" width="12" height="38" rx="6" fill="var(--k-fff8ee)" stroke="var(--k-7a2430)" strokeWidth="2.2" />
+            <rect x="18" y="36" width="28" height="20" fill="var(--k-fff8ee)" />
             <path d="M22 10h6M36 22h6" stroke="#C4A15A" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         </span>

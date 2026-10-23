@@ -1,4 +1,4 @@
-const TONES = ["#7A2430", "#3D5A4C", "#8A6230", "#5C1B24", "#245A6B", "#6B3A52"];
+const TONES = ["var(--k-7a2430)", "#3D5A4C", "#8A6230", "var(--k-5c1b24)", "#245A6B", "var(--k-6b3a52)"];
 
 /** First visible letter (grapheme-safe for Bangla conjuncts / vowel signs). */
 export function initialOf(name: string) {

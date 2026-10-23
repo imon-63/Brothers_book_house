@@ -25,7 +25,7 @@ export function BlockHead({ kicker, title, href, more = "সব দেখুন"
 
 /** Colour per section code, so every বিভাগ gets its own accent. */
 export function accentOf(code: string) {
-  return code === "food" ? "#3D5A4C" : code === "gadget" ? "#245A6B" : code === "book" ? "#7A2430" : "#5C1B24";
+  return code === "food" ? "#3D5A4C" : code === "gadget" ? "#245A6B" : code === "book" ? "var(--k-7a2430)" : "var(--k-5c1b24)";
 }
 
 export function SectionSwitch({ sections, current, onPick }: { sections: SectionView[]; current: string; onPick: (code: string) => void }) {

@@ -455,7 +455,7 @@ function CategoryCard({ d }: { d: Dashboard | undefined }) {
 /* ───────── top products ───────── */
 
 function Thumb({ title }: { title: string }) {
-  return <span className="db-thumb swatch" style={{ background: "#7A2430" }}>{title.trim().slice(0, 1)}</span>;
+  return <span className="db-thumb swatch" style={{ background: "var(--k-7a2430)" }}>{title.trim().slice(0, 1)}</span>;
 }
 
 function TopProductsCard({ d, low }: { d: Dashboard | undefined; low: number }) {

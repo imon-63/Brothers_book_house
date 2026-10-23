@@ -26,6 +26,7 @@ export const SETTINGS = {
   support_hours: { schema: z.string().trim().max(80), default: 'সকাল ১০টা – রাত ১০টা', public: true, description: 'সাপোর্টের সময়' },
   facebook_url: { schema: z.string().trim().url().nullable(), default: null, public: true, description: 'Facebook পেজ' },
   address: { schema: z.string().trim().max(300), default: '', public: true, description: 'ঠিকানা' },
+  theme: { schema: z.enum(['classic', 'mint']), default: 'classic', public: true, description: 'অ্যাপের রং-থিম' },
   cod_enabled: { schema: z.boolean(), default: true, public: true, description: 'ক্যাশ অন ডেলিভারি চালু' },
   online_payment_enabled: { schema: z.boolean(), default: true, public: true, description: 'অনলাইন পেমেন্ট চালু' },
   gateway_fee_pct: { schema: z.number().min(0).max(10), default: 2.5, public: false, description: 'SSLCOMMERZ ফি (%)' },

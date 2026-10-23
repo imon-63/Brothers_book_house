@@ -1,0 +1,135 @@
+/* ═══════════ Glossy theme (data-theme="mint") — glossy teal · sky blue · mint glass ═══════════
+   theme.css swaps the palette (glossy teal · sky blue · mint); this file adds the
+   gloss: aurora backdrop, frosted-glass panels, candy buttons with a top highlight.
+   Every rule is scoped to html[data-theme="mint"], so the classic theme is untouched. */
+
+html[data-theme="mint"] {
+  --gl-aurora:
+    radial-gradient(900px 520px at 0% 0%, rgba(160,236,222,.45), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgba(186,230,253,.42), transparent 60%),
+    radial-gradient(900px 600px at 100% 100%, rgba(147,197,255,.26), transparent 60%),
+    radial-gradient(700px 500px at 0% 100%, rgba(253,230,190,.22), transparent 60%),
+    #EFF6F5;
+  --gl-glass: rgba(255,255,255,.66);
+  --gl-glass-strong: rgba(255,255,255,.82);
+  --gl-edge: rgba(255,255,255,.75);
+  --gl-blur: saturate(180%) blur(22px);
+  --gl-lift: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(15,23,42,.05), 0 10px 30px rgba(15,23,42,.07);
+  --gl-btn: linear-gradient(180deg, #3FD8C4 0%, #0E9F8E 48%, #0B7A6F 100%);
+  --gl-btn-hover: linear-gradient(180deg, #55E2CF 0%, #14AE9C 48%, #0C887C 100%);
+  --gl-btn-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(0,0,0,.12), 0 6px 18px rgba(14,159,142,.32);
+  --gl-deep: radial-gradient(520px 260px at 0% 0%, rgba(255,255,255,.22), transparent 60%), radial-gradient(480px 300px at 100% 100%, rgba(120,160,255,.35), transparent 65%), linear-gradient(135deg, #0B4F4A 0%, #0E8A7E 50%, #3AA0D8 100%);
+  --gl-ink: #1D1D1F;
+  --gl-soft: #6E6E73;
+  --gl-faint: #8E8E93;
+  --gl-line: rgba(60,60,67,.12);
+}
+
+/* ── backdrop ── */
+html[data-theme="mint"] body { background: var(--gl-aurora); background-attachment: fixed; }
+html[data-theme="mint"] .adm { background: var(--gl-aurora); background-attachment: fixed; }
+
+/* ── glossy buttons ── */
+html[data-theme="mint"] .ap-btn.primary, html[data-theme="mint"] .btn-primary, html[data-theme="mint"] .sf-deal-cta {
+  color: #fff; border-color: transparent; background: var(--gl-btn); box-shadow: var(--gl-btn-shadow);
+}
+html[data-theme="mint"] .ap-btn.primary:hover, html[data-theme="mint"] .btn-primary:hover, html[data-theme="mint"] .sf-deal-cta:hover {
+  background: var(--gl-btn-hover); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 10px 24px rgba(14,159,142,.38);
+}
+
+/* ── admin: glass panels ── */
+html[data-theme="mint"] .ap-card, html[data-theme="mint"] .ap-stat, html[data-theme="mint"] .od-tablecard {
+  background: var(--gl-glass); border-color: var(--gl-edge); box-shadow: var(--gl-lift);
+  backdrop-filter: var(--gl-blur); -webkit-backdrop-filter: var(--gl-blur);
+}
+html[data-theme="mint"] .ap-top { background: rgba(239,246,245,.62); border-bottom-color: var(--gl-line); }
+html[data-theme="mint"] .ap-stat-ico { background-image: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,0) 60%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.8), 0 2px 6px rgba(15,23,42,.08); }
+html[data-theme="mint"] .ap-stat.t-ink .ap-stat-ico { background-color: #E1F4F0; color: #0E9F8E; }
+html[data-theme="mint"] .adm .ap-table th, html[data-theme="mint"] .ap-table th { background: rgba(227,246,243,.95); color: #134E5E; border-bottom-color: rgba(14,159,142,.14); }
+html[data-theme="mint"] .ap-table tfoot td, html[data-theme="mint"] .ap-table tr.total td { background: #D3F0EA; color: #0B3F3A; font-weight: 800; border-top: 1px solid rgba(14,159,142,.16); }
+html[data-theme="mint"] .adm .ap-table tbody tr:hover td, html[data-theme="mint"] .ap-table tbody tr:hover td { background: rgba(14,159,142,.045); }
+
+/* ── admin sidebar: frosted glass over the aurora ── */
+html[data-theme="mint"] .ap-side {
+  color: var(--gl-ink);
+  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.5));
+  backdrop-filter: var(--gl-blur); -webkit-backdrop-filter: var(--gl-blur);
+  border-right: 1px solid var(--gl-edge); box-shadow: inset -1px 0 0 var(--gl-line);
+}
+html[data-theme="mint"] .ap-brand img { box-shadow: 0 0 0 1px var(--gl-line), 0 6px 16px rgba(15,23,42,.12); }
+html[data-theme="mint"] .ap-brand-txt strong { color: var(--gl-ink); }
+html[data-theme="mint"] .ap-brand-txt small { color: #0E9F8E; }
+html[data-theme="mint"] .ap-rail-btn, html[data-theme="mint"] .ap-side-x { color: var(--gl-soft); background: rgba(118,118,128,.1); }
+html[data-theme="mint"] .ap-rail-btn:hover, html[data-theme="mint"] .ap-side-x:hover { color: var(--gl-ink); background: rgba(118,118,128,.18); }
+html[data-theme="mint"] .ap-side-search { background: rgba(118,118,128,.1); border-color: transparent; color: var(--gl-faint); }
+html[data-theme="mint"] .ap-side-search:hover { background: rgba(118,118,128,.16); border-color: transparent; }
+html[data-theme="mint"] .ap-side-search .ap-kbd { background: rgba(255,255,255,.8); border-color: var(--gl-line); color: var(--gl-soft); }
+html[data-theme="mint"] .ap-verts { background: rgba(118,118,128,.1); }
+html[data-theme="mint"] .ap-verts button { color: var(--gl-soft); }
+html[data-theme="mint"] .ap-verts button:hover { color: var(--gl-ink); background: rgba(255,255,255,.6); }
+html[data-theme="mint"] .ap-verts button.on { color: #fff; background: var(--gl-btn); box-shadow: var(--gl-btn-shadow); }
+html[data-theme="mint"] .ap-vert-off, html[data-theme="mint"] .ap-nav-dot { box-shadow: 0 0 0 2px #fff; }
+html[data-theme="mint"] .ap-nav-group > p { color: var(--gl-faint); }
+html[data-theme="mint"] .ap-nav-group button { color: var(--gl-ink); }
+html[data-theme="mint"] .ap-nav-ico { color: #0E9F8E; }
+html[data-theme="mint"] .ap-nav-txt small { color: var(--gl-faint); }
+html[data-theme="mint"] .ap-nav-group button em { background: rgba(118,118,128,.14); color: var(--gl-ink); }
+html[data-theme="mint"] .ap-nav-group button em.t-gold { background: #FF9F0A; color: #fff; }
+html[data-theme="mint"] .ap-nav-group button em.t-red { background: #FF3B30; color: #fff; }
+html[data-theme="mint"] .ap-nav-group button:hover { background: rgba(255,255,255,.7); color: var(--gl-ink); }
+html[data-theme="mint"] .ap-nav-group button.on { background: rgba(255,255,255,.95); color: var(--gl-ink); box-shadow: inset 0 1px 0 #fff, 0 6px 18px rgba(15,23,42,.1); }
+html[data-theme="mint"] .ap-nav-group button.on .ap-nav-ico { background: var(--gl-btn); color: #fff; box-shadow: var(--gl-btn-shadow); }
+html[data-theme="mint"] .ap-nav-group button.on .ap-nav-txt small { color: var(--gl-soft); }
+html[data-theme="mint"] .ap-nav-group button.on::before { background: #0E9F8E; }
+html[data-theme="mint"] .ap-me { border-top-color: var(--gl-line); }
+html[data-theme="mint"] .ap-me-btn { color: var(--gl-ink); }
+html[data-theme="mint"] .ap-me-btn:hover { background: rgba(255,255,255,.7); }
+html[data-theme="mint"] .ap-me-btn > svg, html[data-theme="mint"] .ap-me-txt small { color: var(--gl-faint); }
+
+/* ── storefront: header & section bar ── */
+html[data-theme="mint"] header.site { background: rgba(255,255,255,.62); backdrop-filter: var(--gl-blur); -webkit-backdrop-filter: var(--gl-blur); }
+html[data-theme="mint"] .topbar { background: linear-gradient(90deg, #0B4F4A, #0E8A7E 50%, #3AA0D8); }
+html[data-theme="mint"] header.site.sf-head .vbar { background: rgba(255,255,255,.4); border-bottom-color: var(--gl-line); box-shadow: none; }
+html[data-theme="mint"] header.site.sf-head .vbar::after { background: linear-gradient(90deg, transparent, rgba(14,159,142,.35) 50%, transparent); }
+html[data-theme="mint"] header.site.sf-head .vbar-in { background: rgba(118,118,128,.1); border-color: transparent; box-shadow: inset 0 1px 2px rgba(15,23,42,.06); }
+html[data-theme="mint"] header.site.sf-head .vbar .vtab { color: var(--gl-ink); }
+html[data-theme="mint"] header.site.sf-head .vbar .vtab-ico { background: rgba(255,255,255,.85); border-color: var(--gl-line); color: #0E9F8E; }
+html[data-theme="mint"] header.site.sf-head .vbar .vtab:hover { background: rgba(255,255,255,.7); color: var(--gl-ink); }
+html[data-theme="mint"] header.site.sf-head .vbar .vtab:hover .vtab-ico { border-color: rgba(14,159,142,.35); }
+html[data-theme="mint"] header.site.sf-head .vbar .vtab.on { color: #fff; border-color: transparent; background: var(--gl-btn); box-shadow: var(--gl-btn-shadow); }
+html[data-theme="mint"] header.site.sf-head .vbar .vtab.on .vtab-ico { background: #fff; border-color: #fff; color: #0E9F8E; box-shadow: 0 2px 6px rgba(8,63,58,.25); }
+html[data-theme="mint"] .mnav-head { background: rgba(255,255,255,.85); backdrop-filter: var(--gl-blur); -webkit-backdrop-filter: var(--gl-blur); }
+html[data-theme="mint"] .mnav-head b { color: var(--gl-ink); }
+html[data-theme="mint"] .mnav-head .x { background: rgba(118,118,128,.12); color: var(--gl-ink); }
+
+/* ── storefront: product cards get a glass sheen ── */
+html[data-theme="mint"] .card { border-color: var(--gl-edge); box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06); }
+
+/* ── storefront: deal strip — frosted glass over a soft aurora ── */
+html[data-theme="mint"] .sf-deal-in {
+  color: var(--gl-ink);
+  background:
+    radial-gradient(520px 300px at 0% 0%, rgba(160,236,222,.6), transparent 62%),
+    radial-gradient(520px 320px at 100% 100%, rgba(186,230,253,.55), transparent 65%),
+    radial-gradient(400px 260px at 60% 0%, rgba(160,236,222,.4), transparent 65%),
+    rgba(255,255,255,.6);
+  border: 1px solid var(--gl-edge);
+  box-shadow: inset 0 1px 0 #fff, 0 24px 50px rgba(15,23,42,.1);
+}
+html[data-theme="mint"] .sf-deal-in::before { border-color: rgba(14,159,142,.08); }
+html[data-theme="mint"] .sf-deal-side h2 { color: var(--gl-ink); }
+html[data-theme="mint"] .sf-deal-lead { color: var(--gl-soft); }
+html[data-theme="mint"] .sf-deal-lead b, html[data-theme="mint"] .sf-deal-note { color: #0E9F8E; }
+html[data-theme="mint"] .sf-deal-flash { color: #fff; background: linear-gradient(180deg, #FFB340, #FF9500); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 8px 20px rgba(255,149,0,.35); }
+html[data-theme="mint"] .sf-clock-cell { background: rgba(255,255,255,.8); border-color: var(--gl-edge); box-shadow: inset 0 1px 0 #fff, 0 4px 12px rgba(15,23,42,.08); }
+html[data-theme="mint"] .sf-clock-cell b { color: var(--gl-ink); }
+html[data-theme="mint"] .sf-clock-cell small { color: var(--gl-soft); }
+html[data-theme="mint"] .sf-clock-cell i { color: #0E9F8E; }
+
+/* ── storefront: hero banners, help band, footer — glossy deep blue ── */
+html[data-theme="mint"] .sf-phero, html[data-theme="mint"] .sf-ahero, html[data-theme="mint"] .sf-help-in { background: var(--gl-deep); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 20px 44px rgba(14,138,126,.25); }
+html[data-theme="mint"] footer.site.sf-foot { background: radial-gradient(600px 260px at 100% 0%, rgba(58,160,216,.3), transparent 60%), linear-gradient(180deg, #0B3B37, #072A27); }
+html[data-theme="mint"] footer.site.sf-foot::before { background: linear-gradient(90deg, #14B8A6, #60A5FA, #F5B83D); }
+
+/* the logo follows the theme */
+html[data-theme="mint"] img[src="/icons/cholo-mark.svg"] { content: url("/icons/cholo-mark-mint.svg"); }

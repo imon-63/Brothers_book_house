@@ -23,13 +23,13 @@ type AccessUser = {
 type UsersPage = { items: AccessUser[]; total: number; page: number; pageSize: number; counts: Partial<Record<Role | "blocked", number>> };
 
 const ROLES: { id: Role; bn: string; tone: string }[] = [
-  { id: "OWNER", bn: "মালিক", tone: "#7A2430" },
+  { id: "OWNER", bn: "মালিক", tone: "var(--k-7a2430)" },
   { id: "ADMIN", bn: "অ্যাডমিন", tone: "#6B3F7A" },
   { id: "MANAGER", bn: "ম্যানেজার", tone: "#2F5D8A" },
   { id: "SUPPORT", bn: "সাপোর্ট", tone: "#146C3A" },
   { id: "ACCOUNTANT", bn: "হিসাবরক্ষক", tone: "#8A6230" },
   { id: "WAREHOUSE", bn: "গুদাম", tone: "#3D5A4C" },
-  { id: "CUSTOMER", bn: "কাস্টমার", tone: "#5E4E43" },
+  { id: "CUSTOMER", bn: "কাস্টমার", tone: "var(--k-5e4e43)" },
 ];
 const roleOf = (r: Role) => ROLES.find((x) => x.id === r) ?? ROLES[6];
 

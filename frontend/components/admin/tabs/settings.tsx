@@ -15,12 +15,13 @@ import {
 import { readFile, TabMark } from "@/components/admin/shared";
 import { StaffPanel } from "@/components/admin/tabs/staff";
 import { AccessPanel } from "@/components/admin/tabs/access";
+import { ThemePanel } from "@/components/admin/tabs/theme";
 import { useMe } from "@/lib/api/auth";
 import { useConfirm, type ConfirmDetail } from "@/components/admin/confirm";
 import { Ico, Segmented, Toggle } from "@/components/admin/ui";
 import "./settings.css";
 
-type SetMenu = "cats" | "ship" | "coupons" | "promo" | "ticker" | "staff" | "access";
+type SetMenu = "cats" | "ship" | "coupons" | "promo" | "ticker" | "staff" | "access" | "theme";
 
 const SET_MENUS: { id: SetMenu; label: string }[] = [
   { id: "cats", label: "ক্যাটাগরি" },
@@ -30,8 +31,9 @@ const SET_MENUS: { id: SetMenu; label: string }[] = [
   { id: "ticker", label: "টপবার" },
   { id: "staff", label: "স্টাফ" },
   { id: "access", label: "অ্যাক্সেস" },
+  { id: "theme", label: "থিম" },
 ];
-const ADMIN_ONLY: SetMenu[] = ["staff", "access"];
+const ADMIN_ONLY: SetMenu[] = ["staff", "access", "theme"];
 
 export function SettingsTab() {
   const { focus, clearFocus } = useAdminNav();
@@ -60,6 +62,7 @@ export function SettingsTab() {
       {menu === "ticker" ? <div className="set-panel"><TickerTab /></div> : null}
       {menu === "staff" && isAdmin ? <div className="set-panel"><StaffPanel /></div> : null}
       {menu === "access" && isAdmin ? <div className="set-panel"><AccessPanel /></div> : null}
+      {menu === "theme" && isAdmin ? <div className="set-panel"><ThemePanel /></div> : null}
     </div>
   );
 }

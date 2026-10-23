@@ -21,7 +21,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 type Review = { id: string; displayName: string | null; rating: number; title: string | null; body: string | null; verified: boolean; createdAt: string };
 const REVIEW_DRAFT = "cholo_review_draft";
 type ReviewPage = { summary: { average: number; count: number }; items: Review[] };
-const AV = ["#7A2430", "#3D5A4C", "#8A6230", "#1a3a6b", "#5C1B24", "#245A6B"];
+const AV = ["var(--k-7a2430)", "#3D5A4C", "#8A6230", "#1a3a6b", "var(--k-5c1b24)", "#245A6B"];
 const avatarColor = (i: number) => AV[i % AV.length];
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {

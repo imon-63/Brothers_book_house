@@ -338,7 +338,7 @@ export function Menu({ trigger, children, align = "right", placement = "bottom" 
 /* ───────── charts (plain SVG, no deps) ───────── */
 
 const TONE_HEX: Record<Tone, string> = {
-  wine: "#7A2430", gold: "#C4A15A", sage: "#3D5A4C", green: "#146C3A", red: "#B42318", ink: "#5C1B24", blue: "#2F5D8A",
+  wine: "var(--k-7a2430)", gold: "#C4A15A", sage: "#3D5A4C", green: "#146C3A", red: "#B42318", ink: "var(--k-5c1b24)", blue: "#2F5D8A",
 };
 
 export function Spark({ data, tone = "wine", height = 34 }: { data: number[]; tone?: Tone; height?: number }) {

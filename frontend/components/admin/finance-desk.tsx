@@ -1093,7 +1093,7 @@ function Waterfall({ steps }: { steps: Step[] }) {
     <div className="fx-wf-scroll">
       <svg className="fx-wf" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="লাভ-ক্ষতির ধাপ">
         <defs>
-          <linearGradient id="fxWfTot" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#8A2B38" /><stop offset="1" stopColor="#5C1B24" /></linearGradient>
+          <linearGradient id="fxWfTot" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="var(--k-8a2b38)" /><stop offset="1" stopColor="var(--k-5c1b24)" /></linearGradient>
           <linearGradient id="fxWfNet" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#E8C877" /><stop offset="1" stopColor="#B8914A" /></linearGradient>
           <linearGradient id="fxWfPos" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#2E9A5C" /><stop offset="1" stopColor="#146C3A" /></linearGradient>
           <linearGradient id="fxWfNeg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#D9564A" /><stop offset="1" stopColor="#B42318" /></linearGradient>

@@ -996,7 +996,7 @@ function OrderPanel({ o, onAdvance, onRegress, onCancel, onReopen, onPay, onPape
       {pinned.length ? (
         <ul className="od-notes od-pinned">
           {pinned.map((nt) => (
-            <li key={nt.id} style={{ borderLeft: "3px solid var(--ap-gold, #C4A15A)", background: "var(--ap-surface2, #faf6f0)" }}>
+            <li key={nt.id} style={{ borderLeft: "3px solid var(--ap-gold, #C4A15A)", background: "var(--ap-surface2, var(--k-faf6f0))" }}>
               <Avatar name={nt.by?.name || "স"} size={28} />
               <div>
                 <p><b>📌 </b>{nt.body}</p>

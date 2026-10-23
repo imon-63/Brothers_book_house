@@ -315,7 +315,7 @@ export function SiteFrame({ children }: { children: React.ReactNode }) {
             </div>
             <SearchBox placeholder={meta.search} />
             <button className="icon-btn cart-btn" type="button" aria-label="কার্ট" onClick={() => dispatch(setMiniCart(true))}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1C1410" strokeWidth="2"><path d="M6 6h15l-1.5 9h-12z" /><circle cx="9" cy="20" r="1.4" /><circle cx="18" cy="20" r="1.4" /><path d="M6 6 5 3H2" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--k-1c1410)" strokeWidth="2"><path d="M6 6h15l-1.5 9h-12z" /><circle cx="9" cy="20" r="1.4" /><circle cx="18" cy="20" r="1.4" /><path d="M6 6 5 3H2" /></svg>
               <i className={`badge${badgePop ? " pop" : ""}`}>{bn(count)}</i>
             </button>
             {user ? (
